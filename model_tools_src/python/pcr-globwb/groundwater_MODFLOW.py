@@ -83,6 +83,51 @@ class GroundwaterModflow(object):
 
         return result
 
+
+    def set_multiple_drain_parameters(self, iniItems):
+
+
+        logger.info("Using multiple drains.")
+        
+        # set the multiple drainage elevations
+        
+        # relative elevation files above minimumDEM
+        relZFileName = vos.getFullPath(iniItems.modflowParameterOptions['relativeElevationFiles'],\
+                                       iniItems.globalOptions['inputDir'])
+
+        # a dictionary contains areaFractions (dimensionless): fractions of flooded/innundated areas  
+        areaFractions = list(map(float, str(iniItems.modflowParameterOptions['relativeElevationLevels']).split(',')))
+        # ~ print(areaFractions)
+        
+        # number of levels/intervals
+        nrZLevels     = len(areaFractions)
+        
+        # initiate relative elevation values (with zero)
+        relZ = [0.] * nrZLevels
+
+        # initiate percentile DEMs (with zero)
+        self.percentile_dem = [0.] * nrZLevels
+
+        # reading percentile values of digital elevation model
+        for iCnt in range(0, nrZLevels):
+            
+            inputName = relZFileName %(areaFractions[iCnt] * 100)
+            relZ[iCnt] = vos.readPCRmapClone(inputName, 
+                                             self.cloneMap, self.tmpDir, self.inputDir)
+		
+            # covering elevation values
+            relZ[iCnt] = pcr.ifthen(self.landmask, pcr.cover(relZ[iCnt], 0.0))
+		
+            # make sure that relZ[iCnt] >= relZ[iCnt-1] (added by Edwin)
+            if iCnt > 0: relZ[iCnt] = pcr.max(relZ[iCnt], relZ[iCnt-1])
+            
+            # percentile values of digital elevation model
+            self.percentile_dem[iCnt] = self.dem_minimum + relZ[iCnt]
+        
+        # make nrZLevels available for other modules
+        self.nrZLevels = nrZLevels
+
+
     def __init__(self, iniItems, landmask, groundwater_pcrglobwb = None):
         object.__init__(self)
 
@@ -251,7 +296,14 @@ class GroundwaterModflow(object):
         self.lddMap = pcr.lddrepair(pcr.ldd(self.lddMap))
         self.lddMap = pcr.lddmask(self.lddMap, self.landmask)
 
+        
+        # option to introduce multiple drains 
+        self.multiple_drains = False
+        if "multiple_drains" in self.iniItems.modflowParameterOptions.keys() and\
+           self.iniItems.modflowParameterOptions['multiple_drains'] == "True": self.multiple_drains = True
+        if self.multiple_drains: self.set_multiple_drain_parameters()   
 
+        
         self.convert_channel_discharge_to_water_level = False
         # This conversion is definitely needed for a run with monthly MODFLOW stress period.
         if self.online_daily_coupling_between_pcrglobwb_and_modflow == False: self.convert_channel_discharge_to_water_level = True
@@ -2482,6 +2534,8 @@ class GroundwaterModflow(object):
         net_recharge = gwRecharge - gwAbstraction + \
                        gwAbstractionReturnFlow
 
+        # TODO: Barry will incorporate the downscaling scheme here.
+
         # built-up area fractions for limitting groundwater recharge
         if self.using_built_up_area_correction_for_recharge:
             msg = 'Incorporating built-up area fractions to limit groundwater recharge.'
@@ -2550,6 +2604,8 @@ class GroundwaterModflow(object):
 
         gwAbstraction = pcr.cover(gwAbstraction, 0.0)
         gwAbstraction = pcr.max(gwAbstraction, 0.0)
+        
+        # TODO: Barry will incorporate the downscaling scheme here.
 
         # abstraction for the layer 1 (lower layer) is limited only in productive aquifer
         abstraction_layer_1 = pcr.cover(pcr.ifthen(self.productive_aquifer, gwAbstraction), 0.0)
@@ -2626,20 +2682,80 @@ class GroundwaterModflow(object):
         #~ self.pcr_modflow.setDrain(drain_elevation, drain_conductance, 1)
         #~ self.pcr_modflow.setDrain(pcr.spatial(pcr.scalar(0.0)),pcr.spatial(pcr.scalar(0.0)), 2)
 
+
         # a new idea 9 Nov 2018:
         drain_elevation_lowermost_layer = pcr.max(drain_elevation, self.bottom_layer_1)
-        pcr.report(drain_elevation_lowermost_layer, self.iniItems.mapsDir + "/" + "drain_elevation_lowermost_layer" + self.getYearMonth(currTimeStep) + ".map") #JV
-        pcr.report(drain_conductance, self.iniItems.mapsDir + "/" + "drain_conductance.map") #JV
-        self.pcr_modflow.setDrain(drain_elevation_lowermost_layer, drain_conductance, 1)
         drain_elevation_uppermost_layer = pcr.max(drain_elevation, self.bottom_layer_2)
-        pcr.report(drain_elevation_uppermost_layer, self.iniItems.mapsDir + "/" + "drain_elevation_uppermost_layer" + self.getYearMonth(currTimeStep) + ".map") #JV
-        self.pcr_modflow.setDrain(drain_elevation_uppermost_layer, drain_conductance, 2)
 
 
-        # for reporting
-        self.drain_conductance = drain_conductance
-        self.drain_elevation_lowermost_layer = drain_elevation_lowermost_layer
-        self.drain_elevation_uppermost_layer = drain_elevation_uppermost_layer
+
+        # for multiple drainage case, we will modify the drain package input files
+        if self.multiple_drains:
+            
+            drain_mult_elevations   = self.percentile_dem
+            drain_mult_conductances = [drain_conductance] * self.nrZLevels
+
+            using_modflow_6 = True
+            
+            for iCnt in range(0, self.nrZLevels):
+                
+                print(iCnt)
+
+                # set the drain for the top and bottom layers
+                self.pcr_modflow.setDrain(pcr.cover(drain_mult_elevations[iCnt], 0.0), drain_mult_conductances[iCnt], 2)
+                self.pcr_modflow.setDrain(pcr.cover(drain_mult_elevations[iCnt], 0.0), drain_mult_conductances[iCnt], 1)
+                
+                # save conductance to pcraster maps
+                conductance_file_name = self.iniItems.mapsDir + "/" + "drain_conductance_" +  str(iCnt) + ".map"
+                pcr.report(drain_mult_conductances[iCnt], conductance_file_name)
+
+                # save elevation to pcraster maps
+                pcr.report(drain_elevation_lowermost_layer, self.iniItems.mapsDir + "/" + "drain_elevation_lowermost_layer" + self.getYearMonth(currTimeStep) + str(iCnt) + ".map")
+                pcr.report(drain_elevation_uppermost_layer, self.iniItems.mapsDir + "/" + "drain_elevation_uppermost_layer" + self.getYearMonth(currTimeStep) + str(iCnt) + ".map")
+
+                if using_modflow_6 == False:
+
+                    # run a dummy modflow run, in order to create temporary files pcrmf.drn and pcrmf_drn.asc (the files will be located under the folder "tmp_modflow")
+                    self.pcr_modflow.setPCG(1, 1, 1, 100000000000000000, 100000000000000000, 1.0, 2, 1)
+                    self.pcr_modflow.run()
+                    
+                    # move the files to a temporary drain folder
+                    tmp_dir_for_drain = "tmp_drain"
+                    if os.path.exists(tmp_dir_for_drain) == False: os.mkdir(tmp_dir_for_drain)
+                    os.rename("pcrmf_drn.asc", tmp_dir_for_drain + '/' + str(iCnt) + 'pcrmf_drn.asc')
+				    
+                    # somehow the following file already contains the 'correct' number of drain packages that we want to use (hence, no need to isolate this)
+                    # ~ os.rename("pcrmf.drn",     tmp_dir_for_drain + '/pcrmf.drn' + str(iCnt))
+            
+            if using_modflow_6 == False:
+
+                # merge all files pcrmf_drn.asc to a single file
+                # ~ input_files = glob.glob(self.tmp_modflow_dir + "/tmp_drain/*.asc")
+                input_files = glob.glob("tmp_drain/*.asc")
+                print(input_files)
+                output_file = 'pcrmf_drn.asc'
+                
+                with open(output_file, 'w') as output_file:  
+                    for input_file in input_files:    
+                        with open(input_file, 'r') as input_file:  
+                            output_file.write(input_file.read())
+                            # ~ output_file.write('\n')
+                
+                # delete the dummy pcg file
+                os.remove("pcrmf.pcg")            
+                        
+        else:
+
+            pcr.report(drain_elevation_lowermost_layer, self.iniItems.mapsDir + "/" + "drain_elevation_lowermost_layer" + self.getYearMonth(currTimeStep) + ".map") #JV
+            pcr.report(drain_conductance, self.iniItems.mapsDir + "/" + "drain_conductance.map") #JV
+            self.pcr_modflow.setDrain(drain_elevation_lowermost_layer, drain_conductance, 1)
+            pcr.report(drain_elevation_uppermost_layer, self.iniItems.mapsDir + "/" + "drain_elevation_uppermost_layer" + self.getYearMonth(currTimeStep) + ".map") #JV
+            self.pcr_modflow.setDrain(drain_elevation_uppermost_layer, drain_conductance, 2)
+
+            # for reporting
+            self.drain_conductance = drain_conductance
+            self.drain_elevation_lowermost_layer = drain_elevation_lowermost_layer
+            self.drain_elevation_uppermost_layer = drain_elevation_uppermost_layer
 
 
         # TODO: Shall we link the specificYield used to the BCF package ??
