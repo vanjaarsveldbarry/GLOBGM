@@ -1,13 +1,12 @@
 [edwinmod@int5 _example_map_files_from_jarno_scripts]$ ls -lah *
 
+!!! DONE:
 !!! TODO - NOT YET DONE!!!
--rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 horizontal_conductivity_lowermost_layer.map
--rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 horizontal_conductivity_uppermost_layer.map
 -rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 primary_storage_coefficient_lowermost_layer.map
 -rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 primary_storage_coefficient_uppermost_layer.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 horizontal_conductivity_lowermost_layer.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 horizontal_conductivity_uppermost_layer.map
 -rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:03 vertical_conductivity_lowermost_layer.map
-
-!!! DONE:
 -rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 abstraction_lowermost_layer_195801.map
 -rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 abstraction_lowermost_layer.map
 -rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 abstraction_uppermost_layer_195801.map

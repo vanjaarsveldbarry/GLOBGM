@@ -944,7 +944,11 @@ class GroundwaterModflow(object):
         msg = "Assign storage coefficient values to the MODFLOW (BCF package)."
         if self.log_to_info: logger.info(msg)
         # put the storage coefficient values to the modflow model
+        pcr.report(primary_1,   self.iniItems.mapsDir + "/" + "primary_storage_coefficient_lowermost_layer.map") #JV
+        # pcr.report(secondary_1, self.iniItems.mapsDir + "/" + "secondary_storage_coefficient_lowermost_layer.map") #JV
         self.pcr_modflow.setStorage(primary_1, secondary_1, 1)
+        pcr.report(primary_2,   self.iniItems.mapsDir + "/" + "primary_storage_coefficient_uppermost_layer.map") #JV
+        # pcr.report(secondary_2, self.iniItems.mapsDir + "/" + "secondary_storage_coefficient_uppermost_layer.map") #JV
         self.pcr_modflow.setStorage(primary_2, secondary_2, 2)
 
 
@@ -1152,12 +1156,17 @@ class GroundwaterModflow(object):
         #~ pcr.aguila(horizontal_conductivity_layer_2)
         #~ pcr.aguila(vertical_conductivity_layer_2)
         #~ raw_input("Press Enter to continue...")
+        
+        pcr.report(horizontal_conductivity_layer_2, self.iniItems.mapsDir + "/" + "horizontal_conductivity_uppermost_layer.map")
+        pcr.report(vertical_conductivity_layer_2, self.iniItems.mapsDir + "/" + "vertical_conductivity_uppermost_layer.map")
 
         # for the lower layer
         if "aquiferLayerSecondaryStorageCoefficient" in self.iniItems.modflowParameterOptions.keys() and\
             self.iniItems.modflowParameterOptions['aquiferLayerSecondaryStorageCoefficient'] not in ["None", "False"]:
             msg = "Using the layer type (LAYCON) 2 for the aquifer layer."
             logger.debug(msg)
+            pcr.report(horizontal_conductivity_layer_1, self.iniItems.mapsDir + "/" + "horizontal_conductivity_lowermost_layer.map") #JV
+            pcr.report(vertical_conductivity_layer_1, self.iniItems.mapsDir + "/" + "vertical_conductivity_lowermost_layer.map") #JV
             self.pcr_modflow.setConductivity(2, horizontal_conductivity_layer_1, \
                                                  vertical_conductivity_layer_1, 1)              
             #~ self.pcr_modflow.setConductivity(02, horizontal_conductivity_layer_1, \
@@ -1168,8 +1177,12 @@ class GroundwaterModflow(object):
                                                  #~ vertical_conductivity_layer_1, 1)              
         else:
 
+            pcr.report(horizontal_conductivity_layer_1, self.iniItems.mapsDir + "/" + "horizontal_conductivity_lowermost_layer.map") #JV
+            pcr.report(vertical_conductivity_layer_1, self.iniItems.mapsDir + "/" + "vertical_conductivity_lowermost_layer.map") #JV
+
             # ~ self.pcr_modflow.setConductivity(00, horizontal_conductivity_layer_1, \
                                                  # ~ vertical_conductivity_layer_1, 1)              
+
             # QUICK FIX to avoid missing values
             self.pcr_modflow.setConductivity(00, pcr.cover(horizontal_conductivity_layer_1, 10.0), \
                                                  pcr.cover(vertical_conductivity_layer_1  , 10.0), 1)
@@ -1199,6 +1212,8 @@ class GroundwaterModflow(object):
 
         # specification for storage coefficient (BCF package)
         self.set_storages_for_two_layer_model()
+        
+        # TODO: Please check whether the lat/lon correction is necessary for the MODFLOW6. 
 
 
     def get_initial_heads(self, initialHeadsFromSpinUp = None):
