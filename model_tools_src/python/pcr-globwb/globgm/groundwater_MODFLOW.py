@@ -2662,12 +2662,12 @@ class GroundwaterModflow(object):
         gwAbstractionUsed = gwAbstraction * adjusting_factor
 
         if self.number_of_layers == 1: self.set_well_package_for_one_layer_model(gwAbstractionUsed)
-        if self.number_of_layers == 2: self.set_well_package_for_two_layer_model(gwAbstractionUsed)
+        if self.number_of_layers == 2: self.set_well_package_for_two_layer_model(gwAbstractionUsed, currTimeStep) #JV
         
         # for debugging
         self.gwAbstractionUsed = pcr.ifthen(self.landmask, gwAbstractionUsed)
 
-    def set_well_package_for_one_layer_model(self, gwAbstraction):
+    def set_well_package_for_one_layer_model(self, gwAbstraction, currTimeStep):
 		
         gwAbstraction = pcr.cover(gwAbstraction, 0.0)
         gwAbstraction = pcr.max(gwAbstraction, 0.0)
@@ -2678,7 +2678,7 @@ class GroundwaterModflow(object):
         # set the well package
         self.pcr_modflow.setWell(abstraction, 1)
 
-    def set_well_package_for_two_layer_model(self, gwAbstraction):
+    def set_well_package_for_two_layer_model(self, gwAbstraction, currTimeStep): #JV
 		
         gwAbstraction = pcr.cover(gwAbstraction, 0.0)
         gwAbstraction = pcr.max(gwAbstraction, 0.0)
