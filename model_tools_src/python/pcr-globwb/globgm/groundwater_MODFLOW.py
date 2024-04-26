@@ -1981,8 +1981,8 @@ class GroundwaterModflow(object):
             self.set_drain_and_river_package(discharge, channelStorage, currTimeStep, simulation_type)
         
         # set recharge and well packages
-        self.set_recharge_package(gwRecharge)
-        self.set_well_package(gwAbstraction)
+        self.set_recharge_package(gwRecharge, currTimeStep) #JV
+        self.set_well_package(gwAbstraction, currTimeStep) #JV
 
         # DAMP parameters (this may help the convergence)
         self.parameter_DAMP = self.parameter_DAMP_default
@@ -2593,10 +2593,16 @@ class GroundwaterModflow(object):
 
 
 
-    def set_recharge_package(self, \
-                             gwRecharge, gwAbstraction = 0.0, 
-                             gwAbstractionReturnFlow = 0.0):            # Note: We ignored the latter as MODFLOW should capture this part as well.
-								                                        #       We also moved the abstraction to the WELL package 
+    # ~ def set_recharge_package(self, \
+                             # ~ gwRecharge, gwAbstraction = 0.0, 
+                             # ~ gwAbstractionReturnFlow = 0.0):            # Note: We ignored the latter as MODFLOW should capture this part as well.
+								                                        # ~ #       We also moved the abstraction to the WELL package 
+
+    #JV
+    def set_recharge_package(self, gwRecharge, currTimeStep, \
+                             gwAbstraction = 0.0, \
+                             gwAbstractionReturnFlow = 0.0):
+
 
         logger.info("Set the recharge package.")
 
@@ -2640,7 +2646,7 @@ class GroundwaterModflow(object):
         #~ # if we want to put RCH in the lower layer
         #~ self.pcr_modflow.setIndicatedRecharge(net_RCH, pcr.spatial(pcr.nominal(1)))
 
-    def set_well_package(self, gwAbstraction):
+    def set_well_package(self, gwAbstraction, currTimeStep): #JV
 
         logger.info("Set the well package.")
 
