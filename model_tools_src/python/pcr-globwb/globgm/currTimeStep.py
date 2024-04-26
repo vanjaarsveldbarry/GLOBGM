@@ -123,6 +123,10 @@ class ModelTime(object):
     def fulldate(self):
         return self._fulldate
 
+    @property
+    def yearmonth(self):
+        return '%04i%02i' %(self._currTime.year, self._currTime.month)
+
     def update(self,timeStepPCR):
         self._timeStepPCR = timeStepPCR
         self._currTime = self._startTime + datetime.timedelta(days=1 * (timeStepPCR - 1))
