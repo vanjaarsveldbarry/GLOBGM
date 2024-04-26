@@ -1640,6 +1640,7 @@ class GroundwaterModflow(object):
                                    PERLEN = None, \
                                    NSTP = None):
 									   
+        self.online_coupling_between_pcrglobwb_and_modflow_via_memory = False
         if online_coupling_between_pcrglobwb_and_modflow_via_memory: self.online_coupling_between_pcrglobwb_and_modflow_via_memory = True
         
         if self.online_daily_coupling_between_pcrglobwb_and_modflow or self.online_coupling_between_pcrglobwb_and_modflow_via_memory:
