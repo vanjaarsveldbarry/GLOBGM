@@ -1771,7 +1771,6 @@ class GroundwaterModflow(object):
             var_name = 'groundwaterHeadLayer'+str(i)
             initial_head = pcr.scalar(groundwaterHead[var_name])
             if i == 1: #JV
-                if 
                 pcr.report(initial_head, self.iniItems.mapsDir + "/" + "initial_head_lowermost_layer" + self.getYearMonth(currTimeStep) + ".map") #JV
             if i == 2: #JV
                 pcr.report(initial_head, self.iniItems.mapsDir + "/" + "initial_head_uppermost_layer" + self.getYearMonth(currTimeStep) + ".map") #JV
