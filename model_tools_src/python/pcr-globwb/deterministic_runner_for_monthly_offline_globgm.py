@@ -105,6 +105,15 @@ def main():
                                          debug_mode = debug_mode, \
                                          steady_state_only = steady_state_only)      
 
+    if len(sys.argv) > 4: #JV
+        tile = sys.argv[4]
+        print('Writing ini-file for tile %s'%tile)
+        iniFileName_new = os.path.join(os.path.dirname(iniFileName),'%s.ini'%tile)
+        f = open(iniFileName,'r'); s = f.read(); f.close()
+        iniFileName = iniFileName_new
+        s = s.replace('$tile$',tile)
+        f = open(iniFileName,'w'); f.write(s); f.close()
+
     # if steady_state_only startTime = endTime
     if steady_state_only:
        configuration.globalOptions['endTime'] = configuration.globalOptions['startTime']
