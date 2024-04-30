@@ -100,10 +100,6 @@ def main():
     steady_state_only = False
     if len(sys.argv) > 3: 
         if sys.argv[3] == "steady-state-only": steady_state_only = True
-    # object to handle configuration/ini file
-    configuration = globgm.Configuration(iniFileName = iniFileName, \
-                                         debug_mode = debug_mode, \
-                                         steady_state_only = steady_state_only)      
 
     if len(sys.argv) > 4: #JV
         tile = sys.argv[4]
@@ -113,6 +109,11 @@ def main():
         iniFileName = iniFileName_new
         s = s.replace('$tile$',tile)
         f = open(iniFileName,'w'); f.write(s); f.close()
+
+    # object to handle configuration/ini file
+    configuration = globgm.Configuration(iniFileName = iniFileName, \
+                                         debug_mode = debug_mode, \
+                                         steady_state_only = steady_state_only)      
 
     # if steady_state_only startTime = endTime
     if steady_state_only:
