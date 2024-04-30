@@ -2,8 +2,17 @@
 #SBATCH -t 04:00:00
 #SBATCH --output=ss_%j.out
 #SBATCH --error=ss_%j.err
-#SBATCH -p normal
+#SBATCH -p genoa
 #SBATCH -N 1
+
+# activate the pcrglobwb conda environment
+# load miniconda
+# - using 2022 modules (suitable for genoa nodes)
+module load 2022
+module load Miniconda3/4.12.0
+unset PYTHONPATH
+source activate /home/hydrowld/.conda/envs/pcrglobwb_python3
+
 
 MODEL_SCRIPT_FOLDER="/home/edwin/github/edwinkost/GLOBGM/model_tools_src/python/pcr-globwb/"
 INI_FILE="/home/edwin/github/edwinkost/GLOBGM/model_input/1_write_tiled_parameter_data/develop/steady-state_config_develop.ini"
