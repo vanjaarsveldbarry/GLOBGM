@@ -2740,7 +2740,12 @@ class GroundwaterModflow(object):
         drain_elevation = self.estimate_bottom_of_bank_storage()                               # unit: m
         
         if ('satAreaFracInputNC' in self.iniItems.modflowTransientInputOptions.keys() and self.iniItems.modflowTransientInputOptions['satAreaFracInputNC'] != "None"):
+		
+		# TODO: At this moment works only for the transient purpose. We have to make this works for the steady state option as well. 
+		
 		# TODO: Check this whether this is correct (if we don´t use satAreaFracInputNC)
+		
+		
             
             # - using satAreaFrac to estimate drain_elevation (based on satAreaFracInputNC provided in the configuration file)
             if simulation_type == "transient":
