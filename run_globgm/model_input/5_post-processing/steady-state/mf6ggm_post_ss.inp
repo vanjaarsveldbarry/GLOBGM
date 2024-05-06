@@ -1,0 +1,8 @@
+43200 21600 2 -180 -90 8.333333333333E-003 4
+195801
+{yoda_input}/clonemap_tiles/tile_163.txt
+dummy.txt
+tiled {globgm_dir}/input_map/steady-state/tile_???-163/steady-state_only/maps/top_uppermost_layer.map
+2
+{globgm_dir}/mf6_mod/glob_ss/ s {solution} .ss.hds 1 1 2 195801 195801 flt ./ wtd.ss.
+{globgm_dir}/mf6_mod/glob_ss/ s {solution} .ss.hds 0 1 2 195801 195801 flt ./ hds.ss.
