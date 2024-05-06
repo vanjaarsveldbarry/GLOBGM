@@ -104,7 +104,13 @@ def main():
     if len(sys.argv) > 4: #JV
         tile = sys.argv[4]
         print('Writing ini-file for tile %s'%tile)
-        iniFileName_new = os.path.join(os.path.dirname(iniFileName),'%s.ini'%tile)
+        
+        if len(sys.argv) > 5:
+            new_folder_for_ini_file = str(sys.argv[5]) 
+        else:
+            new_folder_for_ini_file = os.path.dirname(iniFileName)
+        
+        iniFileName_new = os.path.join(new_folder_for_ini_file, '%s.ini' %tile)
         f = open(iniFileName,'r'); s = f.read(); f.close()
         iniFileName = iniFileName_new
         s = s.replace('$tile$',tile)
