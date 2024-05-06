@@ -107,6 +107,7 @@ def main():
         
         if len(sys.argv) > 5:
             new_folder_for_ini_file = str(sys.argv[5]) 
+            if os.path.exists(new_folder_for_ini_file) == False: os.makedirs(new_folder_for_ini_file)
         else:
             new_folder_for_ini_file = os.path.dirname(iniFileName)
         
