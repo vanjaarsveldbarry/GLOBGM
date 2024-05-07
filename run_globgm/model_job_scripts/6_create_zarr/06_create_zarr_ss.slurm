@@ -11,12 +11,12 @@ mamba activate globgm
 modelRoot=$1
 solution=s0$2
 
-root=$(realpath ./globgm/model_tools_src/python/to_zarr)
-
 inputFolder=$modelRoot/mf6_post
-outputFolder=$modelRoot/mf6_zarr
+outputFolder=$modelRoot/mf6_to_zarr
 
 mkdir -p $outputFolder/temp
+cd ../model_tools_src/python/to_zarr
+wait
 
-python -u $root/createZarr.py $inputFolder $outputFolder $solution
-wait #&& rm -r $outputFolder/temp
+python -u ./createZarr_ss.py $inputFolder $outputFolder $solution
+wait && rm -r $outputFolder/temp

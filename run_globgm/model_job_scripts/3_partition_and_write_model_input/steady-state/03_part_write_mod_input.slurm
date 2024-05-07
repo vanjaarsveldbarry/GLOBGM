@@ -11,18 +11,18 @@ module load intel/2022a
 modelRoot=$1
 
 inpdir=$(realpath $modelRoot/model_input/3_partition_and_write_model_input/steady-state/)
-exe=$(realpath ./globgm/_bin/mf6ggm_181121)
+exe=$(realpath ../_bin/mf6ggm_181121)
 inpmod=mf6_mod_ss.inp
 inpexe=mf6ggm_ss.inp
 moddir=$modelRoot/mf6_mod/
 
 mkdir -p $moddir
 
-cp ${inpdir}${inpmod} ${moddir}
-cp ${inpdir}${inpexe} ${moddir}
+cp ${inpdir}/${inpmod} ${moddir}
+cp ${inpdir}/${inpexe} ${moddir}
 
 #REPLACE NECESSARY STRINGS
-yodaInput=$(realpath ./globgm/_data/globgm_input)
+yodaInput=$(realpath ../_data/globgm_input)
 globgm_dir=$modelRoot
 sed -i "s|{yoda_input}|${yodaInput}|g" ${moddir}${inpmod}
 sed -i "s|{globgm_dir}|${globgm_dir}|g" ${moddir}${inpmod}

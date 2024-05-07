@@ -107,21 +107,23 @@ def main():
 
     if len(sys.argv) > 4: #JV
         tile = sys.argv[4]
-        inDir = sys.argv[5]
-        outDir = sys.argv[6]
-        dischargeFile = sys.argv[7]
-        gwRechargeFile = sys.argv[8]
+        ssDir = sys.argv[5]
+        inDir = sys.argv[6]
+        outDir = sys.argv[7]
+        dischargeFile = sys.argv[8]
+        gwRechargeFile = sys.argv[9]
         
         iniFileName_new = os.path.join(os.path.dirname(iniFileName),'%s.ini'%tile)
         f = open(iniFileName,'r'); s = f.read(); f.close()
         iniFileName = iniFileName_new
         s = s.replace('$tile$',tile)
+        s = s.replace('SS_DIR',ssDir)
         s = s.replace('IN_DIR',inDir)
         s = s.replace('OUT_DIR',outDir)
         s = s.replace('DISCHARGE_FILE',dischargeFile)
         s = s.replace('GW_RECHARGE_FILE',gwRechargeFile)
-        if len(sys.argv) == 10:
-            gwAbstractionFile = sys.argv[9]
+        if len(sys.argv) == 11:
+            gwAbstractionFile = sys.argv[10]
             s = s.replace('GW_ABSTRACTION_FILE',gwAbstractionFile)
         
         f = open(iniFileName,'w'); f.write(s); f.close()

@@ -9,7 +9,7 @@ mamba activate globgm
 
 modelRoot=$1
 cmip6InputFolder=$modelRoot/cmip6_input
-pcrglobInputFolder=$(realpath ./globgm/_data/globgm_input)
+pcrglobInputFolder=$(realpath ../_data/globgm_input)
 saveFolder=$(realpath $modelRoot/forcing_input)
 
 mkdir -p "$saveFolder"

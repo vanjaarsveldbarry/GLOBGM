@@ -11,10 +11,10 @@ mamba activate globgm
 modelRoot=$1
 slurmDir_tr=$2
 cmip6InputFolder=$modelRoot/cmip6_input
-pcrglobInputFolder=$(realpath ./globgm/_data/globgm_input)
-PCR_GLOB_dir=$(realpath ./globgm/model_tools_src/python/pcr-globwb)
+pcrglobInputFolder=$(realpath ../_data/globgm_input)
+PCR_GLOB_dir=$(realpath ../model_tools_src/python/pcr-globwb)
 saveFolder=$modelRoot/forcing_input
-trPreprocessingIni=$(realpath ./globgm/model_input/_2_preprocess_pcrglobwb/transient_preprocessing.ini)
+trPreprocessingIni=$(realpath ../model_input/_2_preprocess_pcrglobwb/transient_preprocessing.ini)
 
 tempdir=$saveFolder/temp
 mkdir -p $tempdir

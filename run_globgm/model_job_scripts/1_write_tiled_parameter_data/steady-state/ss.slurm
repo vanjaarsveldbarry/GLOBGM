@@ -14,9 +14,9 @@ forcingDir=$(realpath $modelRoot/forcing_input)
 gwRechargeFile=$(find "$forcingDir" -type f -name "*gwRecharge*"); dischargeFile=$(find "$forcingDir" -type f -name "*discharge*")
 
 OUT_DIR=$modelRoot/input_map/steady-state
-IN_DIR=$(realpath ./globgm/_data/globgm_input)
+IN_DIR=$(realpath ../_data/globgm_input)
 
-cd ./globgm/model_tools_src/python/pcr-globwb
+cd ../model_tools_src/python/pcr-globwb
 
 one=$(printf "%03d" ${SLURM_ARRAY_TASK_ID#0})
 two=$(printf "%03d" $((10#$one + 1)))
