@@ -20,6 +20,7 @@ IN_DIR=$(realpath ../_data/globgm_input)
 SS_DIR=$(dirname $modelRoot)/ss
 
 cd ../model_tools_src/python/pcr-globwb
+
 one=$(printf "%03d" ${SLURM_ARRAY_TASK_ID#0})
 two=$(printf "%03d" $((10#$one + 1)))
 three=$(printf "%03d" $((10#$one + 2)))

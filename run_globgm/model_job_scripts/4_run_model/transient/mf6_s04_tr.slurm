@@ -18,7 +18,7 @@ sol=s04
 mod=glob_tr
 
 dir=$modelRoot/mf6_mod/${mod}/solutions/run_output/
-exe=$(realpath ./globgm/_bin/mf6_rel_openmpi-4.1.4-gcc-11.3.0)
+exe=$(realpath ../_bin/mf6_rel_openmpi-4.1.4-gcc-11.3.0)
 nam1=${sol}.par.mfsim.spu.nam
 nam2=${sol}.par.mfsim.ic_spu.nam
 

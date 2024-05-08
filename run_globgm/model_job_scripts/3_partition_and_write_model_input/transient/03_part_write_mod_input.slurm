@@ -1,8 +1,10 @@
 #!/bin/bash
+#SBATCH --exclusive
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --time=02:00:00
 #SBATCH --cpus-per-task=32
+
 
 # load modules
 module load 2022
@@ -11,21 +13,20 @@ module load intel/2022a
 modelRoot=$1
 
 inpdir=$(realpath $modelRoot/model_input/3_partition_and_write_model_input/transient/)
-exe=$(realpath ./globgm/_bin/mf6ggm_181121)
+exe=$(realpath ../_bin/mf6ggm_181121)
 inpmod=mf6_mod_tr.inp
 inpexe=mf6ggm_tr.inp
 moddir=$modelRoot/mf6_mod/
 
 mkdir -p $moddir
 
-cp ${inpdir}${inpmod} ${moddir}
-cp ${inpdir}${inpexe} ${moddir}
+cp ${inpdir}/${inpmod} ${moddir}
+cp ${inpdir}/${inpexe} ${moddir}
 
 #REPLACE NECESSARY STRINGS
-yodaInput=$(realpath ./globgm/_data/globgm_input)
+yodaInput=$(realpath ../_data/globgm_input)
 globgm_dir=$modelRoot
 ssFolder=$(dirname $modelRoot)/ss/mf6_mod/glob_ss/models/run_output_bin/
-echo $ssFolder
 sed -i "s|{yoda_input}|${yodaInput}|g" ${moddir}${inpmod}
 sed -i "s|{globgm_dir}|${globgm_dir}|g" ${moddir}${inpmod}
 sed -i "s|{ssFolder}|${ssFolder}|g" ${moddir}${inpmod}

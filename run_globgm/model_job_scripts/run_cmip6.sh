@@ -23,7 +23,7 @@
 ####################################################################################################
 simulations=("gswp3-w5e5")
 period=("historical")
-solution=("3")
+solution=("1")
 outputDirectory=/projects/0/einf4705/workflow/output
 
 for simulation in "${simulations[@]}"; do
@@ -39,7 +39,7 @@ for simulation in "${simulations[@]}"; do
     # mkdir -p $modelRoot
 
     #copy globgm input files ino simulation folder
-    # cp -r $(realpath ../model_input/) $modelRoot 
+    # cp -r $(realpath ../model_input/) $modelRoot
 
     # copy input data from eejit 
     # bash $model_job_scripts/_1_download_input/copyFiles.sh $modelRoot
@@ -87,6 +87,9 @@ for simulation in "${simulations[@]}"; do
     slurmDir_tr=$modelRoot/slurm_logs/tr
     mkdir -p $slurmDir_tr
 
+    # copy globgm input files ino simulation folder
+    cp -r $(realpath ../model_input/) $modelRoot 
+
     #copy input data from eejit 
     # bash $model_job_scripts/_1_download_input/copyFiles.sh $modelRoot
 
@@ -100,9 +103,9 @@ for simulation in "${simulations[@]}"; do
     #TODO check the ini file dos it even need the steady state netcdf's?
     #TODO make sure this runs of multiple year files
     #TODO hwo do I pass on start and end dates here?
-    mkdir -p $slurmDir_tr/1_write_tiled_parameter_data
-    tr_writeTiled_script=$model_job_scripts/1_write_tiled_parameter_data/transient/tr.slurm
-    sbatch -o $slurmDir_tr/1_write_tiled_parameter_data/tr_write_tiles_%a.out --array=1-163:3 $tr_writeTiled_script $modelRoot
+    # mkdir -p $slurmDir_tr/1_write_tiled_parameter_data
+    # tr_writeTiled_script=$model_job_scripts/1_write_tiled_parameter_data/transient/tr.slurm
+    # sbatch -o $slurmDir_tr/1_write_tiled_parameter_data/tr_write_tiles_%a.out --array=1-163:3 $tr_writeTiled_script $modelRoot
 
     # Step 2: 2_prep_model_part
     # mkdir -p $slurmDir_tr/2_prepare_model_partitioning
@@ -127,11 +130,9 @@ for simulation in "${simulations[@]}"; do
     # sbatch -o $slurmDir_tr/5_post-processing/5_post_globgm_${solution}.out $run_script_post_tr $modelRoot $solution
 
     #Step 6: Create Zarr
-    #TODO add the zarr for tranisnet form eejit 
-    #TODO add the new zarr stuff into the steady-state pre-processing
-    # mkdir -p $slurmDir_tr/6_create_zarr
-    # run_create_zarr_tr=$model_job_scripts/6_create_zarr/06_create_zarr_tr.slurm
-    # # bash $run_create_zarr_tr $modelRoot $solution
-    # sbatch -o $slurmDir_tr/6_create_zarr/6_create_zarr_tr_${solution}.out $run_create_zarr_tr $modelRoot $solution
+    #TODO its only working for one year now so watch out, how do I make it flexible?
+    mkdir -p $slurmDir_tr/6_create_zarr
+    run_create_zarr_tr=$model_job_scripts/6_create_zarr/06_create_zarr_tr.slurm
+    sbatch -o $slurmDir_tr/6_create_zarr/6_create_zarr_tr_${solution}.out $run_create_zarr_tr $modelRoot $solution
 
 done
