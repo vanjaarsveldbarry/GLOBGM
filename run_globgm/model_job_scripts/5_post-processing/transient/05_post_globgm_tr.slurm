@@ -6,6 +6,9 @@
 
 modelRoot=$1
 solution=$2
+startDate=$3
+endDate=$4
+
 
 inpdir=$(realpath $modelRoot/model_input/5_post-processing/transient)
 inp_tr=mf6ggm_post_tr.inp

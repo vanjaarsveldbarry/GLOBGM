@@ -8,7 +8,7 @@ source ${HOME}/.bashrc
 mamba activate globgm
 
 modelRoot=$1
-cmip6InputFolder=$modelRoot/cmip6_input
+cmip6InputFolder=$(dirname $modelRoot)/cmip6_input/historical
 pcrglobInputFolder=$(realpath ../_data/globgm_input)
 saveFolder=$(realpath $modelRoot/forcing_input)
 

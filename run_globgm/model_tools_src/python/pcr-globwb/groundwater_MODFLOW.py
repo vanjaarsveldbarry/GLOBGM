@@ -1771,8 +1771,10 @@ class GroundwaterModflow(object):
                     runoff = pcr.cover(runoff, 0.0)
                     discharge = pcr.catchmenttotal(self.cellAreaMap * runoff, self.lddMap) / vos.secondsPerDay()
                 else:
-                    discharge = vos.netcdf2PCRobjClone(vos.getFullPath(self.iniItems.modflowTransientInputOptions['dischargeInputNC'], self.inputDir),
-                                                       "discharge", str(currTimeStep.fulldate), None, self.cloneMap)
+                    discharge_file_name = self.iniItems.modflowTransientInputOptions['dischargeInputNC'] %(int(currTimeStep.year))
+                    discharge = vos.netcdf2PCRobjClone(discharge_file_name, "discharge", str(currTimeStep.fulldate), None, self.cloneMap)
+                    # discharge = vos.netcdf2PCRobjClone(vos.getFullPath(self.iniItems.modflowTransientInputOptions['dischargeInputNC'], self.inputDir),
+                    #                                    "discharge", str(currTimeStep.fulldate), None, self.cloneMap)
                 discharge = pcr.cover(discharge, 0.0)
                 discharge = pcr.max(discharge, 0.0)
                 

@@ -21,118 +21,153 @@
 # USER DEFINED OPTIONS #                                                                           # 
 # simulations=("gfdl-esm4" "gswp3-w5e5" "ipsl-cm6a-lr" "mpi-esm1-2-hr" "mri-esm2-0" "ukesm1-0-ll") #
 ####################################################################################################
-simulations=("gswp3-w5e5")
-period=("historical")
-solution=("1")
+simulations=("gfdl-esm4")
+# period=("historical")
+# solution=("3")
 outputDirectory=/projects/0/einf4705/workflow/output
 
+# if [[ $period == *"historical"* ]]; then
+
+#     if [[ $simulations == *"gswp3-w5e5"* ]]; then
+#         start_year=1960
+#         end_year=1961
+#     else
+#         start_year=2013
+#         end_year=2014
+#     fi
+# else
+#         start_year=2015
+#         end_year=2100
+# fi
+
+#TODO seperate the preprocessing according to tiles that match the solution spaces, do tis by changing the model folder input names 
+#TODO do I really need two ini files for the 1_wite_tiled_parameter_data step?
 for simulation in "${simulations[@]}"; do
     model_job_scripts=$(realpath ./)
-    mkdir -p $outputDirectory
+    mkdir -p $outputDirectory/$simulation
+    modelRoot=$outputDirectory/$simulation
+
+    #copy input data from eejit 
+    #TODO replace this with a static location on snellius when it is available
+    # bash $model_job_scripts/_1_download_input/copyFiles.sh $outputDirectory
+
 
     ####################
     # RUN STEADY STATE #
     ####################
-    #TODO how do I pass on start and end date yeras for the steady state 
-    # modelRoot=$outputDirectory/$simulation/$period/ss
-    # slurmDir_ss=$modelRoot/slurm_logs/ss
-    # mkdir -p $modelRoot
+    #TODO this shoud be using naturalised data but we dont have that
+    #TODO you've ade changes to the transient state model so you need to update this and see if its runs
+    ssModelRoot=$modelRoot/ss
+    slurmDir_ss=$ssModelRoot/slurm_logs
+    mkdir -p $ssModelRoot
 
-    #copy globgm input files ino simulation folder
-    # cp -r $(realpath ../model_input/) $modelRoot
-
-    # copy input data from eejit 
-    # bash $model_job_scripts/_1_download_input/copyFiles.sh $modelRoot
+    # #copy globgm input files ino simulation folder
+    # cp -r $(realpath ../model_input/) $ssModelRoot
 
     # # Step 0: Preprocess steady state data pcrglobwb data
     # mkdir -p $slurmDir_ss/_2_preprocess_pcrglobwb
     # ss_preprocess_script=$model_job_scripts/_2_preprocess_pcrglobwb/2_preprocess_pcrglobwb_ss.slurm
-    # sbatch -o $slurmDir_ss/_2_preprocess_pcrglobwb/_2_preprocess_pcrglobwb.out $ss_preprocess_script $modelRoot
+    # sbatch -o $slurmDir_ss/_2_preprocess_pcrglobwb/_2_preprocess_pcrglobwb.out $ss_preprocess_script $ssModelRoot
     
-    # Step 1: 1_write_tiled_parameter_data
+    # # Step 1: 1_write_tiled_parameter_data
     # mkdir -p $slurmDir_ss/1_write_tiled_parameter_data
     # ss_writeTiled_script=$model_job_scripts/1_write_tiled_parameter_data/steady-state/ss.slurm
-    # sbatch -o $slurmDir_ss/1_write_tiled_parameter_data/ss_write_tiles_%a.out --array=1-163:3 $ss_writeTiled_script $modelRoot
+    # sbatch -o $slurmDir_ss/1_write_tiled_parameter_data/ss_write_tiles_%a.out --array=1-163:3 $ss_writeTiled_script $ssModelRoot
 
     # # Step 2: 2_prep_model_part
     # mkdir -p $slurmDir_ss/2_prepare_model_partitioning
     # ss_prep_mod_part_script=$model_job_scripts/2_prepare_model_partitioning/02_prep_model_part.slurm
-    # sbatch -o $slurmDir_ss/2_prepare_model_partitioning/02_prep_model_part.out $ss_prep_mod_part_script $modelRoot
+    # sbatch -o $slurmDir_ss/2_prepare_model_partitioning/02_prep_model_part.out $ss_prep_mod_part_script $ssModelRoot
     
     # # Step 3: 03_part_write_mod_input
     # mkdir -p $slurmDir_ss/3_partition_and_write_model_input
     # ss_write_input_script=$model_job_scripts/3_partition_and_write_model_input/steady-state/03_part_write_mod_input.slurm
-    # sbatch -o $slurmDir_ss/3_partition_and_write_model_input/3_partition_and_write_model_input.out $ss_write_input_script $modelRoot
+    # sbatch -o $slurmDir_ss/3_partition_and_write_model_input/3_partition_and_write_model_input.out $ss_write_input_script $ssModelRoot
 
     #Step 4: 04_run_globgm
     # mkdir -p $slurmDir_ss/4_run_model
-    # run_script_ss=$model_job_scripts/4_run_model/steady-state/mf6_s0${solution}_ss.slurm
-    # sbatch -o $slurmDir_ss/4_run_model/4_run_globgm${solution}.out $run_script_ss $modelRoot
+    # run_script_ss1=$model_job_scripts/4_run_model/steady-state/mf6_s01_ss.slurm
+    # sbatch -o $slurmDir_ss/4_run_model/4_run_globgm_s01.out $run_script_ss1 $ssModelRoot
+    # run_script_ss2=$model_job_scripts/4_run_model/steady-state/mf6_s02_ss.slurm
+    # sbatch -o $slurmDir_ss/4_run_model/4_run_globgm_s02.out $run_script_ss2 $ssModelRoot
+    # run_script_ss3=$model_job_scripts/4_run_model/steady-state/mf6_s03_ss.slurm
+    # sbatch -o $slurmDir_ss/4_run_model/4_run_globgm_s03.out $run_script_ss3 $ssModelRoot
+    # run_script_ss4=$model_job_scripts/4_run_model/steady-state/mf6_s04_ss.slurm
+    # sbatch -o $slurmDir_ss/4_run_model/4_run_globgm_s04.out $run_script_ss4 $ssModelRoot
 
     # Step 5: post-process
     # mkdir -p $slurmDir_ss/5_post-processing
     # run_script_post_ss=$model_job_scripts/5_post-processing/steady-state/05_post_globgm_ss.slurm
-    # sbatch -o $slurmDir_ss/5_post-processing/5_post_globgm_${solution}.out $run_script_post_ss $modelRoot $solution
+    # sbatch -o $slurmDir_ss/5_post-processing/5_post_globgm_1.out $run_script_post_ss $ssModelRoot 1
+    # sbatch -o $slurmDir_ss/5_post-processing/5_post_globgm_2.out $run_script_post_ss $ssModelRoot 2
+    # sbatch -o $slurmDir_ss/5_post-processing/5_post_globgm_3.out $run_script_post_ss $ssModelRoot 3
+    # sbatch -o $slurmDir_ss/5_post-processing/5_post_globgm_4.out $run_script_post_ss $ssModelRoot 4
+
 
     #Step 6: Create Zarr
     # mkdir -p $slurmDir_ss/6_create_zarr
     # run_create_zarr_ss=$model_job_scripts/6_create_zarr/06_create_zarr_ss.slurm
-    # sbatch -o $slurmDir_ss/6_create_zarr/6_create_zarr_ss_${solution}.out $run_create_zarr_ss $modelRoot $solution
+    # sbatch -o $slurmDir_ss/6_create_zarr/6_create_zarr_ss_1.out $run_create_zarr_ss $ssModelRoot 1
+    # sbatch -o $slurmDir_ss/6_create_zarr/6_create_zarr_ss_2.out $run_create_zarr_ss $ssModelRoot 2
+    # sbatch -o $slurmDir_ss/6_create_zarr/6_create_zarr_ss_3.out $run_create_zarr_ss $ssModelRoot 3
+    # sbatch -o $slurmDir_ss/6_create_zarr/6_create_zarr_ss_4.out $run_create_zarr_ss $ssModelRoot 4
 
-    ###################
-    # Run transient   #
-    ###################
-    modelRoot=$(realpath $outputDirectory/$simulation/$period/tr)
+    ###############################
+    # Run transient historical    #
+    ###############################
+    start_year=2013
+    end_year=2014
+    trModelRoot=$modelRoot/tr_historical
 
-    slurmDir_tr=$modelRoot/slurm_logs/tr
+    slurmDir_tr=$trModelRoot/slurm_logs
     mkdir -p $slurmDir_tr
 
-    # copy globgm input files ino simulation folder
-    cp -r $(realpath ../model_input/) $modelRoot 
+    # # copy globgm input files ino simulation folder
+    # cp -r $(realpath ../model_input/) $trModelRoot 
 
-    #copy input data from eejit 
-    # bash $model_job_scripts/_1_download_input/copyFiles.sh $modelRoot
-
-    # Step 0: Preprocess steady state data pcrglobwb data
-    #TODO hwo do I pass on start and end dates here?
+    # # Step 0: Preprocess steady state data pcrglobwb data
     # mkdir -p $slurmDir_tr/_2_preprocess_pcrglobwb
     # tr_preprocess_script=$model_job_scripts/_2_preprocess_pcrglobwb/2_preprocess_pcrglobwb_tr.slurm
-    # bash $tr_preprocess_script $modelRoot $slurmDir_tr/_2_preprocess_pcrglobwb
+    # bash $tr_preprocess_script $trModelRoot $slurmDir_tr/_2_preprocess_pcrglobwb $start_year $end_year
 
     # Step 1: 1_write_tiled_parameter_data
-    #TODO check the ini file dos it even need the steady state netcdf's?
-    #TODO make sure this runs of multiple year files
-    #TODO hwo do I pass on start and end dates here?
+    # TODO check the ini file dos it even need the steady state netcdf's?
+    # TODO make it 4 tiles per job instead of only 3
     # mkdir -p $slurmDir_tr/1_write_tiled_parameter_data
     # tr_writeTiled_script=$model_job_scripts/1_write_tiled_parameter_data/transient/tr.slurm
-    # sbatch -o $slurmDir_tr/1_write_tiled_parameter_data/tr_write_tiles_%a.out --array=1-163:3 $tr_writeTiled_script $modelRoot
+    # sbatch -o $slurmDir_tr/1_write_tiled_parameter_data/tr_write_tiles_%a.out --array=1-163:4 $tr_writeTiled_script $trModelRoot $start_year $end_year
 
     # Step 2: 2_prep_model_part
     # mkdir -p $slurmDir_tr/2_prepare_model_partitioning
     # tr_prep_mod_part_script=$model_job_scripts/2_prepare_model_partitioning/02_prep_model_part.slurm
-    # sbatch -o $slurmDir_tr/2_prepare_model_partitioning/02_prep_model_part.out $tr_prep_mod_part_script $modelRoot
+    # sbatch -o $slurmDir_tr/2_prepare_model_partitioning/02_prep_model_part.out $tr_prep_mod_part_script $trModelRoot
 
     # Step 3: 03_part_write_mod_input
-    #TODO hwo do I pass on start and end dates here?
     # mkdir -p $slurmDir_tr/3_partition_and_write_model_input
     # tr_write_input_script=$model_job_scripts/3_partition_and_write_model_input/transient/03_part_write_mod_input.slurm
-    # sbatch -o $slurmDir_tr/3_partition_and_write_model_input/3_partition_and_write_model_input.out $tr_write_input_script $modelRoot
+    # bash $tr_write_input_script $trModelRoot $start_year $end_year
+    # sbatch -o $slurmDir_tr/3_partition_and_write_model_input/3_partition_and_write_model_input.out $tr_write_input_script $trModelRoot $start_year $end_year
 
     #Step 4: 04_run_globgm
     # mkdir -p $slurmDir_tr/4_run_model
-    # run_script_tr=$model_job_scripts/4_run_model/transient/mf6_s0${solution}_tr.slurm
-    # sbatch -o $slurmDir_tr/4_run_model/4_run_globgm_${solution}.out $run_script_tr $modelRoot
+    # run_script_tr1=$model_job_scripts/4_run_model/transient/mf6_s01_tr.slurm
+    # sbatch -o $slurmDir_tr/4_run_model/4_run_globgm_1.out $run_script_tr1 $trModelRoot
+    # run_script_tr2=$model_job_scripts/4_run_model/transient/mf6_s02_tr.slurm
+    # sbatch -o $slurmDir_tr/4_run_model/4_run_globgm_2.out $run_script_tr2 $trModelRoot
+    # run_script_tr3=$model_job_scripts/4_run_model/transient/mf6_s03_tr.slurm
+    # sbatch -o $slurmDir_tr/4_run_model/4_run_globgm_3.out $run_script_tr3 $trModelRoot
+    # run_script_tr4=$model_job_scripts/4_run_model/transient/mf6_s04_tr.slurm
+    # sbatch -o $slurmDir_tr/4_run_model/4_run_globgm_4.out $run_script_tr4 $trModelRoot
 
     # Step 5: post-process
     #TODO hwo do I pass on start and end dates here?
     # mkdir -p $slurmDir_tr/5_post-processing
     # run_script_post_tr=$model_job_scripts/5_post-processing/transient/05_post_globgm_tr.slurm
-    # sbatch -o $slurmDir_tr/5_post-processing/5_post_globgm_${solution}.out $run_script_post_tr $modelRoot $solution
+    # sbatch -o $slurmDir_tr/5_post-processing/5_post_globgm_${solution}.out $run_script_post_tr $trModelRoot $solution
 
     #Step 6: Create Zarr
     #TODO its only working for one year now so watch out, how do I make it flexible?
-    mkdir -p $slurmDir_tr/6_create_zarr
-    run_create_zarr_tr=$model_job_scripts/6_create_zarr/06_create_zarr_tr.slurm
-    sbatch -o $slurmDir_tr/6_create_zarr/6_create_zarr_tr_${solution}.out $run_create_zarr_tr $modelRoot $solution
-
+    # mkdir -p $slurmDir_tr/6_create_zarr
+    # run_create_zarr_tr=$model_job_scripts/6_create_zarr/06_create_zarr_tr.slurm
+    # sbatch -o $slurmDir_tr/6_create_zarr/6_create_zarr_tr_${solution}.out $run_create_zarr_tr $trModelRoot $solution
 done

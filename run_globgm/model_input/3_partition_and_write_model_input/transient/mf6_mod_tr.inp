@@ -1,9 +1,9 @@
 TILE_BB {yoda_input}/clonemap_tiles/tile_163.txt
 INPUT_DIST_DIR {globgm_dir}/input_map/transient/tile_???-163/transient/maps/
 
-NPER 24
-NYEAR_SPINUP 1
-STARTDATE 20140101
+NPER {NUMBER_OF_MONTHS}
+NYEAR_SPINUP {NUMBER_SPIN_YEARS}
+STARTDATE {START_DATE}0101
 
 TOP          top_uppermost_layer.map DIST
 BOT_L1       bottom_uppermost_layer.map DIST

@@ -2,7 +2,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --time=00:30:00
-#SBATCH --cpus-per-task=16
+#SBATCH --cpus-per-task=32
 
 # load modules
 module load 2022
