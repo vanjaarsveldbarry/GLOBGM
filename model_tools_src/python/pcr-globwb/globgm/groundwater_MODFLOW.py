@@ -2009,7 +2009,7 @@ class GroundwaterModflow(object):
         # if MODFLOW 6 is used, we would skip the MODFLOW 2005 calculation
         if "using_modflow6" in self.iniItems.modflowParameterOptions.keys() and self.iniItems.modflowParameterOptions["using_modflow6"] == "True":
             using_modflow_6 = True
-            self.modflow_converged = True:
+            self.modflow_converged = True
 
         # execute MODFLOW (2005)
         while self.modflow_converged == False:
