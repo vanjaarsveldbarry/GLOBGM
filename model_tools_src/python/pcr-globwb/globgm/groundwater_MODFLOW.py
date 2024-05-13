@@ -2003,7 +2003,15 @@ class GroundwaterModflow(object):
         self.iteration_DAMP   = 0
         self.modflow_converged = False
 
-        # execute MODFLOW 
+        # option to use MODFLOW 6
+        using_modflow_6 = False
+        
+        # if MODFLOW 6 is used, we would skip the MODFLOW 2005 calculation
+        if "using_modflow6" in self.iniItems.modflowParameterOptions.keys() and self.iniItems.modflowParameterOptions["using_modflow6"] == "True":
+            using_modflow_6 = True
+            self.modflow_converged = True:
+
+        # execute MODFLOW (2005)
         while self.modflow_converged == False:
             
             # convergence criteria 
@@ -2037,9 +2045,6 @@ class GroundwaterModflow(object):
 
             msg = "Executing MODFLOW with DAMP = " + str(DAMP) + " and HCLOSE = "+str(HCLOSE)+" and RCLOSE = "+str(RCLOSE)+" and MXITER = "+str(MXITER)+" and ITERI = "+str(ITERI)+" and PERLEN = "+str(PERLEN)+" and NSTP = "+str(NSTP)
             logger.info(msg)
-            
-            # option to use MODFLOW 6
-            using_modflow_6 = False
             
             if using_modflow_6 == False:
             
@@ -2137,11 +2142,11 @@ class GroundwaterModflow(object):
                 msg += "\n\n"
                 logger.info(msg)
             
-        # obtaining the results from modflow simulation
-        if self.modflow_converged: self.get_all_modflow_results(simulation_type)
+        # obtaining the results from modflow simulation (from modflow 2005 only)
+        if self.modflow_converged and using_modflow_6 == False: self.get_all_modflow_results(simulation_type)
         
         # copy all modflow files (only for transient simulation)
-        if self.make_backup_of_modflow_files and simulation_type == "transient": 
+        if self.make_backup_of_modflow_files and simulation_type == "transient" and using_modflow_6 == False: 
             # target directory:
             target_directory = self.iniItems.globalOptions['outputDir'] + "/" + "modflow_files" + "/" + str(currTimeStep.fulldate) + "/"
             if os.path.exists(target_directory): shutil.rmtree(target_directory)
@@ -2154,7 +2159,8 @@ class GroundwaterModflow(object):
         self.pcr_modflow = None
         
         # calculate some variables that will be accessed from PCR-GLOBWB (for online coupling purpose)
-        self.calculate_values_for_pcrglobwb()
+        if using_modflow_6 == False: self.calculate_values_for_pcrglobwb()
+
         
     def calculate_values_for_pcrglobwb(self):
 
