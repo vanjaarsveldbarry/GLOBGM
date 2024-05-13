@@ -42,6 +42,7 @@ outputDirectory=/projects/0/einf4705/workflow/output
 
 #TODO seperate the preprocessing according to tiles that match the solution spaces, do tis by changing the model folder input names 
 #TODO do I really need two ini files for the 1_wite_tiled_parameter_data step?
+#TODO drop the islands with no data by seeing if they have a value of 0 or nan i n the steady state results
 for simulation in "${simulations[@]}"; do
     model_job_scripts=$(realpath ./)
     mkdir -p $outputDirectory/$simulation
@@ -56,7 +57,6 @@ for simulation in "${simulations[@]}"; do
     # RUN STEADY STATE #
     ####################
     #TODO this shoud be using naturalised data but we dont have that
-    #TODO you've ade changes to the transient state model so you need to update this and see if its runs
     ssModelRoot=$modelRoot/ss
     slurmDir_ss=$ssModelRoot/slurm_logs
     mkdir -p $ssModelRoot
@@ -123,7 +123,7 @@ for simulation in "${simulations[@]}"; do
     mkdir -p $slurmDir_tr
 
     # # copy globgm input files ino simulation folder
-    # cp -r $(realpath ../model_input/) $trModelRoot 
+    cp -r $(realpath ../model_input/) $trModelRoot 
 
     # # Step 0: Preprocess steady state data pcrglobwb data
     # mkdir -p $slurmDir_tr/_2_preprocess_pcrglobwb
@@ -132,7 +132,6 @@ for simulation in "${simulations[@]}"; do
 
     # Step 1: 1_write_tiled_parameter_data
     # TODO check the ini file dos it even need the steady state netcdf's?
-    # TODO make it 4 tiles per job instead of only 3
     # mkdir -p $slurmDir_tr/1_write_tiled_parameter_data
     # tr_writeTiled_script=$model_job_scripts/1_write_tiled_parameter_data/transient/tr.slurm
     # sbatch -o $slurmDir_tr/1_write_tiled_parameter_data/tr_write_tiles_%a.out --array=1-163:4 $tr_writeTiled_script $trModelRoot $start_year $end_year
@@ -160,14 +159,21 @@ for simulation in "${simulations[@]}"; do
     # sbatch -o $slurmDir_tr/4_run_model/4_run_globgm_4.out $run_script_tr4 $trModelRoot
 
     # Step 5: post-process
-    #TODO hwo do I pass on start and end dates here?
+    # TODO this is slow maybe excluisve will help
+    # #TODO  you could also split the jobs to do one variabel per job this cutting the run times here in half
     # mkdir -p $slurmDir_tr/5_post-processing
     # run_script_post_tr=$model_job_scripts/5_post-processing/transient/05_post_globgm_tr.slurm
-    # sbatch -o $slurmDir_tr/5_post-processing/5_post_globgm_${solution}.out $run_script_post_tr $trModelRoot $solution
+    # sbatch -o $slurmDir_tr/5_post-processing/5_post_globgm_1.out $run_script_post_tr $trModelRoot 1 $start_year $end_year
+    # sbatch -o $slurmDir_tr/5_post-processing/5_post_globgm_2.out $run_script_post_tr $trModelRoot 2 $start_year $end_year
+    # sbatch -o $slurmDir_tr/5_post-processing/5_post_globgm_3.out $run_script_post_tr $trModelRoot 3 $start_year $end_year
+    # sbatch -o $slurmDir_tr/5_post-processing/5_post_globgm_4.out $run_script_post_tr $trModelRoot 4 $start_year $end_year
 
     #Step 6: Create Zarr
     #TODO its only working for one year now so watch out, how do I make it flexible?
-    # mkdir -p $slurmDir_tr/6_create_zarr
-    # run_create_zarr_tr=$model_job_scripts/6_create_zarr/06_create_zarr_tr.slurm
-    # sbatch -o $slurmDir_tr/6_create_zarr/6_create_zarr_tr_${solution}.out $run_create_zarr_tr $trModelRoot $solution
+    mkdir -p $slurmDir_tr/6_create_zarr
+    run_create_zarr_tr=$model_job_scripts/6_create_zarr/06_create_zarr_tr.slurm
+    # sbatch -o $slurmDir_tr/6_create_zarr/6_create_zarr_tr_1.out $run_create_zarr_tr $trModelRoot 1 $start_year $end_year
+    # sbatch -o $slurmDir_tr/6_create_zarr/6_create_zarr_tr_2.out $run_create_zarr_tr $trModelRoot 2 $start_year $end_year
+    # sbatch -o $slurmDir_tr/6_create_zarr/6_create_zarr_tr_3.out $run_create_zarr_tr $trModelRoot 3 $start_year $end_year
+    # sbatch -o $slurmDir_tr/6_create_zarr/6_create_zarr_tr_4.out $run_create_zarr_tr $trModelRoot 4 $start_year $end_year
 done

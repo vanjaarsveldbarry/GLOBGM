@@ -1,8 +1,8 @@
 43200 21600 2 -180 -90 8.333333333333E-003 4
-20140101
+{START_DATE}0101
 {yoda_input}/clonemap_tiles/tile_163.txt
 dummy.txt
 tiled {globgm_dir}/input_map/transient/tile_???-163/transient/maps/top_uppermost_layer.map
 2
-{globgm_dir}/mf6_mod/glob_tr/ s {solution} .tr.hds 1 1 2 20140101 20141201 flt ./ wtd.tr.
-{globgm_dir}/mf6_mod/glob_tr/ s {solution} .tr.hds 0 1 2 20140101 20141201 flt ./ hds.tr.
+{globgm_dir}/mf6_mod/glob_tr/ s {solution} .tr.hds 1 1 2 {START_DATE}01 {END_DATE}12 flt ./ wtd.tr.
+{globgm_dir}/mf6_mod/glob_tr/ s {solution} .tr.hds 0 1 2 {START_DATE}01 {END_DATE}12 flt ./ hds.tr.
