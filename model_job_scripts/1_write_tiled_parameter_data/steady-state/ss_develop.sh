@@ -1,7 +1,9 @@
 #!/bin/bash
 #SBATCH -t 04:00:00
-#SBATCH --output=ss_%j.out
-#SBATCH --error=ss_%j.err
+
+#~ #SBATCH --output=ss_%j.out
+#~ #SBATCH --error=ss_%j.err
+
 #SBATCH -p genoa
 #SBATCH -N 1
 
