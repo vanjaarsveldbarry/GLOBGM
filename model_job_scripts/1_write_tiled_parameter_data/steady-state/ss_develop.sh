@@ -16,10 +16,10 @@ unset PYTHONPATH
 source activate /home/hydrowld/.conda/envs/pcrglobwb_python3
 
 
-MODEL_SCRIPT_FOLDER="/home/edwin/github/edwinkost/GLOBGM/model_tools_src/python/pcr-globwb/"
-INI_FILE="/home/edwin/github/edwinkost/GLOBGM/model_input/1_write_tiled_parameter_data/develop/steady-state_config_develop.ini"
+MODEL_SCRIPT_FOLDER="/home/edwinaha/github/edwinkost/GLOBGM/model_tools_src/python/pcr-globwb/"
+INI_FILE="/home/edwinaha/github/edwinkost/GLOBGM/model_input/1_write_tiled_parameter_data/develop/steady-state_config_develop.ini"
 
-TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE="/scratch-shared/edwin/test_globgm/map_input/steady-state/ini_files/"
+TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE="/scratch-shared/edwinaha/test_globgm/map_input/steady-state/ini_files/"
 
 #~ cd {git_dir}/model_tools_src/python/pcr-globwb
 
