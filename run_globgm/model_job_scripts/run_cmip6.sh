@@ -43,6 +43,7 @@ outputDirectory=/projects/0/einf4705/workflow/output
 #TODO seperate the preprocessing according to tiles that match the solution spaces, do tis by changing the model folder input names 
 #TODO do I really need two ini files for the 1_wite_tiled_parameter_data step?
 #TODO drop the islands with no data by seeing if they have a value of 0 or nan i n the steady state results
+#connect this to the big project folder on snellius. 
 for simulation in "${simulations[@]}"; do
     model_job_scripts=$(realpath ./)
     mkdir -p $outputDirectory/$simulation
@@ -142,6 +143,7 @@ for simulation in "${simulations[@]}"; do
     # sbatch -o $slurmDir_tr/2_prepare_model_partitioning/02_prep_model_part.out $tr_prep_mod_part_script $trModelRoot
 
     # Step 3: 03_part_write_mod_input
+    #TODO 
     # mkdir -p $slurmDir_tr/3_partition_and_write_model_input
     # tr_write_input_script=$model_job_scripts/3_partition_and_write_model_input/transient/03_part_write_mod_input.slurm
     # bash $tr_write_input_script $trModelRoot $start_year $end_year
@@ -169,11 +171,10 @@ for simulation in "${simulations[@]}"; do
     # sbatch -o $slurmDir_tr/5_post-processing/5_post_globgm_4.out $run_script_post_tr $trModelRoot 4 $start_year $end_year
 
     #Step 6: Create Zarr
-    #TODO its only working for one year now so watch out, how do I make it flexible?
-    mkdir -p $slurmDir_tr/6_create_zarr
-    run_create_zarr_tr=$model_job_scripts/6_create_zarr/06_create_zarr_tr.slurm
-    # sbatch -o $slurmDir_tr/6_create_zarr/6_create_zarr_tr_1.out $run_create_zarr_tr $trModelRoot 1 $start_year $end_year
-    # sbatch -o $slurmDir_tr/6_create_zarr/6_create_zarr_tr_2.out $run_create_zarr_tr $trModelRoot 2 $start_year $end_year
-    # sbatch -o $slurmDir_tr/6_create_zarr/6_create_zarr_tr_3.out $run_create_zarr_tr $trModelRoot 3 $start_year $end_year
-    # sbatch -o $slurmDir_tr/6_create_zarr/6_create_zarr_tr_4.out $run_create_zarr_tr $trModelRoot 4 $start_year $end_year
+    # mkdir -p $slurmDir_tr/6_create_zarr
+    # run_create_zarr_tr=$model_job_scripts/6_create_zarr/06_create_zarr_tr.slurm
+    # sbatch -o $slurmDir_tr/6_create_zarr/6_create_zarr_tr_1.out $run_create_zarr_tr $trModelRoot 1 $start_year $end_year $slurmDir_tr
+    # sbatch -o $slurmDir_tr/6_create_zarr/6_create_zarr_tr_2.out $run_create_zarr_tr $trModelRoot 2 $start_year $end_year $slurmDir_tr
+    # sbatch -o $slurmDir_tr/6_create_zarr/6_create_zarr_tr_3.out $run_create_zarr_tr $trModelRoot 3 $start_year $end_year $slurmDir_tr
+    # sbatch -o $slurmDir_tr/6_create_zarr/6_create_zarr_tr_4.out $run_create_zarr_tr $trModelRoot 4 $start_year $end_year $slurmDir_tr
 done

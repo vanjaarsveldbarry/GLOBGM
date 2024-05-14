@@ -85,38 +85,3 @@ sbatch --time=24:00:00 -o $slurmDir_tr/3_partition_and_write_model_input/m45.out
 sbatch --time=24:00:00 -o $slurmDir_tr/3_partition_and_write_model_input/m46.out --wrap="${exe} ${inpexe} 379 380"
 sbatch --time=24:00:00 -o $slurmDir_tr/3_partition_and_write_model_input/m47.out --wrap="${exe} ${inpexe} 381 382"
 sbatch --time=24:00:00 -o $slurmDir_tr/3_partition_and_write_model_input/m48.out --wrap="${exe} ${inpexe} 383 384"
-
-# ${exe} ${inpexe} 0
-# ${exe} ${inpexe} 1 12 &
-# ${exe} ${inpexe} 13 24 &
-# ${exe} ${inpexe} 25 36 &
-# ${exe} ${inpexe} 37 48 &
-# ${exe} ${inpexe} 49 60 &
-# ${exe} ${inpexe} 61 72 &
-# ${exe} ${inpexe} 73 84 &
-# ${exe} ${inpexe} 85 96 &
-# ${exe} ${inpexe} 97 108 &
-# ${exe} ${inpexe} 109 120 &
-# ${exe} ${inpexe} 121 132 &
-# ${exe} ${inpexe} 133 144 &
-# ${exe} ${inpexe} 145 156 &
-# ${exe} ${inpexe} 157 168 &
-# ${exe} ${inpexe} 168 180 &
-# ${exe} ${inpexe} 181 192 &
-# ${exe} ${inpexe} 193 204 &
-# ${exe} ${inpexe} 205 216 &
-# ${exe} ${inpexe} 217 228 &
-# ${exe} ${inpexe} 229 240 &
-# ${exe} ${inpexe} 241 252 &
-# ${exe} ${inpexe} 253 264 &
-# ${exe} ${inpexe} 265 276 &
-# ${exe} ${inpexe} 277 288 &
-# ${exe} ${inpexe} 289 300 &
-# ${exe} ${inpexe} 301 312 &
-# ${exe} ${inpexe} 313 324 &
-# ${exe} ${inpexe} 325 336 &
-# ${exe} ${inpexe} 337 348 &
-# ${exe} ${inpexe} 349 360 &
-# ${exe} ${inpexe} 361 372 &
-# ${exe} ${inpexe} 373 384 &
-# wait
