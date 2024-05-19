@@ -1703,10 +1703,14 @@ class GroundwaterModflow(object):
             discharge = pcr.cover(discharge, 0.0)
             discharge = pcr.max(0.0, discharge)
 
-
             # - recharge/capillary rise (unit: m/day) from PCR-GLOBWB
-            gwRecharge = vos.readPCRmapClone(self.iniItems.modflowSteadyStateInputOptions['avgGroundwaterRechargeInputMap'],\
-                                                self.cloneMap, self.tmpDir, self.inputDir)
+            if "gwRechargeDownscale" in self.iniItems.modflowSteadyStateInputOptions.keys() and self.iniItems.modflowSteadyStateInputOptions['gwRechargeDownscale'] == "True":
+                gwRecharge = vos.readDownscaling_gwRecharge_modflow(gwRechargeFile=self.iniItems.modflowSteadyStateInputOptions['avgGroundwaterRechargeInputMap'],
+                                                                    correctionFile=self.iniItems.modflowSteadyStateInputOptions['gwRechargeDownscaleFactor'], 
+                                                                    cloneMap=self.cloneMap)
+            else:
+                gwRecharge = vos.readPCRmapClone(self.iniItems.modflowSteadyStateInputOptions['avgGroundwaterRechargeInputMap'],\
+                                                    self.cloneMap, self.tmpDir, self.inputDir)
             # - groundwater abstraction (unit: m/day) from PCR-GLOBWB
             gwAbstraction = pcr.spatial(pcr.scalar(0.0))
             gwAbstraction = vos.readPCRmapClone(self.iniItems.modflowSteadyStateInputOptions['avgGroundwaterAbstractionInputMap'],\
