@@ -57,10 +57,11 @@ for simulation in "${simulations[@]}"; do
     ####################
     # RUN STEADY STATE #
     ####################
-    #TODO this shoud be using naturalised data but we dont have that
     ssModelRoot=$modelRoot/ss
     slurmDir_ss=$ssModelRoot/slurm_logs
     mkdir -p $ssModelRoot
+    #TODO this shoud be using naturalised data but we dont have that
+    #TODO correct date reference for this simulation its 1958 and should be 1960 
 
     # #copy globgm input files ino simulation folder
     # cp -r $(realpath ../model_input/) $ssModelRoot
@@ -104,9 +105,7 @@ for simulation in "${simulations[@]}"; do
     # sbatch -o $slurmDir_ss/5_post-processing/5_post_globgm_3.out $run_script_post_ss $ssModelRoot 3
     # sbatch -o $slurmDir_ss/5_post-processing/5_post_globgm_4.out $run_script_post_ss $ssModelRoot 4
 
-
     #Step 6: Create Zarr
-    #TODO add chunking so that the chunks size match that of teh transient runs, it will also speed it up 
     # mkdir -p $slurmDir_ss/6_create_zarr
     # run_create_zarr_ss=$model_job_scripts/6_create_zarr/06_create_zarr_ss.slurm
     # sbatch -o $slurmDir_ss/6_create_zarr/6_create_zarr_ss_1.out $run_create_zarr_ss $ssModelRoot 1
@@ -117,15 +116,15 @@ for simulation in "${simulations[@]}"; do
     ###############################
     # Run transient historical    #
     ###############################
-    start_year=2013
-    end_year=2014
-    trModelRoot=$modelRoot/tr_historical
+    # start_year=2013
+    # end_year=2014
+    # trModelRoot=$modelRoot/tr_historical
 
-    slurmDir_tr=$trModelRoot/slurm_logs
-    mkdir -p $slurmDir_tr
+    # slurmDir_tr=$trModelRoot/slurm_logs
+    # mkdir -p $slurmDir_tr
 
-    # # copy globgm input files ino simulation folder
-    cp -r $(realpath ../model_input/) $trModelRoot 
+    # # # copy globgm input files ino simulation folder
+    # cp -r $(realpath ../model_input/) $trModelRoot 
 
     # # Step 0: Preprocess steady state data pcrglobwb data
     # mkdir -p $slurmDir_tr/_2_preprocess_pcrglobwb

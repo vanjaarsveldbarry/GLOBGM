@@ -3,7 +3,7 @@
 #SBATCH --exclusive
 #SBATCH --constraint=scratch-node
 #SBATCH -t 12:00:00
-#SBATCH --partition=genoa
+#SBATCH --partition=rome
 
 source ${HOME}/.bashrc
 mamba activate globgm

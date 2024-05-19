@@ -2,7 +2,7 @@ TILE_BB {yoda_input}/clonemap_tiles/tile_163.txt
 INPUT_DIST_DIR {globgm_dir}/input_map/steady-state/tile_???-163/steady-state_only/maps/
 
 NPER 1
-STARTDATE 19580101
+STARTDATE 19600101
 
 TOP          top_uppermost_layer.map DIST
 BOT_L1       bottom_uppermost_layer.map DIST

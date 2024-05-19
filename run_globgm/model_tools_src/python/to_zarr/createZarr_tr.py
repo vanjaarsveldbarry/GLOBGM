@@ -44,7 +44,7 @@ def merge_variables(month):
     variable_names = list(l1_ds.data_vars.keys())[0]
     l1_ds = l1_ds.rename({'X': 'longitude', 'Y': 'latitude', variable_names: varName})
     l1_ds = l1_ds.expand_dims({'time': pd.date_range(f"{timeStamp}01", periods=1)}).chunk(_chunks)
-    l1_ds.to_zarr(zarrSavePath / f"{solution}_{timeStamp}.zarr", mode='w', consolidated=True, encoding={'l1_hds': _encoding_dict})
+    l1_ds.to_zarr(zarrSavePath / f"{solution}_{timeStamp.zarr", mode='w', consolidated=True, encoding={'l1_hds': _encoding_dict})
     shutil.rmtree(file)
 
     varName='l2_hds'

@@ -1,9 +1,8 @@
 #!/bin/bash -l
-#SBATCH --partition=genoa
+#SBATCH --partition=rome
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --time=00:15:00
-
 
 source ${HOME}/.bashrc
 mamba activate globgm
@@ -20,3 +19,5 @@ wait
 
 python -u ./createZarr_ss.py $inputFolder $outputFolder $solution
 wait
+
+rm -r $modelRoot/mf6_to_zarr/_temp_$solution
