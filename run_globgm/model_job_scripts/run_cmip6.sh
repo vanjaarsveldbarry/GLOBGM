@@ -106,6 +106,7 @@ for simulation in "${simulations[@]}"; do
 
 
     #Step 6: Create Zarr
+    #TODO add chunking so that the chunks size match that of teh transient runs, it will also speed it up 
     # mkdir -p $slurmDir_ss/6_create_zarr
     # run_create_zarr_ss=$model_job_scripts/6_create_zarr/06_create_zarr_ss.slurm
     # sbatch -o $slurmDir_ss/6_create_zarr/6_create_zarr_ss_1.out $run_create_zarr_ss $ssModelRoot 1
@@ -163,6 +164,7 @@ for simulation in "${simulations[@]}"; do
     # Step 5: post-process
     # TODO this is slow maybe excluisve will help
     # #TODO  you could also split the jobs to do one variabel per job this cutting the run times here in half
+    # #TODO  combine this with step 6 and use the node_local_storaeg. 
     # mkdir -p $slurmDir_tr/5_post-processing
     # run_script_post_tr=$model_job_scripts/5_post-processing/transient/05_post_globgm_tr.slurm
     # sbatch -o $slurmDir_tr/5_post-processing/5_post_globgm_1.out $run_script_post_tr $trModelRoot 1 $start_year $end_year
