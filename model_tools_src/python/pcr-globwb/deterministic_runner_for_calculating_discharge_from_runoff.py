@@ -171,7 +171,7 @@ def main():
 
     model_setup["ldd_file"]                = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/global_30sec/routing/surface_water_bodies/version_2020-05-XX/lddsound_30sec_version_202005XX_correct_lat.nc"
     
-    model_setup["cell_area_file"]          = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/cdo_grid_area_30sec_map_correct_lat.nc"
+    model_setup["cell_area_file"]          = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/others/estimate_cell_dimension/30sec/cdo_grid_area_30sec_map_correct_lat.nc"
 
     model_setup["lake_and_reservoir_file"] = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/global_30sec/routing/surface_water_bodies/version_2020-05-XX/lakes_and_reservoirs_30sec_global_2019_version_202005XX.nc"
 
