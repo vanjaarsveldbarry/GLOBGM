@@ -185,7 +185,7 @@ def main():
     model_setup["end_date"]   = YEAR + "-12-31"
 
     # PLEASE MODIFY THIS!!!
-    model_setup["output_dir"] = "/scratch-shared/edwinaha/discharge_30sec_test/monthly_1958-2015_splitted/" + model_setup["start_date"] + "_to_" + model_setup["end_date"] + "/"
+    model_setup["output_dir"] = "/scratch-shared/edwinaha/discharge_30sec_test/monthly_splitted/" + model_setup["start_date"] + "_to_" + model_setup["end_date"] + "/"
 
     model_setup["discharge_output_file"] = model_setup["output_dir"] + "/" + "discharge_30sec_monthAvg_" + model_setup["start_date"] + "_to_" + model_setup["end_date"] + ".nc"
 
