@@ -1,5 +1,10 @@
 
-sbatch job_for_discharge_30sec.sh
+
+
+
+
+
+
 
 sbatch --export YEAR="1979" job_for_discharge_30sec.sh
 sbatch --export YEAR="1980" job_for_discharge_30sec.sh

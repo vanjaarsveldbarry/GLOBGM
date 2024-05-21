@@ -21,5 +21,4 @@ MODEL_SCRIPT_FOLDER="/home/edwinaha/github/edwinkost/GLOBGM/model_tools_src/pyth
 
 cd ${MODEL_SCRIPT_FOLDER}
 
-python deterministic_runner_for_calculating_discharge_from_runoff.py ${YEAR} &
-
+python deterministic_runner_for_calculating_discharge_from_runoff.py ${YEAR} 
