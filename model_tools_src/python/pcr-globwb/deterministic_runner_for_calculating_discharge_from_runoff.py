@@ -12,10 +12,13 @@ import pcraster as pcr
 from pcraster.framework import DynamicModel
 from pcraster.framework import DynamicFramework
 
-from currTimeStep import ModelTime
+from globgm.currTimeStep import ModelTime 
 
-import ncConverter_for_discharge_30sec as netcdf_writer
-import virtualOS as vos
+# ~ import ncConverter_for_discharge_30sec as netcdf_writer
+# ~ import virtualOS as vos
+
+from globgm.ncConverter_for_discharge_30sec import ncConverter_for_discharge_30sec as netcdf_writer 
+from globgm.virtualOS import import virtualOS as vos 
 
 import logging
 logger = logging.getLogger(__name__)
