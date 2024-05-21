@@ -169,7 +169,7 @@ def main():
     
     model_setup["clone_file"]              = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/global_30sec/cloneMaps/global_30sec_clone.map"
 
-    model_setup["ldd_file"]                = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/global_30sec/routing/surface_water_bodies/version_2020-05-X/lddsound_30sec_version_202005XX_correct_lat.nc"
+    model_setup["ldd_file"]                = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/global_30sec/routing/surface_water_bodies/version_2020-05-XX/lddsound_30sec_version_202005XX_correct_lat.nc"
     
     model_setup["cell_area_file"]          = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/cdo_grid_area_30sec_map_correct_lat.nc"
 
