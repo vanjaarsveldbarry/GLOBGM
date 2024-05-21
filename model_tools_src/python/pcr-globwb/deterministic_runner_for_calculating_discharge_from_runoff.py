@@ -14,8 +14,8 @@ from pcraster.framework import DynamicFramework
 
 from globgm.currTimeStep import ModelTime 
 
-from globgm.ncConverter_for_discharge_30sec import ncConverter_for_discharge_30sec as netcdf_writer 
-from globgm.virtualOS import virtualOS as vos 
+import globgm.ncConverter_for_discharge_30sec as netcdf_writer 
+import globgm.virtualOS as vos 
 
 import logging
 logger = logging.getLogger(__name__)
