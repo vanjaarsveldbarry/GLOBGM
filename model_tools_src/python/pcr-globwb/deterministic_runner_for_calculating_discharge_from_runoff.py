@@ -181,8 +181,8 @@ def main():
     # ~ model_setup["end_date"]   = "2015-12-31"
 
     YEAR = sys.argv[1]
-    model_setup["start_date"] = YEAR+"-01-31"
-    model_setup["end_date"]   = YEAR"+-12-31"
+    model_setup["start_date"] = YEAR + "-01-31"
+    model_setup["end_date"]   = YEAR + "-12-31"
 
     # PLEASE MODIFY THIS!!!
     model_setup["output_dir"] = "/scratch-shared/edwinaha/discharge_30sec_test/monthly_1958-2015_splitted/" + model_setup["start_date"] + "_to_" + model_setup["end_date"] + "/"
