@@ -167,8 +167,12 @@ def main():
 
     model_setup["monthly_runoff_file"] = "/scratch/depfg/sutan101/data/pcrglobwb_gmglob_input/develop/example_output/pcrglobwb/global_05min_gmd_paper_output/totalRunoff_monthTot_output_1958-01-31_to_2015-12-31.zip.nc"
     
-    model_setup["start_date"] = "1958-01-31"
-    model_setup["end_date"]   = "2015-12-31"
+    # ~ model_setup["start_date"] = "1958-01-31"
+    # ~ model_setup["end_date"]   = "2015-12-31"
+
+    YEAR = sys.argv[1]
+    model_setup["start_date"] = YEAR+"-01-31"
+    model_setup["end_date"]   = YEAR"+-12-31"
 
     model_setup["output_dir"] = "/scratch/depfg/sutan101/discharge_30sec_gmd_paper/monthly_1958-2015_splitted/" + model_setup["start_date"] + "_to_" + model_setup["end_date"] + "/"
 
