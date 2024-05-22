@@ -7,6 +7,8 @@
 #SBATCH -p genoa
 #SBATCH -N 1
 
+#SBATCH -n 32
+
 SBATCH --export YEAR="2000"
 
 # activate the pcrglobwb conda environment
