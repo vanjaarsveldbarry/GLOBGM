@@ -76,17 +76,15 @@ for simulation in "${simulations[@]}"; do
     #copy globgm input files ino simulation folder
     cp -r $(realpath ../model_input/) $ssModelRoot
 
-
     # Step 0: Preprocess steady state data pcrglobwb data
     # mkdir -p $slurmDir_ss/_2_preprocess_pcrglobwb
     # ss_preprocess_script=$model_job_scripts/_2_preprocess_pcrglobwb/2_preprocess_pcrglobwb_ss.slurm
     # sbatch -o $slurmDir_ss/_2_preprocess_pcrglobwb/_2_preprocess_pcrglobwb.out $ss_preprocess_script $ssModelRoot
     
     # Step 1: 1_write_tiled_parameter_data
-    # mkdir -p $slurmDir_ss/1_write_tiled_parameter_data
+    mkdir -p $slurmDir_ss/1_write_tiled_parameter_data
     ss_writeTiled_script=$model_job_scripts/1_write_tiled_parameter_data/steady-state/ss.slurm
-    sbatch -o $slurmDir_ss/1_write_tiled_parameter_data/ss_write_tiles_%a.out --array=1 $ss_writeTiled_script $ssModelRoot
-    # sbatch -o $slurmDir_ss/1_write_tiled_parameter_data/ss_write_tiles_%a.out --array=1-163:3 $ss_writeTiled_script $ssModelRoot
+    sbatch -o $slurmDir_ss/1_write_tiled_parameter_data/ss_write_tiles_%a.out --array=1-163:3 $ss_writeTiled_script $ssModelRoot
 
     # prepare_model_partitioning
     # mkdir -p
@@ -110,13 +108,13 @@ for simulation in "${simulations[@]}"; do
     # sbatch -o $slurmDir_ss/4_run_model/4_run_globgm_s04.out $run_script_ss4 $ssModelRoot
 
     # Step 5: 5_post-processing
-    make this work for the so that the variables are split up into differnet datasets. 
-    mkdir -p $slurmDir_ss/5_post-processing
-    run_script_post_ss=$model_job_scripts/5_post-processing/steady-state/05_post_globgm_ss.slurm
-    sbatch -o $slurmDir_ss/5_post-processing/5_post_globgm_1.out $run_script_post_ss $ssModelRoot 1
-    sbatch -o $slurmDir_ss/5_post-processing/5_post_globgm_2.out $run_script_post_ss $ssModelRoot 2
-    sbatch -o $slurmDir_ss/5_post-processing/5_post_globgm_3.out $run_script_post_ss $ssModelRoot 3
-    sbatch -o $slurmDir_ss/5_post-processing/5_post_globgm_4.out $run_script_post_ss $ssModelRoot 4
+    # make this work for the so that the variables are split up into differnet datasets. 
+    # mkdir -p $slurmDir_ss/5_post-processing
+    # run_script_post_ss=$model_job_scripts/5_post-processing/steady-state/05_post_globgm_ss.slurm
+    # sbatch -o $slurmDir_ss/5_post-processing/5_post_globgm_1.out $run_script_post_ss $ssModelRoot 1
+    # sbatch -o $slurmDir_ss/5_post-processing/5_post_globgm_2.out $run_script_post_ss $ssModelRoot 2
+    # sbatch -o $slurmDir_ss/5_post-processing/5_post_globgm_3.out $run_script_post_ss $ssModelRoot 3
+    # sbatch -o $slurmDir_ss/5_post-processing/5_post_globgm_4.out $run_script_post_ss $ssModelRoot 4
 
     ###############################
     # Run transient historical    #

@@ -1790,6 +1790,7 @@ class GroundwaterModflow(object):
                                                                         timeStamp=str(currTimeStep.fulldate))
 
                 else:
+                    print("HERE AND WORKING")
                     gwRecharge = vos.netcdf2PCRobjClone(vos.getFullPath(self.iniItems.modflowTransientInputOptions['groundwaterRechargeInputNC'], self.inputDir),\
                                                     "groundwater_recharge", str(currTimeStep.fulldate), None, self.cloneMap)
                 gwRecharge = pcr.cover(gwRecharge, 0.0)
