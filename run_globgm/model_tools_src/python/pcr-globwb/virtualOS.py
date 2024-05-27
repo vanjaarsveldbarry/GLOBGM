@@ -46,8 +46,6 @@ import numpy.ma as ma
 import pcraster as pcr
 
 import xarray as xr
-import pyinterp
-import zarr
 
 import logging
 
@@ -71,14 +69,23 @@ netcdf_suffixes = ('.nc4','.nc')
 # maximum number of tries for reading files:
 max_num_of_tries = 5
 
-def readDownscaling_gwRecharge_modflow(gwRechargeFile, correctionFile, cloneMap):    
+def readDownscaling_gwRecharge_modflow(gwRechargeFile, correctionFile, cloneMap, timeStamp=None):    
     lat= pcr.pcr2numpy(pcr.ycoordinate(pcr.boolean(1)),MV)[:,0].ravel()
     lon= pcr.pcr2numpy(pcr.xcoordinate(pcr.boolean(1)),MV)[0,:].ravel()
-    gwRecharge = xr.open_dataset(gwRechargeFile).groundwater_recharge.sel(lon=slice(lon[0]-1, lon[-1]+1), lat=slice(lat[0]+1, lat[-1]-1))
-    gwRecharge = gwRecharge.reindex(lat=lat, lon=lon, method='nearest')
-    downScaleCF = xr.open_zarr(correctionFile).groundwater_recharge.sel(lon=slice(lon[0], lon[-1]), lat=slice(lat[0], lat[-1])).compute()
-    gwRecharge = (gwRecharge * downScaleCF) * 100
-    return pcr.numpy2pcr(pcr.Scalar, gwRecharge.values, MV)
+    
+    if timeStamp == None:
+        gwRecharge = xr.open_dataset(gwRechargeFile).groundwater_recharge.sel(lon=slice(lon[0]-1, lon[-1]+1), lat=slice(lat[0]+1, lat[-1]-1))
+        gwRecharge = gwRecharge.reindex(lat=lat, lon=lon, method='nearest')
+        downScaleCF = xr.open_zarr(correctionFile).groundwater_recharge.sel(lon=slice(lon[0], lon[-1]), lat=slice(lat[0], lat[-1])).compute()
+        gwRecharge = (gwRecharge * downScaleCF) * 100
+        return pcr.numpy2pcr(pcr.Scalar, gwRecharge.values, MV)
+    else:
+        gwRecharge = xr.open_dataset(gwRechargeFile).groundwater_recharge.sel(time=timeStamp, lon=slice(lon[0]-1, lon[-1]+1), lat=slice(lat[0]+1, lat[-1]-1))
+        gwRecharge = gwRecharge.reindex(lat=lat, lon=lon, method='nearest')
+        downScaleCF = xr.open_zarr(correctionFile).groundwater_recharge.sel(lon=slice(lon[0], lon[-1]), lat=slice(lat[0], lat[-1])).compute()
+        gwRecharge = (gwRecharge * downScaleCF) * 100
+        return pcr.numpy2pcr(pcr.Scalar, gwRecharge.values, MV)
+        
 
 def initialize_logging(log_file_location, log_file_front_name = "log", debug_mode = True):
     """

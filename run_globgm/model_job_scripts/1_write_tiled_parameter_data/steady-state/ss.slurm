@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH -N 1
 #SBATCH -t 01:00:00
-#SBATCH --partition=genoa
+#SBATCH --partition=rome
 #SBATCH --cpus-per-task=16
 
 source ${HOME}/.bashrc

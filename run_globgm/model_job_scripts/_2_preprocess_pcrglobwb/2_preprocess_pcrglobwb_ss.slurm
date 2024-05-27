@@ -3,30 +3,32 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --time=00:20:00
+#SBATCH --constraint=scratch-node
+
 
 source ${HOME}/.bashrc
 mamba activate globgm
 
 modelRoot=$1
+modelScratch=$2
+
 cmip6InputFolder=$(dirname $modelRoot)/cmip6_input/historical
 pcrglobInputFolder=$(realpath ../_data/globgm_input)
-saveFolder=$(realpath $modelRoot/forcing_input)
+saveFolder=$modelRoot/forcing_input
 
-mkdir -p "$saveFolder"
+mkdir -p $saveFolder
 
-tempdir=$saveFolder/temp
+tempdir=$TMPDIR/temp
 mkdir -p $tempdir
 
 process_gwRecharge() {
     local inFile=$(find "$cmip6InputFolder" -type f -name "*gwRecharge*")
     local outFile=$tempdir/average_gwRecharge_m_per_day
+
     cdo -L -f nc4 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,1960/2014 $inFile $outFile.temp.nc
-    gdal_translate -of GTiff $outFile.temp.nc $outFile.temp.tif
-    gdal_translate -of PCRaster ${outFile}.temp.tif ${outFile}.temp.map
-    local FILE_NAME=average_gwRecharge_m_per_day
-    gdal_translate -of NETCDF ${outFile}.temp.map $tempdir/average_gwRecharge_m_per_day.map.nc
-    cdo -L -invertlat $tempdir/average_gwRecharge_m_per_day.map.nc $tempdir/average_gwRecharge_m_per_dayTemp.nc
-    ncwa -O -a time $tempdir/average_gwRecharge_m_per_dayTemp.nc $saveFolder/average_gwRecharge_m_per_day.nc
+    cdo -L -invertlat $outFile.temp.nc $tempdir/average_gwRecharge_m_per_day_withTime.nc
+    ncwa -O -a time $tempdir/average_gwRecharge_m_per_day_withTime.nc $TMPDIR/average_gwRecharge_m_per_day.nc
+    mv $TMPDIR/average_gwRecharge_m_per_day.nc $saveFolder
     echo "gwRecharge Calculated"
 }
 
@@ -47,7 +49,6 @@ process_totalRunoff_to_Discharge() {
     gdalwarp -tr $xres $yres -r bilinear -overwrite -te $ulx $lry $lrx $uly -of GTiff $outFile.temp.nc ${outFile}_30sec.tif
     gdal_translate -of PCRaster ${outFile}_30sec.tif ${outFile}.temp.map
 
-
     # Calculate discharge
     cd $tempdir
     cp $pcrglobInputFolder/cdo_gridarea_30sec.map .
@@ -63,10 +64,11 @@ process_totalRunoff_to_Discharge() {
     pcrcalc average_lake_reservoir_discharge_m3_per_second.map = "if(scalar($waterBodyIds_lakes_and_reservoirs_30sec_global_2019_version_202005XX) gt 0, areamaximum(average_river_discharge_m3_per_second.map, nominal($waterBodyIds_lakes_and_reservoirs_30sec_global_2019_version_202005XX)))"
     pcrcalc average_discharge_m3_per_second.map = "cover(average_lake_reservoir_discharge_m3_per_second.map, average_river_discharge_m3_per_second.map)"
     gdal_translate -of NETCDF average_discharge_m3_per_second.map $tempdir/average_discharge_m3_per_second.map.nc
-    cdo -L -invertlat $tempdir/average_discharge_m3_per_second.map.nc $saveFolder/average_discharge_m3_per_second.nc
+    cdo -L -invertlat $tempdir/average_discharge_m3_per_second.map.nc $TMPDIR/average_discharge_m3_per_second.nc
+    mv $TMPDIR/average_discharge_m3_per_second.nc $saveFolder
     echo "Discharge Calculated"
 }
 
-process_totalRunoff_to_Discharge &
-process_gwRecharge &
-wait && rm -r $tempdir
+process_gwRecharge
+process_totalRunoff_to_Discharge
+# wait #&& rm -r $tempdir

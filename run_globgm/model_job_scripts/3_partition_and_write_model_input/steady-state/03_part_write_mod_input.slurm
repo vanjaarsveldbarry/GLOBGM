@@ -3,6 +3,8 @@
 #SBATCH --ntasks-per-node=1
 #SBATCH --time=00:30:00
 #SBATCH --cpus-per-task=32
+#SBATCH --exclusive
+#SBATCH --partition=rome
 
 # load modules
 module load 2022
@@ -15,6 +17,7 @@ exe=$(realpath ../_bin/mf6ggm_181121)
 inpmod=mf6_mod_ss.inp
 inpexe=mf6ggm_ss.inp
 moddir=$modelRoot/mf6_mod/
+
 
 mkdir -p $moddir
 

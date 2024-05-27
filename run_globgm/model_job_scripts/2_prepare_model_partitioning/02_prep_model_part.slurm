@@ -2,10 +2,11 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=1
 #SBATCH --time=00:05:00
+#SBATCH --cpus-per-task=16
 
 modelRoot=$1 
-tilesPath=$(realpath ../_data/globgm_input/clonemap_tiles)
 
+tilesPath=$(realpath ../_data/globgm_input/clonemap_tiles)
 
 exe=$(realpath ../_bin/datamap_070224)
 out_pref=./map_glob

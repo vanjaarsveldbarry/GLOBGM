@@ -1,4 +1,5 @@
 #!/bin/bash
+#SBATCH --exclusive
 #SBATCH --nodes=3
 #SBATCH --ntasks-per-node=32
 #SBATCH --time=00:30:00
@@ -6,7 +7,6 @@
 #SBATCH --gres=cpu:1
 #SBATCH --partition=rome
 #SBATCH --job-name=run_s02
-
 
 # load modules
 module load 2022

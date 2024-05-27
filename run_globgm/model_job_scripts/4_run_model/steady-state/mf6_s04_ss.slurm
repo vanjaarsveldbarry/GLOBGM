@@ -1,4 +1,5 @@
 #!/bin/bash
+#SBATCH --exclusive
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=32
 #SBATCH --time=00:45:00
