@@ -14,7 +14,7 @@
 MODEL_SCRIPT_FOLDER="/home/edwinbar/github/edwinkost/GLOBGM/model_tools_src/python/pcr-globwb/"
 INI_FILE="/home/edwinbar/github/edwinkost/GLOBGM/model_input/1_write_tiled_parameter_data/develop/steady-state_config_develop_edwinbar.ini"
 
-TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE="/scratch-shared/edwinbar/globgm_tile_map_files_for_arfan/map_input/steady-state/ini_files/"
+TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE="/scratch-shared/edwinbar/globgm_tile_map_files_for_arfan/map_input/steady-state/average/ini_files/"
 
 #~ cd {git_dir}/model_tools_src/python/pcr-globwb
 
