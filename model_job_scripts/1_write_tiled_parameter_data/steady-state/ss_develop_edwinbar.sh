@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH -t 08:00:00
+#SBATCH -t 16:00:00
 
 #~ #SBATCH --output=ss_%j.out
 #~ #SBATCH --error=ss_%j.err
@@ -34,6 +34,8 @@ python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug stea
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_008-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_009-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_010-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
+wait
+
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_011-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_012-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_013-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
@@ -56,6 +58,8 @@ python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug stea
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_028-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_029-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_030-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
+wait
+
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_031-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_032-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_033-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
@@ -78,6 +82,8 @@ python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug stea
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_048-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_049-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_050-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
+wait
+
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_051-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_052-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_053-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
@@ -100,6 +106,8 @@ python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug stea
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_068-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_069-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_070-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
+wait
+
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_071-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_072-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_073-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
@@ -122,6 +130,8 @@ python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug stea
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_088-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_089-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_090-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
+wait
+
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_091-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_092-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_093-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
@@ -144,6 +154,8 @@ python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug stea
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_108-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_109-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_110-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
+wait
+
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_111-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_112-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_113-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
@@ -166,6 +178,8 @@ python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug stea
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_128-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_129-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_130-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
+wait
+
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_131-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_132-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_133-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
@@ -188,6 +202,8 @@ python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug stea
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_148-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_149-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_150-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
+wait
+
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_151-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_152-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_153-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
@@ -204,6 +220,3 @@ python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug stea
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_162-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_163-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
 wait
-
-
-
