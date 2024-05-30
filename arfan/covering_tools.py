@@ -12,7 +12,7 @@ tiles = glob.glob(main_folder + "/tile_*")
 for tile in tiles:
     
     print(tile)
-    
+
     top_uppermost_file    = tile + "/steady-state-only/maps/top_uppermost_layer.map"
     bottom_uppermost_file = tile + "/steady-state-only/maps/bottom_uppermost_layer.map"
     bottom_lowermost_file = tile + "/steady-state-only/maps/bottom_lowermost_layer.map"
