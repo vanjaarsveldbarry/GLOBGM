@@ -1712,6 +1712,14 @@ class GroundwaterModflow(object):
         msg = "Saving some pcraster maps (MODFLOW parameters/input files) to the folder"
         logger.info(msg)
 
+        # option to use MODFLOW 6
+        using_modflow_6 = False
+        
+        # if MODFLOW 6 is used, we would skip the MODFLOW 2005 calculation
+        if "using_modflow6" in self.iniItems.modflowParameterOptions.keys() and self.iniItems.modflowParameterOptions["using_modflow6"] == "True":
+            using_modflow_6 = True
+            return
+        
         # - top and bottom layer elevations, as well as thicknesses
         pcr.report(pcr.ifthen(self.landmask, self.top_layer_2), self.iniItems.mapsDir + "/" + "top_uppermost_layer.map")
         pcr.report(pcr.ifthen(self.landmask, self.bottom_layer_2), self.iniItems.mapsDir + "/" + "bottom_uppermost_layer.map")
