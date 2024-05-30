@@ -11,7 +11,7 @@ tiles = glob.glob(main_folder + "/tile_*")
 
 for tile in tiles:
     
-    print tile
+    print(tile)
     
     pcr.setclone(top_uppermost_file)
     
