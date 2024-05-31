@@ -12,10 +12,10 @@ import pcraster as pcr
 from pcraster.framework import DynamicModel
 from pcraster.framework import DynamicFramework
 
-from globgm.currTimeStep import ModelTime 
+from currTimeStep import ModelTime
 
-import globgm.ncConverter_for_discharge_30sec as netcdf_writer 
-import globgm.virtualOS as vos 
+import ncConverter_for_discharge_30sec as netcdf_writer
+import virtualOS as vos
 
 import logging
 logger = logging.getLogger(__name__)
@@ -141,53 +141,22 @@ def main():
 
     model_setup = {}
 
-    # ~ model_setup["clone_file"]              = "/scratch/depfg/sutan101/data/pcrglobwb_gmglob_input/develop/global_30sec/cloneMaps/global_30sec_clone.map"
-    # ~ model_setup["ldd_file"]                = "/scratch/depfg/sutan101/data/pcrglobwb_gmglob_input/develop/global_30sec/routing/surface_water_bodies/version_2020-05-XX//lddsound_30sec_version_202005XX_correct_lat.nc"
+    model_setup["clone_file"]              = "/scratch/depfg/sutan101/data/pcrglobwb_gmglob_input/develop/global_30sec/cloneMaps/global_30sec_clone.map"
+    model_setup["ldd_file"]                = "/scratch/depfg/sutan101/data/pcrglobwb_gmglob_input/develop/global_30sec/routing/surface_water_bodies/version_2020-05-XX//lddsound_30sec_version_202005XX_correct_lat.nc"
     
-    # ~ model_setup["cell_area_file"]          = "/scratch/depfg/sutan101/data/pcrglobwb_gmglob_input/develop/global_30sec/others/estimate_cell_dimension/30sec/cdo_grid_area_30sec_map_correct_lat.nc"
+    model_setup["cell_area_file"]          = "/scratch/depfg/sutan101/data/pcrglobwb_gmglob_input/develop/global_30sec/others/estimate_cell_dimension/30sec/cdo_grid_area_30sec_map_correct_lat.nc"
 
-    # ~ model_setup["lake_and_reservoir_file"] = "/scratch/depfg/sutan101/data/pcrglobwb_gmglob_input/develop/global_30sec/routing/surface_water_bodies/version_2020-05-XX/lakes_and_reservoirs_30sec_global_2019_version_202005XX.nc"
+    model_setup["lake_and_reservoir_file"] = "/scratch/depfg/sutan101/data/pcrglobwb_gmglob_input/develop/global_30sec/routing/surface_water_bodies/version_2020-05-XX/lakes_and_reservoirs_30sec_global_2019_version_202005XX.nc"
 
-    # ~ model_setup["monthly_runoff_file"] = "/scratch/depfg/sutan101/data/pcrglobwb_gmglob_input/develop/example_output/pcrglobwb/global_05min_gmd_paper_output/totalRunoff_monthTot_output_1958-01-31_to_2015-12-31.zip.nc"
+    model_setup["monthly_runoff_file"] = "/scratch/depfg/sutan101/data/pcrglobwb_gmglob_input/develop/example_output/pcrglobwb/global_05min_gmd_paper_output/totalRunoff_monthTot_output_1958-01-31_to_2015-12-31.zip.nc"
     
-    # ~ model_setup["start_date"] = "1958-01-31"
-    # ~ model_setup["end_date"]   = "2015-12-31"
+    model_setup["start_date"] = "1958-01-31"
+    model_setup["end_date"]   = "2015-12-31"
 
-    # ~ model_setup["output_dir"] = "/scratch/depfg/sutan101/discharge_30sec_gmd_paper/monthly_1958-2015_splitted/" + model_setup["start_date"] + "_to_" + model_setup["end_date"] + "/"
-
-    # ~ model_setup["discharge_output_file"] = model_setup["output_dir"] + "/" + "discharge_30sec_monthAvg_" + model_setup["start_date"] + "_to_" + model_setup["end_date"] + ".nc"
-
-
-    # ~ model_setup["clone_file"]              = "/scratch/depfg/sutan101/data/pcrglobwb_gmglob_input/develop/global_30sec/cloneMaps/global_30sec_clone.map"
-    # ~ model_setup["ldd_file"]                = "/scratch/depfg/sutan101/data/pcrglobwb_gmglob_input/develop/global_30sec/routing/surface_water_bodies/version_2020-05-XX//lddsound_30sec_version_202005XX_correct_lat.nc"
-    
-    # ~ model_setup["cell_area_file"]          = "/scratch/depfg/sutan101/data/pcrglobwb_gmglob_input/develop/global_30sec/others/estimate_cell_dimension/30sec/cdo_grid_area_30sec_map_correct_lat.nc"
-
-    # ~ model_setup["lake_and_reservoir_file"] = "/scratch/depfg/sutan101/data/pcrglobwb_gmglob_input/develop/global_30sec/routing/surface_water_bodies/version_2020-05-XX/lakes_and_reservoirs_30sec_global_2019_version_202005XX.nc"
-
-    # ~ model_setup["monthly_runoff_file"] = "/scratch/depfg/sutan101/data/pcrglobwb_gmglob_input/develop/example_output/pcrglobwb/global_05min_gmd_paper_output/totalRunoff_monthTot_output_1958-01-31_to_2015-12-31.zip.nc"
-    
-    model_setup["clone_file"]              = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/global_30sec/cloneMaps/global_30sec_clone.map"
-
-    model_setup["ldd_file"]                = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/global_30sec/routing/surface_water_bodies/version_2020-05-XX/lddsound_30sec_version_202005XX_correct_lat.nc"
-    
-    model_setup["cell_area_file"]          = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/others/estimate_cell_dimension/30sec/cdo_grid_area_30sec_map_correct_lat.nc"
-
-    model_setup["lake_and_reservoir_file"] = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/global_30sec/routing/surface_water_bodies/version_2020-05-XX/lakes_and_reservoirs_30sec_global_2019_version_202005XX.nc"
-
-    model_setup["monthly_runoff_file"] = "/projects/0/managed_datasets/hypflowsci6_v1.0/output/gswp3-w5e5/historical-reference/pcrglobwb_cmip6-isimip3-gswp3-w5e5_image-aqueduct_historical-reference_totalRunoff_global_monthly-total_1960_2019_basetier1.nc"
-
-    # ~ model_setup["start_date"] = "1958-01-31"
-    # ~ model_setup["end_date"]   = "2015-12-31"
-
-    YEAR = sys.argv[1]
-    model_setup["start_date"] = YEAR + "-01-31"
-    model_setup["end_date"]   = YEAR + "-12-31"
-
-    # PLEASE MODIFY THIS!!!
-    model_setup["output_dir"] = "/scratch-shared/edwinaha/discharge_30sec_test/monthly_splitted/" + model_setup["start_date"] + "_to_" + model_setup["end_date"] + "/"
+    model_setup["output_dir"] = "/scratch/depfg/sutan101/discharge_30sec_gmd_paper/monthly_1958-2015_splitted/" + model_setup["start_date"] + "_to_" + model_setup["end_date"] + "/"
 
     model_setup["discharge_output_file"] = model_setup["output_dir"] + "/" + "discharge_30sec_monthAvg_" + model_setup["start_date"] + "_to_" + model_setup["end_date"] + ".nc"
+
 
     print(model_setup["output_dir"])
     
