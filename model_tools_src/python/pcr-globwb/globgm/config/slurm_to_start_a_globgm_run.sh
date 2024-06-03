@@ -27,7 +27,7 @@ set -x
 
 # configuration (.ini) file - PLEASE MODIFY THIS!
 # - historical
-INI_FILE="/home/edwinaha/github/edwinkost/GLOBGM/model_tools_src/python/pcr-globwb/globgm/config/globgm_offline_05min_global_develop_for_beda.ini"
+INI_FILE="/home/edwinaha/github/edwinkost/GLOBGM/model_tools_src/python/pcr-globwb/globgm/config/globgm_offline_05min_beda_thesis_v2024-06-03.ini"
 
 
 # location of your GLOBGM model scripts - PLEASE MODIFY THIS
