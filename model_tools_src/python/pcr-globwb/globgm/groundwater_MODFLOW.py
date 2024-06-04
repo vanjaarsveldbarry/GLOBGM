@@ -2590,11 +2590,21 @@ class GroundwaterModflow(object):
         # set the RIV package only to the uppermost layer
         if set_the_modflow_river_package:
             logger.info('Set the RIVER package.')
+            
+            # rounding surface_water_elevation and surface_water_elevation to 3 point after decimal (unit: m)
+            surface_water_elevation          = pcr.rounddown(surface_water_elevation * 1000.)/1000.
+            surface_water_bed_elevation_used = pcr.rounddown(surface_water_bed_elevation_used * 1000.)/1000.
+            
+            # make sure that surface_water_elevation >= surface_water_bed_elevation_used
+            surface_water_elevation = pcr.max(surface_water_elevation, surface_water_bed_elevation_used)
+            
             pcr.report(surface_water_elevation,          self.iniItems.mapsDir + "/" + "surface_water_elevation" + self.getYearMonth(currTimeStep) + ".map") #JV
             pcr.report(surface_water_bed_elevation_used, self.iniItems.mapsDir + "/" + "surface_water_bed_elevation_used" + self.getYearMonth(currTimeStep) + ".map") #JV
             pcr.report(bed_conductance_used,             self.iniItems.mapsDir + "/" + "bed_conductance_used" + self.getYearMonth(currTimeStep) + ".map") #JV
             self.pcr_modflow.setRiver(surface_water_elevation, surface_water_bed_elevation_used, bed_conductance_used, self.number_of_layers)
+
         else:
+
             return surface_water_elevation, surface_water_bed_elevation_used, bed_conductance_used
 
         # for reporting
