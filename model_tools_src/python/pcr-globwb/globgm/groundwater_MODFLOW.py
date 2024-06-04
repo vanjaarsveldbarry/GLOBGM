@@ -2887,8 +2887,8 @@ class GroundwaterModflow(object):
         drain_elevation_uppermost_layer = pcr.max(drain_elevation, self.bottom_layer_2)
         if self.multiple_drains == False: self.pcr_modflow.setDrain(drain_elevation_uppermost_layer, drain_conductance, 2)
         
-        pcr.report(drain_elevation_lowermost_layer, "drain_elevation_lowermost_layer.map")
-
+        # ~ pcr.report(drain_elevation_lowermost_layer, "drain_elevation_lowermost_layer.map")
+        
         # for reporting
         self.drain_conductance = drain_conductance
         self.drain_elevation_lowermost_layer = drain_elevation_lowermost_layer
@@ -2923,7 +2923,9 @@ class GroundwaterModflow(object):
                          
 
             using_modflow_6 = False
-            # TODO: Include this in the configuration file to activate it. 
+            # if MODFLOW 6 is used, we would skip the MODFLOW 2005 calculation
+            if "using_modflow6" in self.iniItems.modflowParameterOptions.keys() and self.iniItems.modflowParameterOptions["using_modflow6"] == "True":
+                using_modflow_6 = True
             
             for iCnt in range(0, self.nrZLevels):
                 

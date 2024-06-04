@@ -189,6 +189,12 @@ class ModflowCoupling(object):
         
         self.modflow.get_initial_heads()
 
+        # - Note that that the following is not done if modflow6 is used
+        using_modflow_6 = False
+        if "using_modflow6" in self._configuration.modflowParameterOptions.keys() and self._configuration.modflowParameterOptions["using_modflow6"] == "True":
+            using_modflow_6 = True
+            return
+
         # save/dump states used as the initial conditions 
         logger.info("Save/dump states of the initial conitions used to pcraster maps to the directory %s", self._configuration.endStateDir)
         self.dumpState(outputDirectory = self._configuration.endStateDir,\
