@@ -24,6 +24,4 @@ cd ${MODEL_SCRIPT_FOLDER}
 . /home/edwin/load_all_default.sh
 
 
-python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_078-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE} &
-
-wait
+python deterministic_runner_for_monthly_offline_globgm.py ${INI_FILE} debug steady-state-only tile_078-163 ${TMP_FOLDER_FOR_THE_MODIFIED_INI_FILE}
