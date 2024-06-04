@@ -2888,6 +2888,8 @@ class GroundwaterModflow(object):
         if self.multiple_drains == False: self.pcr_modflow.setDrain(drain_elevation_uppermost_layer, drain_conductance, 2)
         
         pcr.report(drain_elevation_lowermost_layer, "drain_elevation_lowermost_layer.map")
+        
+        pietje
 
         # for reporting
         self.drain_conductance = drain_conductance
