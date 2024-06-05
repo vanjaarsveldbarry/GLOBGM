@@ -44,7 +44,7 @@ for region in range(1, 4):
 
     # ~ groundwaterHead1_inp = vos.readPCRmapClone(v = ncFile, cloneMapFileName = clone_map, tmpDir = tmp_dir, absolutePath = None, isLddMap = False, cover = None, isNomMap = False)
 
-    print(region1)
+    print(region)
     
     output = tmp_dir + 'temp.map'
     warp = vos.gdalwarpPCR(input = ncFile, output = output, cloneOut = clone_map, tmpDir = tmp_dir, isLddMap = False, isNominalMap = False, miss_val = "-9999")
