@@ -34,12 +34,16 @@ storGroundwater1 = None
 for region in range(1, 4):
     
     ncFile = modflow6_output_folder + "/s0" + str(region) + "_hds_ss_l1.nc"
-    groundwaterHead1_inp = vos.netcdf2PCRobjCloneWithoutTime(ncFile  = ncFile, \
-                                                             varName = "automatic",\
-                                                             cloneMapFileName  = clone_map,\
-                                                             LatitudeLongitude = False,\
-                                                             specificFillValue = None,\
-                                                             absolutePath = None)
+
+    # ~ groundwaterHead1_inp = vos.netcdf2PCRobjCloneWithoutTime(ncFile  = ncFile, \
+                                                             # ~ varName = "automatic",\
+                                                             # ~ cloneMapFileName  = clone_map,\
+                                                             # ~ LatitudeLongitude = False,\
+                                                             # ~ specificFillValue = None,\
+                                                             # ~ absolutePath = None)
+
+    groundwaterHead1_inp = vos.readPCRmapClone(v = ncFile, cloneMapFileName = clone_map, tmpDir = tmp_dir, absolutePath = None, isLddMap = False, cover = None, isNomMap = False)
+
     if region == 1:
         groundwaterHead1 = groundwaterHead1_inp
     else:
