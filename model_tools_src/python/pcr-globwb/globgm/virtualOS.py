@@ -1764,6 +1764,63 @@ def isSameClone(inputMapFileName,cloneMapFileName):
     if yULClone != yULInput: sameClone = False
     return sameClone
 
+def gdalwarpPCR_with_mv(input, output, cloneOut, tmpDir, isLddMap = False, isNominalMap = False, miss_val = "-9999"):
+    # 19 Mar 2013 created by Edwin H. Sutanudjaja
+    # all input maps must be in PCRaster maps
+    # 
+    # remove temporary files:
+    co = 'rm '+str(tmpDir)+'*.*'
+    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
+    # 
+    # converting files to tif:
+    co = 'gdal_translate -ot Float64 '+str(input)+' '+str(tmpDir)+'tmp_inp.tif'
+    if isLddMap == True: co = 'gdal_translate -ot Int32 '+str(input)+' '+str(tmpDir)+'tmp_inp.tif'
+    if isNominalMap == True: co = 'gdal_translate -ot Int32 '+str(input)+' '+str(tmpDir)+'tmp_inp.tif'
+    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
+    # 
+    # get the attributes of PCRaster map:
+    cloneAtt = getMapAttributesALL(cloneOut)
+    xmin = cloneAtt['xUL']
+    ymin = cloneAtt['yUL'] - cloneAtt['rows']*cloneAtt['cellsize']
+    xmax = cloneAtt['xUL'] + cloneAtt['cols']*cloneAtt['cellsize']
+    ymax = cloneAtt['yUL'] 
+    xres = cloneAtt['cellsize']
+    yres = cloneAtt['cellsize']
+    te = '-te '+str(xmin)+' '+str(ymin)+' '+str(xmax)+' '+str(ymax)+' '
+    tr = '-tr '+str(xres)+' '+str(yres)+' '
+
+    # ~ co = 'gdalwarp '+te+tr+ \
+         # ~ ' -srcnodata -3.4028234663852886e+38 -dstnodata mv '+ \
+           # ~ str(tmpDir)+'tmp_inp.tif '+ \
+           # ~ str(tmpDir)+'tmp_out.tif'
+
+    co = 'gdalwarp '+te+tr+ \
+         ' -srcnodata ' + str(miss_val) + ' -dstnodata mv '+ \
+           str(tmpDir)+'tmp_inp.tif '+ \
+           str(tmpDir)+'tmp_out.tif'
+
+
+    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
+    # 
+    co = 'gdal_translate -of PCRaster '+ \
+              str(tmpDir)+'tmp_out.tif '+str(output)
+    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
+    # 
+    co = 'mapattr -c '+str(cloneOut)+' '+str(output)
+    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
+    # 
+    #~ co = 'aguila '+str(output)
+    #~ print(co)
+    #~ cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
+    # 
+    co = 'rm '+str(tmpDir)+'tmp*.*'
+    cOut,err = subprocess.Popen(co, stdout=subprocess.PIPE,stderr=open(os.devnull),shell=True).communicate()
+    co = None; cOut = None; err = None
+    del co; del cOut; del err
+    stdout = None; del stdout
+    stderr = None; del stderr
+    n = gc.collect() ; del gc.garbage[:] ; n = None ; del n
+
 def gdalwarpPCR(input,output,cloneOut,tmpDir,isLddMap=False,isNominalMap=False):
     # 19 Mar 2013 created by Edwin H. Sutanudjaja
     # all input maps must be in PCRaster maps
