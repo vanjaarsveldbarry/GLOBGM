@@ -54,6 +54,7 @@ class DeterministicRunner(DynamicModel):
                                        isLddMap         = True, \
                                        cover            = None, \
                                        isNomMap         = False)
+
         self.ldd = pcr.lddrepair(pcr.lddrepair(pcr.ldd(self.ldd)))                               
 
         # read cell area (m2)
@@ -67,10 +68,10 @@ class DeterministicRunner(DynamicModel):
 
         
         # initiate a netcdf writer
-        self.netcdf_report = netcdf_writer.PCR2netCDF(self.model_setup["clone_file"])
-        self.netcdf_report.createNetCDF(self.model_setup["discharge_output_file"],\
-                                        "discharge",\
-                                        "m3/s")
+        # self.netcdf_report = netcdf_writer.PCR2netCDF(self.model_setup["clone_file"])
+        # self.netcdf_report.createNetCDF(self.model_setup["discharge_output_file"],\
+        #                                 "discharge",\
+        #                                 "m3/s")
         
     def initial(self): 
         
@@ -95,6 +96,7 @@ class DeterministicRunner(DynamicModel):
                                                             date_used, \
                                                             useDoy = 'yearly',\
                                                             cloneMapFileName = self.clone)
+
             self.lake_and_reservoir_ids = pcr.nominal(lake_and_reservoir_ids)
             
         # calculating discharge only at the last day of every month
@@ -126,23 +128,43 @@ class DeterministicRunner(DynamicModel):
             # merge all discharge values
             self.discharge = pcr.cover(self.lake_and_reservoir_discharge, self.river_discharge)
             
-
             # reporting 
             # - time stamp for reporting
-            timeStamp = datetime.datetime(self.modelTime.year,\
-                                          self.modelTime.month,\
-                                          self.modelTime.day,\
-                                          0)
-            logger.info("Reporting for time %s", self.modelTime.currTime)
-            self.netcdf_report.data2NetCDF(self.model_setup["discharge_output_file"], \
-                                           "discharge", \
-                                           pcr.pcr2numpy(self.discharge, vos.MV), \
-                                           timeStamp)
+            from pathlib import Path
+            import xarray as xr
+            import pandas as pd
+            import numpy as np
+            from numcodecs import Blosc
+            _compressor = Blosc(cname='zstd', clevel=5, shuffle=Blosc.BITSHUFFLE)
+            _encoding_dict={'dtype': 'float32', '_FillValue': -9999, 'compressor': _compressor}
+            _chunks={'time': 1, 'lat': 20000, 'lon': 20000}
+            def toZarr(discharge):
+                savePath=Path(self.model_setup["discharge_output_file"])
+                array = pcr.pcr2numpy(self.ldd, vos.MV)
+                timeStamp = datetime.datetime(self.modelTime.year,self.modelTime.month, self.modelTime.day,0)
+                dsInfo = xr.open_zarr(savePath)
+                index = dsInfo.get_index('time').get_loc(timeStamp.strftime('%Y-%m-%d'))
+                ds = xr.DataArray(data=array, dims=['lat', 'lon'], 
+                                  coords={'lat':np.zeros(array.shape[0]), 'lon':np.zeros(array.shape[1])}).to_dataset(name='discharge')
+                timeStampPandas=pd.Timestamp(datetime.datetime(self.modelTime.year,self.modelTime.month, self.modelTime.day,0))
+                ds = ds.expand_dims({'time': [timeStampPandas]})
+                ds = ds.drop_vars(['lat', 'lon'])
+                ds = ds.chunk(_chunks)
+                ds.to_zarr(savePath, region={"time": slice(index, index+1)}, consolidated=True)
+
+            toZarr(self.discharge)
+            sys.exit()
+            
+            # logger.info("Reporting for time %s", self.modelTime.currTime)
+            # self.netcdf_report.data2NetCDF(self.model_setup["discharge_output_file"], \
+                                        #    "discharge", \
+                                        #    pcr.pcr2numpy(self.discharge, vos.MV), \
+                                        #    timeStamp)
 
 
 def main():
     
-    if len(sys.argv) != 5:
+    if len(sys.argv) != 7:
         print("Usage: python deterministic_runner_for_calculating_discharge_from_runoff.py <config_file> <totalRunOffFile> <outputDirectory>  <yearID>")
         sys.exit(1)
 
@@ -159,13 +181,24 @@ def main():
     model_setup["cell_area_file"] = config.get("model_setup", "cell_area_file")
     model_setup["lake_and_reservoir_file"] = config.get("model_setup", "lake_and_reservoir_file")
     model_setup["monthly_runoff_file"] = sys.argv[2]
-    model_setup["output_dir"] = f"{sys.argv[3]}/{sys.argv[4]}"
+    model_setup["output_dir"] = f"{sys.argv[3]}/{sys.argv[4]}_{sys.argv[5]}"
     
-    model_setup["start_date"] = f"{sys.argv[4]}-01-31"
-    model_setup["end_date"] = f"{sys.argv[4]}-12-31"
+    month = sys.argv[5]
+
+    if month == "2":
+        model_setup["start_date"] = f"{sys.argv[4]}-{str(month).zfill(2)}-28"
+        model_setup["end_date"] = f"{sys.argv[4]}-{str(month).zfill(2)}-28"
+        
+    else:
+        if month in ["4", "6", "9", "11"]:
+            model_setup["start_date"] = f"{sys.argv[4]}-{str(month).zfill(2)}-30"
+            model_setup["end_date"] = f"{sys.argv[4]}-{str(month).zfill(2)}-30"  
     
-    model_setup["discharge_output_file"] = Path(model_setup["output_dir"]).parent.parent / f"discharge_30sec_monthAvg_{sys.argv[4]}.nc"
+        else:
+            model_setup["start_date"] = f"{sys.argv[4]}-{str(month).zfill(2)}-31"
+            model_setup["end_date"] = f"{sys.argv[4]}-{str(month).zfill(2)}-31"
     
+    model_setup["discharge_output_file"] = f"{sys.argv[6]}/discharge.zarr"
     # make output and temporary folders
     if os.path.exists(model_setup["output_dir"]):
         shutil.rmtree(model_setup["output_dir"])

@@ -3,6 +3,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
 #SBATCH --time=00:20:00
+#SBATCH --partition=genoa,rome
 #SBATCH --constraint=scratch-node
 
 
@@ -24,13 +25,6 @@ mkdir -p $tempdir
 process_gwRecharge() {
     local inFile=$(find "$cmip6InputFolder" -type f -name "*gwRecharge*")
     local outFile=$tempdir/average_gwRecharge_m_per_day
-
-    # cdo -L -f nc4 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,1960/2014 $inFile $outFile.temp.nc
-    # ncwa -O -a time $tempdir/average_gwRecharge_m_per_day_withTime.nc $tempdir/average_gwRecharge_m_per_day.nc
-    # # ncks -C -x -v time $tempdir/average_gwRecharge_m_per_day_withTime.nc $tempdir/average_gwRecharge_m_per_day.nc
-    # cdo -L -invertlat $outkFile.temp.nc $tempdir/average_gwRecharge_m_per_day_withTime.nc
-    # mv $tempdir/average_gwRecharge_m_per_day.nc $saveFolder
-    # echo "gwRecharge Calculated"
 
     cdo -L -f nc4 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,1960/2014 $inFile $outFile.temp.nc
     gdal_translate -of GTiff $outFile.temp.nc $outFile.temp.tif
@@ -80,5 +74,5 @@ process_totalRunoff_to_Discharge() {
 }
 
 process_gwRecharge
-# process_totalRunoff_to_Discharge
+process_totalRunoff_to_Discharge
 # wait #&& rm -r $tempdir

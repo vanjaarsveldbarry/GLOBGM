@@ -1,14 +1,14 @@
 #!/bin/bash -l
 
-# create_environment() {
-    # # Name of the environment
-    # local ENV_NAME="globgm"
+create_environment() {
+    # Name of the environment
+    local ENV_NAME="globgm"
 
-    # # Check if the environment exists
-    # if mamba env list | grep -q "$ENV_NAME"; then
-    #     # Delete the existing environment
-    #     yes | mamba env remove -n "$ENV_NAME"
-    # fi
+    # Check if the environment exists
+    if mamba env list | grep -q "$ENV_NAME"; then
+        # Delete the existing environment
+        yes | mamba env remove -n "$ENV_NAME"
+    fi
 
     # Create a new environment with the same name
     # yes | mamba create -n "$ENV_NAME" python=3.10 pcraster netcdf4 cdo nco six xarray dask zarr bottleneck
@@ -17,7 +17,7 @@
     # yes | mamba create -n "$ENV_NAME" python=3.10 requests pcraster netcdf4 cdo beautifulsoup4 \
                                                 #  tqdm six nco python-wget xarray dask zarr bottleneck \
                                                 #  pyinterp 
-# }
+}
 # create_environment
 # wait
 
@@ -25,7 +25,7 @@
 # USER DEFINED OPTIONS #                                                                           # 
 # simulations=("gfdl-esm4" "gswp3-w5e5" "ipsl-cm6a-lr" "mpi-esm1-2-hr" "mri-esm2-0" "ukesm1-0-ll") #
 ####################################################################################################
-simulations=("gfdl-esm4")
+simulations=("gswp3-w5e5")
 # period=("historical")
 # solution=("3")
 outputDirectory=/projects/0/einf4705/workflow/output
@@ -45,8 +45,14 @@ outputDirectory=/projects/0/einf4705/workflow/output
 #         end_year=2100
 # fi
 
-#TODO chnage names in model input to relfect your changes
+#TODO seperate the preprocessing according to tiles that match the solution spaces, do tis by changing the model folder input names 
+#TODO add a prepreces that write steh needed file for the spinup part of the transient run. 
 #TODO drop the islands with no data by seeing if they have a value of 0 or nan i n the steady state results
+#TODO delete the intermediiate stes that arent needed to free up disk spcae requirments. 
+    #for this you need touse the temp directory
+    #+ add job dependencies
+    #+ use the steady state runs to see what needs what
+    #+ see if you can delete in parrallel and include a chekc that only runs if its in teh correct directroy. 
 #connect this to the big project folder on snellius. 
 for simulation in "${simulations[@]}"; do
     model_job_scripts=$(realpath ./)
@@ -61,7 +67,7 @@ for simulation in "${simulations[@]}"; do
     # RUN STEADY STATE #
     ####################
 
-    #TODO HIGH PRIORITY: use natural simulations once they are complete on eejit
+    #TODO this shoud be using naturalised data but we dont have that its busy running
     ssModelRoot=${modelRoot}/ss
     slurmDir_ss=$ssModelRoot/slurm_logs 
     mkdir -p $ssModelRoot
@@ -69,6 +75,7 @@ for simulation in "${simulations[@]}"; do
     #copy globgm input files ino simulation folder
     cp -r $(realpath ../model_input/) $ssModelRoot
 
+    # #TODO rename this all to step 0
     # # Step 0: Preprocess steady state data pcrglobwb data
     # mkdir -p $slurmDir_ss/0_preprocess_pcrglobwb
     # ss_preprocess_script=$model_job_scripts/0_preprocess_pcrglobwb/0_preprocess_pcrglobwb_ss.slurm
@@ -76,36 +83,14 @@ for simulation in "${simulations[@]}"; do
 
     # Step 1: prepare_model_partitioning
     # mkdir -p $slurmDir_ss/1_prepare_model_partitioning
-    # prep_mod_part_script=$model_job_scripts/1_prepare_model_partitioning/01_prep_model_part.slurm
-    # sbatch -o $slurmDir_ss/1_prepare_model_partitioning/1_prep_model_part.out $prep_mod_part_script $ssModelRoot
+    # prep_mod_part_script=$model_job_scripts/1_prepare_model_partitioning/02_prep_model_part.slurm
+    # sbatch -o $slurmDir_ss/02_prep_model_part/02_prep_model_part.out $prep_mod_part_script $ssModelRoot
 
     # Step 2: 2_write_model_input
-    # mkdir -p $slurmDir_ss/2_write_model_input/
-    # ss_writeInput_setup_script=$model_job_scripts/2_write_model_input/_setup.slurm
-    # sbatch -o $slurmDir_ss/2_write_model_input/2_write_model_input_setup.out $ss_writeInput_setup_script $ssModelRoot
-    # ss_writeInput_script=$model_job_scripts/2_write_model_input/ss.slurm
-    # sbatch -o $slurmDir_ss/2_write_model_input/2_write_model_input%a.out --array=1-163:10 --constraint=scratch-node --exclusive $ss_writeInput_script $ssModelRoot
+    # mkdir -p $slurmDir_ss/2_write_model_input/ss/
+    # ss_writeTiled_script=$model_job_scripts/2_write_model_input/steady-state/ss.slurm
 
-    # Step 3: 3_run_model
-    # mkdir -p $slurmDir_ss/3_run_model
-    # run_script_ss1=$model_job_scripts/3_run_model/steady-state/mf6_s01_ss.slurm
-    # sbatch -o $slurmDir_ss/3_run_model/3_run_globgm_s01.out $run_script_ss1 $ssModelRoot
-    # run_script_ss2=$model_job_scripts/3_run_model/steady-state/mf6_s02_ss.slurm
-    # sbatch -o $slurmDir_ss/3_run_model/3_run_globgm_s02.out $run_script_ss2 $ssModelRoot
-    # run_script_ss3=$model_job_scripts/3_run_model/steady-state/mf6_s03_ss.slurm
-    # sbatch -o $slurmDir_ss/3_run_model/3_run_globgm_s03.out $run_script_ss3 $ssModelRoot
-    # run_script_ss4=$model_job_scripts/3_run_model/steady-state/mf6_s04_ss.slurm
-    # sbatch -o $slurmDir_ss/3_run_model/3_run_globgm_s04.out $run_script_ss4 $ssModelRoot
 
-    # Step 4: 4_post-processing
-    #TODO LOW PRIORITY: I could move some of this to node-local.
-    #TODO HIGH PRIORITY: make it much transinet runs make this work for the so that the variables are split up into differnet datasets. 
-    mkdir -p $slurmDir_ss/4_post-processing
-    run_script_post_ss=$model_job_scripts/4_post-processing/steady-state/04_post_globgm_ss.slurm
-    sbatch -o $slurmDir_ss/4_post-processing/4_post_globgm_1.out $run_script_post_ss $ssModelRoot 1
-    sbatch -o $slurmDir_ss/4_post-processing/4_post_globgm_2.out $run_script_post_ss $ssModelRoot 2
-    sbatch -o $slurmDir_ss/4_post-processing/4_post_globgm_3.out $run_script_post_ss $ssModelRoot 3
-    sbatch -o $slurmDir_ss/4_post-processing/4_post_globgm_4.out $run_script_post_ss $ssModelRoot 4
 
     #############################################################
     
@@ -148,11 +133,10 @@ for simulation in "${simulations[@]}"; do
     ###############################
     # Run transient historical    #
     ###############################
-    #TODO For transient include the steady state preprocessing steps that mkaes fiels needed for spinup
+    #TODO For transient run what must I provide as the steady state? 
     #TODO change in ifile you are using the bergen file
     #TODO where you have have implimented zarr read an writes speed it up and check latlon order
     #TODO you need the upper layer pcraster map for post processing 
-    #TODO copy what you did in the steady state using node-local storage
     # start_year=2013
     # end_year=2014
     # trModelRoot=$modelRoot/tr_historical
