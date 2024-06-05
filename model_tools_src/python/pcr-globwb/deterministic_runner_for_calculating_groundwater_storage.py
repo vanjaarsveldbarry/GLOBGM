@@ -93,5 +93,7 @@ storGroundwater1 = groundwaterHead1 * storage_coefficient_1
 pcr.aguila(storGroundwater1)
 
 totalStorGroundwater = pcr.cover(storGroundwater2, 0.0) + pcr.cover(storGroundwater1, 0.0)
+totalStorGroundwater = pcr.ifthen(pcr.defined(groundwaterHead1), totalStorGroundwater)
 pcr.aguila(totalStorGroundwater)
+pcr.report(totalStorGroundwater, output_folder + "/total_stor_groundwater.map")
 
