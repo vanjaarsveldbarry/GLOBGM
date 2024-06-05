@@ -9,7 +9,7 @@ import datetime
 
 import pcraster as pcr
 
-from globgm.virtualOS import vos
+import globgm.virtualOS as vos
 
 # output folder for this analysis
 output_folder = "/scratch-shared/edwinaha/test_baseflow_and_storage/test/"
