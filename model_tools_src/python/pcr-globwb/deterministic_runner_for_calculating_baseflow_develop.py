@@ -24,16 +24,23 @@ os.makedirs(tmp_dir)
 
 
 # the folder that contains modflow 6 output runs
-modflow6_output_folder = "/scratch-shared/marfan/globgm_ss/output/average/gswp3-w5e5/ss/mf6_post/"
+modflow6_output_folder   = "/scratch-shared/marfan/globgm_ss/output/average/gswp3-w5e5/ss/mf6_post/"
 # ~ modflow6_output_folder = sys.argv[2]
+
+# the folder that contain the pcraster maps in tiles
+tile_pcraster_map_folder = "/scratch-shared/edwinbar/globgm_tile_map_files_for_arfan/map_input/steady-state/average/tile_001-163/steady-state_only/maps/"
 
 # clone map
 clone_map = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/global_30sec/routing/surface_water_bodies/version_2020-05-XX/lddsound_30sec_version_202005XX.map"
 
-# specific yield
-specificYield_input_file  = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/global_30sec/groundwater/properties/version_202312XX/specific_yield_aquifer_30sec_filled_v20231205.map"
-specificYield = pcr.readmap(specificYield_input_file)
-aquiferLayerPrimaryStorageCoefficient = 0.003
+
+# parameters for the river package top layer
+river_bed_conductance  =  
+river_stage_elevation  =
+river_bottom_elevation =
+
+
+
 
 # obtain the groundwater head for the top layer (layer 2 of the pcraster version of GLOBGM)
 groundwaterHead2 = None
@@ -81,18 +88,7 @@ for region in range(1, 4):
     
 
 
-# calculating the corresponding groundwater storage for the top layer
-storage_coefficient_2 = specificYield
-storGroundwater2 = groundwaterHead2 * storage_coefficient_2
-# ~ pcr.aguila(storGroundwater2)
 
-# calculating the corresponding groundwater storage for the bottom layer
-confined_aquifer = pcr.cover(pcr.defined(storGroundwater2), pcr.boolean(0.0))
-storage_coefficient_1 = pcr.ifthenelse(confined_aquifer, aquiferLayerPrimaryStorageCoefficient, specificYield)
-storGroundwater1 = groundwaterHead1 * storage_coefficient_1
-# ~ pcr.aguila(storGroundwater1)
+# get the river package outflow
 
-totalStorGroundwater = pcr.cover(storGroundwater2, 0.0) + pcr.cover(storGroundwater1, 0.0)
-# ~ pcr.aguila(totalStorGroundwater)
-pcr.report(totalStorGroundwater, output_folder + "/total_stor_groundwater.map")
 
