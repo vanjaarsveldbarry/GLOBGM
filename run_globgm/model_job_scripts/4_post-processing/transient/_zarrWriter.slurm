@@ -22,7 +22,11 @@ dir=$modelRoot/mf6_post
 
 input_file=s0${solution}_${inp_tr}_$year
 
-cd ${TMPDIR}
+# tempDir=$TMPDIR
+tempDir=/projects/0/einf4705/workflow/output/gfdl-esm4/tr_historical/testTemp
+mkdir -p tempDir
+# cd ${TMPDIR}
+cd $tempDir
 mkdir -p ./mod_files_s0${solution}_$year
 cd ./mod_files_s0${solution}_$year
 tempFolder=$(realpath ./temp) 

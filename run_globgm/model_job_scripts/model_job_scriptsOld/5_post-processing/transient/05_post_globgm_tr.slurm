@@ -26,7 +26,7 @@ python -u $to_zarrFolder/createZarr_tr.py $modelRoot $solution $dir $startDate $
 wait
 
 for ((year=startDate; year<=startDate; year++)); do
-    outFile=$modelRoot/slurm_logs/5_post-processing/_s0${solution}_zarrWriter/${solution}_$year.out
+    outFile=$modelRoot/slurm_logs/4_post-processing/_s0${solution}_zarrWriter/${solution}_$year.out
     sbatch --exclusive -o $outFile $_zarrWriter $modelRoot $var $solution $year $startDate
 done
 

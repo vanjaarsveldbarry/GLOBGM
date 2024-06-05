@@ -29,15 +29,15 @@ echo $one $two $three $four
 
 
 if (( 10#$four >= 163 )); then
-    python deterministic_runner_for_offline_monthly_modflow.py $model_input/transient_config.ini debug transient tile_${one}-163 $SS_DIR $IN_DIR $OUT_DIR $forcingDir $start_year $end_year &
-    python deterministic_runner_for_offline_monthly_modflow.py $model_input/transient_config.ini debug transient tile_${two}-163 $SS_DIR $IN_DIR $OUT_DIR $forcingDir $start_year $end_year &
-    python deterministic_runner_for_offline_monthly_modflow.py $model_input/transient_config.ini debug transient tile_${three}-163 $SS_DIR $IN_DIR $OUT_DIR $forcingDir $start_year $end_year &
+    python deterministic_runner_for_offline_monthly_modflow.py $model_input/transient_config.ini debug transient tile_${one}-163 $IN_DIR $OUT_DIR $forcingDir $start_year $end_year &
+    python deterministic_runner_for_offline_monthly_modflow.py $model_input/transient_config.ini debug transient tile_${two}-163 $IN_DIR $OUT_DIR $forcingDir $start_year $end_year &
+    python deterministic_runner_for_offline_monthly_modflow.py $model_input/transient_config.ini debug transient tile_${three}-163 $IN_DIR $OUT_DIR $forcingDir $start_year $end_year &
     wait
 else
-    python deterministic_runner_for_offline_monthly_modflow.py $model_input/transient_config.ini debug transient tile_${one}-163 $SS_DIR $IN_DIR $OUT_DIR $forcingDir $start_year $end_year &
-    python deterministic_runner_for_offline_monthly_modflow.py $model_input/transient_config.ini debug transient tile_${two}-163 $SS_DIR $IN_DIR $OUT_DIR $forcingDir $start_year $end_year &
-    python deterministic_runner_for_offline_monthly_modflow.py $model_input/transient_config.ini debug transient tile_${three}-163 $SS_DIR $IN_DIR $OUT_DIR $forcingDir $start_year $end_year &
-    python deterministic_runner_for_offline_monthly_modflow.py $model_input/transient_config.ini debug transient tile_${four}-163 $SS_DIR $IN_DIR $OUT_DIR $forcingDir $start_year $end_year &
+    python deterministic_runner_for_offline_monthly_modflow.py $model_input/transient_config.ini debug transient tile_${one}-163 $IN_DIR $OUT_DIR $forcingDir $start_year $end_year &
+    python deterministic_runner_for_offline_monthly_modflow.py $model_input/transient_config.ini debug transient tile_${two}-163 $IN_DIR $OUT_DIR $forcingDir $start_year $end_year &
+    python deterministic_runner_for_offline_monthly_modflow.py $model_input/transient_config.ini debug transient tile_${three}-163 $IN_DIR $OUT_DIR $forcingDir $start_year $end_year &
+    python deterministic_runner_for_offline_monthly_modflow.py $model_input/transient_config.ini debug transient tile_${four}-163 $IN_DIR $OUT_DIR $forcingDir $start_year $end_year &
     wait
 fi
 

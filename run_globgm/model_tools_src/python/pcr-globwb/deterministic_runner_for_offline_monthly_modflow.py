@@ -120,18 +120,16 @@ def main():
             s = s.replace('FORCING_DIR',forcingDir)
             f = open(iniFileName,'w'); f.write(s); f.close()
         else:
-            ssDir = sys.argv[5]
-            inDir = sys.argv[6]
-            outDir = sys.argv[7]
-            forcingDir = sys.argv[8]
-            startYear = sys.argv[9]
-            endYear = sys.argv[10]
+            inDir = sys.argv[5]
+            outDir = sys.argv[6]
+            forcingDir = sys.argv[7]
+            startYear = sys.argv[8]
+            endYear = sys.argv[9]
         
             iniFileName_new = os.path.join(os.path.dirname(iniFileName),'%s.ini'%tile)
             f = open(iniFileName,'r'); s = f.read(); f.close()
             iniFileName = iniFileName_new
             s = s.replace('$tile$',tile)
-            s = s.replace('SS_DIR',ssDir)
             s = s.replace('IN_DIR',inDir)
             s = s.replace('OUT_DIR',outDir)
             s = s.replace('FORCING_DIR',forcingDir)

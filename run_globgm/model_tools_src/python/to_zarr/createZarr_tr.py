@@ -3,7 +3,6 @@ import sys
 from pathlib import Path
 from numcodecs import Blosc
 import pandas as pd
-from tqdm import tqdm
 import os
 import subprocess
 import shutil

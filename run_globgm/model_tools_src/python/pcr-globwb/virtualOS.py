@@ -46,6 +46,7 @@ import numpy.ma as ma
 import pcraster as pcr
 
 import xarray as xr
+import zarr
 
 import logging
 
@@ -90,7 +91,7 @@ def read_discharge_zarr(dischargeFile, timeStamp, cloneMapFileName):
     lat= pcr.pcr2numpy(pcr.ycoordinate(pcr.boolean(1)),MV)[:,0].ravel()
     lon= pcr.pcr2numpy(pcr.xcoordinate(pcr.boolean(1)),MV)[0,:].ravel()
     
-    ds = xr.open_zarr(dischargeFile)
+    f = zarr.convenience.open(dischargeFile)
     
     attributeClone = getMapAttributesALL(cloneMapFileName)
     cellsizeClone = attributeClone['cellsize']
@@ -99,12 +100,12 @@ def read_discharge_zarr(dischargeFile, timeStamp, cloneMapFileName):
     xULClone = attributeClone['xUL']
     yULClone = attributeClone['yUL']
     #get the attributes of input (netCDF) 
-    cellsizeInput = ds['lat'][0] - ds['lon'][1] 
+    cellsizeInput = f['lat'][0] - f['lat'][1] 
     cellsizeInput = float(cellsizeInput)
 
     factor = 1                                 # needed in regridData2FinerGrid
-    minX    = min(abs(ds['lon'].values[:] - (xULClone + 0.5*cellsizeInput)))
-    xIdxSta = int(np.where(abs(ds['lon'].values[:] - (xULClone + 0.5*cellsizeInput)) == minX)[0])
+    minX    = min(abs(f['lon'][:] - (xULClone + 0.5*cellsizeInput)))
+    xIdxSta = int(np.where(abs(f['lon'][:] - (xULClone + 0.5*cellsizeInput)) == minX)[0])
 
 #     #~ xIdxSta = int(np.where(np.abs(f.variables['lon'][:] - (xULClone - cellsizeInput/2)) == minX)[0][0])
 #     #~ # see: https://github.com/UU-Hydro/PCR-GLOBWB_model/pull/13
@@ -112,19 +113,19 @@ def read_discharge_zarr(dischargeFile, timeStamp, cloneMapFileName):
 #     #~ xIdxEnd = int(math.ceil(xIdxSta + colsClone /(cellsizeInput/cellsizeClone)))
     xIdxEnd = int(math.ceil(xIdxSta + colsClone /(factor)))
 
-    minY    = min(abs(ds['lat'].values[:] - (yULClone - 0.5*cellsizeInput))) # ; print(minY)
+    minY    = min(abs(f['lat'][:] - (yULClone - 0.5*cellsizeInput))) # ; print(minY)
 
-    yIdxSta = int(np.where(abs(ds['lat'].values[:] - (yULClone - 0.5*cellsizeInput)) == minY)[0])
+    yIdxSta = int(np.where(abs(f['lat'][:] - (yULClone - 0.5*cellsizeInput)) == minY)[0])
 
 #     #~ yIdxSta = int(np.where(np.abs(f.variables['lat'][:] - (yULClone - cellsizeInput/2)) == minY)[0][0])
 #     #~ # see: https://github.com/UU-Hydro/PCR-GLOBWB_model/pull/13
 
 #     #~ yIdxEnd = int(math.ceil(yIdxSta + rowsClone /(cellsizeInput/cellsizeClone)))
     yIdxEnd = int(math.ceil(yIdxSta + rowsClone /(factor)))
-    print(timeStamp)
-    print(xIdxSta, xIdxEnd, yIdxSta,yIdxEnd)
-    ds = ds.discharge.sel(time=timeStamp).isel(lon=slice(xIdxSta, xIdxEnd), lat=slice(yIdxSta,yIdxEnd)).compute()
-    return pcr.numpy2pcr(pcr.Scalar, ds.values, MV)    
+    timeStamp=timeStamp-1
+    
+    data = f['discharge'].get_basic_selection((timeStamp, slice(yIdxSta,yIdxEnd), slice(xIdxSta,xIdxEnd)))[:]
+    return pcr.numpy2pcr(pcr.Scalar, data, MV)
     
 def initialize_logging(log_file_location, log_file_front_name = "log", debug_mode = True):
     """

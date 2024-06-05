@@ -1,10 +1,7 @@
 #!/bin/bash
 #SBATCH --nodes=1
-#SBATCH --time=02:0:00
-#SBATCH --partition=genoa
-
-
-df -kh ${TMPDIR}
+#SBATCH --time=00:30:00
+#SBATCH --partition=genoa,rome
 
 modelRoot=$1
 solution=$2
@@ -16,7 +13,7 @@ source ${HOME}/.bashrc
 mamba activate globgm
 
 to_zarrFolder=$(realpath ../model_tools_src/python/to_zarr)
-_zarrWriter=$(realpath ./5_post-processing/transient/_zarrWriter.slurm)
+_zarrWriter=$(realpath ./4_post-processing/transient/_zarrWriter.slurm)
 
 dir=$modelRoot/mf6_post
 mkdir -p $dir
@@ -25,10 +22,10 @@ mkdir -p $dir
 python -u $to_zarrFolder/createZarr_tr.py $modelRoot $solution $dir $startDate $endDate $var
 wait
 
-for ((year=startDate; year<=startDate; year++)); do
-    outFile=$modelRoot/slurm_logs/5_post-processing/_s0${solution}_zarrWriter/${solution}_$year.out
-    sbatch --exclusive -o $outFile $_zarrWriter $modelRoot $var $solution $year $startDate
-done
+# for ((year=startDate; year<=startDate; year++)); do
+#     outFile=$modelRoot/slurm_logs/4_post-processing/_s0${solution}_zarrWriter/${solution}_$year.out
+#     sbatch --exclusive -o $outFile $_zarrWriter $modelRoot $var $solution $year $startDate
+# done
 
 #TODO for the hds variable, see if the memory allocaation allows for doing two variables at a time
 

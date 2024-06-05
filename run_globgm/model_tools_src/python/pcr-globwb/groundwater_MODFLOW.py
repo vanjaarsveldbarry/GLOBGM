@@ -1777,7 +1777,7 @@ class GroundwaterModflow(object):
                 else:
                     # discharge_file_name = self.iniItems.modflowTransientInputOptions['dischargeInputNC'] %(int(currTimeStep.year))
                     # discharge = vos.netcdf2PCRobjClone(discharge_file_name, "discharge", str(currTimeStep.fulldate), None, self.cloneMap)
-                    discharge = vos.read_discharge_zarr(self.iniItems.modflowTransientInputOptions['dischargeInputNC'], currTimeStep.fulldate, self.cloneMap)
+                    discharge = vos.read_discharge_zarr(self.iniItems.modflowTransientInputOptions['dischargeInputNC'], currTimeStep.monthIdx, self.cloneMap)
                     # discharge = vos.netcdf2PCRobjClone(vos.getFullPath(self.iniItems.modflowTransientInputOptions['dischargeInputNC'], self.inputDir),
                     #                                    "discharge", str(currTimeStep.fulldate), None, self.cloneMap)
                 discharge = pcr.cover(discharge, 0.0)
@@ -1791,7 +1791,6 @@ class GroundwaterModflow(object):
                                                                         timeStamp=str(currTimeStep.fulldate))
 
                 else:
-                    print("HERE AND WORKING")
                     gwRecharge = vos.netcdf2PCRobjClone(vos.getFullPath(self.iniItems.modflowTransientInputOptions['groundwaterRechargeInputNC'], self.inputDir),\
                                                     "groundwater_recharge", str(currTimeStep.fulldate), None, self.cloneMap)
                 gwRecharge = pcr.cover(gwRecharge, 0.0)
@@ -1815,7 +1814,7 @@ class GroundwaterModflow(object):
                        channelStorage = pcr.cover(surfaceWaterStorage * self.cellAreaMap, 0.0)
                     else:
                        channelStorage = vos.netcdf2PCRobjClone(vos.getFullPath(self.iniItems.modflowTransientInputOptions['channelStorageInputNC'], self.inputDir),\
-                                                              "channel_storage", str(currTimeStep.fulldate), None, self.cloneMap)
+                                                              "channel_storage", str(currTimeStep.timeStepPCR), None, self.cloneMap)
                        channelStorage = pcr.cover(channelStorage, 0.0)
                     channelStorage = pcr.max(0.0, channelStorage)
 
