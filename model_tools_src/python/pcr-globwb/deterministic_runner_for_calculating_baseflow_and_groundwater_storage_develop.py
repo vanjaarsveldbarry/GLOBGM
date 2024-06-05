@@ -29,7 +29,7 @@ modflow6_output_folder = "/scratch-shared/marfan/globgm_ss/output/average/gswp3-
 clone_map = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/global_30sec/routing/surface_water_bodies/version_2020-05-XX/lddsound_30sec_version_202005XX.map"
 
 # specific yield
-specificYield_input_file  = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/global_30sec/global_30sec/groundwater/properties/version_202312XX/specific_yield_aquifer_30sec_filled_v20231205.map"
+specificYield_input_file  = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/global_30sec/groundwater/properties/version_202312XX/specific_yield_aquifer_30sec_filled_v20231205.map"
 specificYield = pcr.readmap(specificYield_input_file)
 aquiferLayerPrimaryStorageCoefficient = 0.003
 
