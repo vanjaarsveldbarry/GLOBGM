@@ -37,7 +37,7 @@ for region in range(1, 4):
     groundwaterHead1_inp = vos.netcdf2PCRobjCloneWithoutTime(ncFile  = ncFile, \
                                                              varName = "automatic",\
                                                              cloneMapFileName  = clone_map,\
-                                                             LatitudeLongitude = True,\
+                                                             LatitudeLongitude = False,\
                                                              specificFillValue = None,\
                                                              absolutePath = None)
     if region == 1:
