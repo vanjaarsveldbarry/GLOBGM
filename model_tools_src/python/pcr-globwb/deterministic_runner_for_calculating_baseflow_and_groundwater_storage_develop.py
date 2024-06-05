@@ -13,6 +13,7 @@ import globgm.virtualOS as vos
 
 # output folder for this analysis
 output_folder = "/scratch-shared/edwinaha/test_baseflow_and_storage/test/"
+# ~ output_folder = sys.argv[1]
 
 # make output and temporary folders
 if os.path.exists(output_folder): shutil.rmtree(output_folder)
@@ -24,6 +25,7 @@ os.makedirs(tmp_dir)
 
 # the folder that contains modflow 6 output runs
 modflow6_output_folder = "/scratch-shared/marfan/globgm_ss/output/average/gswp3-w5e5/ss/mf6_post/"
+# ~ modflow6_output_folder = sys.argv[2]
 
 # clone map
 clone_map = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/global_30sec/routing/surface_water_bodies/version_2020-05-XX/lddsound_30sec_version_202005XX.map"
@@ -85,7 +87,7 @@ storGroundwater2 = groundwaterHead2 * storage_coefficient_2
 pcr.aguila(storGroundwater2)
 
 # calculating the corresponding groundwater storage for the bottom layer
-confined_aquifer = pcr.cover(pcr.defined(storGroundwater1), pcr.boolean(0.0))
+confined_aquifer = pcr.cover(pcr.defined(storGroundwater2), pcr.boolean(0.0))
 storage_coefficient_1 = pcr.ifthenelse(confined_aquifer, aquiferLayerPrimaryStorageCoefficient, specificYield)
 storGroundwater1 = groundwaterHead1 * storage_coefficient_1
 pcr.aguila(storGroundwater1)
