@@ -77,7 +77,7 @@ def read_from_tile_folder(tile_pcraster_map_folder, pcraster_map_file_name):
     # ~ for tile in range(1, 163+1):
 
     # for testing
-    for tile in range(51, 55+1):
+    for tile in range(1, 5+1):
 
         print(tile)
         tile_folder = tile_pcraster_map_folder %(tile)
