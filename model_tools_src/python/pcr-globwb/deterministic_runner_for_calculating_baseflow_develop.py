@@ -11,6 +11,8 @@ import pcraster as pcr
 
 import globgm.virtualOS as vos
 
+import globgm.various_tools as tools
+
 # output folder for this analysis
 output_folder = "/scratch-shared/edwinaha/test_baseflow/test/"
 # ~ output_folder = sys.argv[1]
@@ -35,33 +37,8 @@ clone_map = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/gl
 
 
 # parameters for the river package top layer
-river_bed_conductance  = read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "bed_condutance_used.map")
+river_bed_conductance  = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "bed_condutance_used.map")
 
 river_stage_elevation  = None
 river_bottom_elevation = None
 
-
-def read_from_tile_folder(tile_pcraster_map_folder, pcraster_map_file_name):
-
-    text = 'reading ' + pcraster_map_file_name
-    print(text)
-    
-    # ~ for tile in range(1, 163+1):
-
-    # for testing
-    for tile in range(51, 55+1):
-
-        print(tile)
-        tile_folder = tile_pcraster_map_folder %(tile)
-        input_file = tile_folder + pcraster_map_file_name
-        
-        if tile == 1: 
-            pcraster_map = vos.readPCRmapClone(v = input_file, cloneMapFileName = clone_map, tmpDir = tmp_dir)
-        else:
-            pcraster_map = pcr.cover(pcraster_map, vos.readPCRmapClone(v = pcraster_map, cloneMapFileName = clone_map, tmpDir = tmp_dir))
-
-        # ~ if tile == 16: pcr.aguila(pcraster_map)    
-        # ~ if tile == 163: pcr.aguila(pcraster_map)
-    
-    return pcraster_map
-    
