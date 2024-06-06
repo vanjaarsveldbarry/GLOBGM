@@ -36,7 +36,9 @@ clone_map = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/gl
 
 # parameters for the river package top layer
 river_bed_conductance  = None
+print()
 for tile in range(1, 163+1):
+    print(tile)
     tile_folder = tile_pcraster_map_folder %(tile)
     river_bed_conductance_input_file = tile_folder + "/bed_conductance_used.map"
     
@@ -44,7 +46,8 @@ for tile in range(1, 163+1):
         river_bed_conductance = vos.readPCRmapClone(v = river_bed_conductance_input_file, cloneMapFileName = clone_map, tmpDir = tmp_dir)
     else:
         river_bed_conductance = pcr.cover(river_bed_conductance, vos.readPCRmapClone(v = river_bed_conductance_input_file, cloneMapFileName = clone_map, tmpDir = tmp_dir))
-    pcr.aguila(river_bed_conductance)    
+    if tile == 16: pcr.aguila(river_bed_conductance)    
+    if tile == 163: pcr.aguila(river_bed_conductance)    
 
 
 river_stage_elevation  = None
