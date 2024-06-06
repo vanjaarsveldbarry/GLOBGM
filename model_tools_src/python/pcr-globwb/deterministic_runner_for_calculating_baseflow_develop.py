@@ -36,9 +36,24 @@ tile_pcraster_map_folder = "/scratch-shared/edwinbar/globgm_tile_map_files_for_a
 clone_map = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/global_30sec/routing/surface_water_bodies/version_2020-05-XX/lddsound_30sec_version_202005XX.map"
 
 
-# parameters for the river package top layer
+# parameters for the river package
 river_bed_conductance  = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "bed_conductance_used.map", clone_map = clone_map, tmp_dir = tmp_dir)
 
-river_stage_elevation  = None
-river_bottom_elevation = None
+river_stage_elevation  = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "surface_water_elevation.map", clone_map = clone_map, tmp_dir = tmp_dir)
+
+river_bottom_elevation = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "surface_water_bed_elevation_used.map", clone_map = clone_map, tmp_dir = tmp_dir)
+
+
+# parameters for the drain package 
+for i_elev in range(0, 12+1):
+    
+    # - drain_conductance (e.g. drain_conductance_0.map, drain_conductance_1.map, ..., drain_conductance_12.map)
+    
+    vars()['drain_conductance_elev_'+str(i_elev)] = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "drain_conductance" + str(i_elev) + ".map", clone_map = clone_map, tmp_dir = tmp_dir)
+
+    # - drain_elevation_uppermost (e.g. drain_elevation_uppermost_layer0.map, drain_elevation_uppermost_layer1.map, ..., drain_drain_elevation_uppermost_layer12.map)
+    vars()['drain_elevation_uppermost_elev_'+str(i_elev)] = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "drain_elevation_uppermost_layer" + str(i_elev) + ".map", clone_map = clone_map, tmp_dir = tmp_dir)
+    
+    # - drain_elevation_lowermost
+    vars()['drain_elevation_lowermost_elev_'+str(i_elev)] = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "drain_elevation_lowermost_layer" + str(i_elev) + ".map", clone_map = clone_map, tmp_dir = tmp_dir)
 
