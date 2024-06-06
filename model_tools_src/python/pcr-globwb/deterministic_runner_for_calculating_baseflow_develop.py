@@ -63,6 +63,5 @@ def read_from_tile_folder(tile_pcraster_map_folder, pcraster_map_file_name):
         # ~ if tile == 16: pcr.aguila(pcraster_map)    
         # ~ if tile == 163: pcr.aguila(pcraster_map)
     
-    return pcraster_map        
-
-
+    return pcraster_map
+    
