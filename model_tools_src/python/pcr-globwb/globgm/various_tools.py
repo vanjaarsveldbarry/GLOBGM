@@ -76,9 +76,9 @@ def read_from_tile_folder(tile_pcraster_map_folder, pcraster_map_file_name, clon
     text = 'reading ' + pcraster_map_file_name
     print(text)
     
-    # ~ for tile in range(1, 163+1):
+    for tile in range(1, 163+1):
 
-    # for testing
+    # ~ # for testing
     for tile in range(1, 5+1):
 
         print(tile)
