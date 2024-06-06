@@ -88,7 +88,7 @@ def read_from_tile_folder(tile_pcraster_map_folder, pcraster_map_file_name, clon
         if tile == 1: 
             pcraster_map = vos.readPCRmapClone(v = input_file, cloneMapFileName = clone_map, tmpDir = tmp_dir)
         else:
-            pcraster_map = pcr.cover(pcraster_map, vos.readPCRmapClone(v = pcraster_map, cloneMapFileName = clone_map, tmpDir = tmp_dir))
+            pcraster_map = pcr.cover(pcraster_map, vos.readPCRmapClone(v = input_file, cloneMapFileName = clone_map, tmpDir = tmp_dir))
 
         # ~ if tile == 16: pcr.aguila(pcraster_map)    
         # ~ if tile == 163: pcr.aguila(pcraster_map)
