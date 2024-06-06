@@ -46,11 +46,11 @@ for i_elev in range(0, 12+1):
 
     global_output_file = output_folder + "/" + 'drain_elevation_uppermost_elev_'+str(i_elev) + ".map"
     # - drain_elevation_uppermost (e.g. drain_elevation_uppermost_layer0.map, drain_elevation_uppermost_layer1.map, ..., drain_drain_elevation_uppermost_layer12.map)
-    vars()['drain_elevation_uppermost_elev_'+str(i_elev)] = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "drain_elevation_uppermost_layer" + str(i_elev) + ".map", clone_map = clone_map, tmp_dir = tmp_dir)
+    vars()['drain_elevation_uppermost_elev_'+str(i_elev)] = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "drain_elevation_uppermost_layer" + str(i_elev) + ".map", clone_map = clone_map, tmp_dir = tmp_dir, saved_global_file = global_output_file)
     
     # - drain_elevation_lowermost
     global_output_file = output_folder + "/" + 'drain_elevation_lowermost_elev_'+str(i_elev) + ".map"
-    vars()['drain_elevation_lowermost_elev_'+str(i_elev)] = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "drain_elevation_lowermost_layer" + str(i_elev) + ".map", clone_map = clone_map, tmp_dir = tmp_dir)
+    vars()['drain_elevation_lowermost_elev_'+str(i_elev)] = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "drain_elevation_lowermost_layer" + str(i_elev) + ".map", clone_map = clone_map, tmp_dir = tmp_dir, saved_global_file = global_output_file)
 
 
 
