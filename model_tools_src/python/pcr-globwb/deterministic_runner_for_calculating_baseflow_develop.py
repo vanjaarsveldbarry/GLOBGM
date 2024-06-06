@@ -37,7 +37,7 @@ clone_map = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_arise/develop/gl
 
 
 # parameters for the river package top layer
-river_bed_conductance  = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "bed_condutance_used.map")
+river_bed_conductance  = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "bed_condutance_used.map", clone_map = clone_map)
 
 river_stage_elevation  = None
 river_bottom_elevation = None
