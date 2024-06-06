@@ -71,7 +71,7 @@ max_num_of_tries = 5
 
 
 
-def read_from_tile_folder(tile_pcraster_map_folder, pcraster_map_file_name):
+def read_from_tile_folder(tile_pcraster_map_folder, pcraster_map_file_name, clone_map, tmp_dir):
 
     text = 'reading ' + pcraster_map_file_name
     print(text)
