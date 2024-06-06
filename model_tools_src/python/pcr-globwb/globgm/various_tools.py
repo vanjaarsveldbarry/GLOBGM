@@ -45,6 +45,8 @@ import numpy as np
 import numpy.ma as ma
 import pcraster as pcr
 
+from . import virtualOS as vos
+
 import logging
 
 from six.moves import range
