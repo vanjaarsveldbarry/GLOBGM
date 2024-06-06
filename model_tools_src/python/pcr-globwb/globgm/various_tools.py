@@ -71,7 +71,7 @@ max_num_of_tries = 5
 
 
 
-def read_from_tile_folder(tile_pcraster_map_folder, pcraster_map_file_name, clone_map, tmp_dir):
+def read_from_tile_folder(tile_pcraster_map_folder, pcraster_map_file_name, clone_map, tmp_dir, saved_global_file = None):
 
     text = 'reading ' + pcraster_map_file_name
     print(text)
@@ -93,5 +93,6 @@ def read_from_tile_folder(tile_pcraster_map_folder, pcraster_map_file_name, clon
         # ~ if tile == 16: pcr.aguila(pcraster_map)    
         # ~ if tile == 163: pcr.aguila(pcraster_map)
     
-    return pcraster_map
+    if saved_global_file is None: pcr.report(pcraster_map, saved_global_file)
     
+    return pcraster_map
