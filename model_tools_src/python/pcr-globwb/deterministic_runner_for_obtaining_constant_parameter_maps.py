@@ -55,10 +55,22 @@ for i_elev in range(0, 12+1):
 
 
 # parameters for the river package
-river_bed_conductance  = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "bed_conductance_used.map", clone_map = clone_map, tmp_dir = tmp_dir)
+global_output_file = output_folder + "/" + "river_bed_conductance.map"
+river_bed_conductance  = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "bed_conductance_used.map", clone_map = clone_map, tmp_dir = tmp_dir, saved_global_file = global_output_file)
 
-river_stage_elevation  = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "surface_water_elevation.map", clone_map = clone_map, tmp_dir = tmp_dir)
+# ~ global_output_file = output_folder + "/" + "river_stage_elevation.map"
+# ~ river_stage_elevation  = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "surface_water_elevation.map", clone_map = clone_map, tmp_dir = tmp_dir, saved_global_file = global_output_file)
 
-river_bottom_elevation = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "surface_water_bed_elevation_used.map", clone_map = clone_map, tmp_dir = tmp_dir)
+global_output_file = output_folder + "/" + "river_bottom_elevation.map"
+river_bottom_elevation = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "surface_water_bed_elevation_used.map", clone_map = clone_map, tmp_dir = tmp_dir, saved_global_file = global_output_file)
+
+
+# bottom layer elevations
+# - uppermost
+global_output_file = output_folder + "/" + "bottom_uppermost_layer.map"
+bottom_uppermost_layer = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "bottom_uppermost_layer.map", clone_map = clone_map, tmp_dir = tmp_dir, saved_global_file = global_output_file)
+# - lowermost
+global_output_file = output_folder + "/" + "bottom_lowermost_layer.map"
+bottom_lowermost_layer  = tools.read_from_tile_folder(tile_pcraster_map_folder = tile_pcraster_map_folder, pcraster_map_file_name = "bottom_lowermost_layer.map", clone_map = clone_map, tmp_dir = tmp_dir, saved_global_file = global_output_file)
 
 
