@@ -35,6 +35,13 @@ specificYield_input_file  = "/projects/0/dfguu/users/edwin/data/pcrglobwb_input_
 specificYield = pcr.readmap(specificYield_input_file)
 aquiferLayerPrimaryStorageCoefficient = 0.003
 
+# bottom layer elevation files
+bottom_uppermost_layer_file = ""
+bottom_uppermost_layer_elevation = pcr.readmap(bottom_layer_upper_file)
+bottom_lowermost_layer_file = ""
+bottom_lowermost_layer_elevation = pcr.readmap(bottom_layer_lower_file)
+
+
 # obtain the groundwater head for the top layer (layer 2 of the pcraster version of GLOBGM)
 groundwaterHead2 = None
 for region in range(1, 4):
@@ -83,13 +90,13 @@ for region in range(1, 4):
 
 # calculating the corresponding groundwater storage for the top layer
 storage_coefficient_2 = specificYield
-storGroundwater2 = groundwaterHead2 * storage_coefficient_2
+storGroundwater2 = pcr.max(0.0, groundwaterHead2 - bottom_uppermost_layer_elevation) * storage_coefficient_2
 # ~ pcr.aguila(storGroundwater2)
 
 # calculating the corresponding groundwater storage for the bottom layer
 confined_aquifer = pcr.cover(pcr.defined(storGroundwater2), pcr.boolean(0.0))
 storage_coefficient_1 = pcr.ifthenelse(confined_aquifer, aquiferLayerPrimaryStorageCoefficient, specificYield)
-storGroundwater1 = groundwaterHead1 * storage_coefficient_1
+storGroundwater1 = pcr.max(0.0, groundwaterHead1 - bottom_lowermost_layer_elevation) * storage_coefficient_1
 # ~ pcr.aguila(storGroundwater1)
 
 totalStorGroundwater = pcr.cover(storGroundwater2, 0.0) + pcr.cover(storGroundwater1, 0.0)
