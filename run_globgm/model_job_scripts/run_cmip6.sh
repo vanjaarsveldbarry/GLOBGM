@@ -25,9 +25,7 @@
 # USER DEFINED OPTIONS #                                                                           # 
 # simulations=("gfdl-esm4" "gswp3-w5e5" "ipsl-cm6a-lr" "mpi-esm1-2-hr" "mri-esm2-0" "ukesm1-0-ll") #
 ####################################################################################################
-simulations=("gfdl-esm4")
-# period=("historical")
-# solution=("3")
+simulations=("gswp3-w5e5")
 outputDirectory=/projects/0/einf4705/workflow/output
 
 #TODO is this till needed
@@ -72,7 +70,7 @@ for simulation in "${simulations[@]}"; do
     mkdir -p $ssModelRoot
 
     #copy globgm input files ino simulation folder
-    cp -r $(realpath ../model_input/) $ssModelRoot
+    # cp -r $(realpath ../model_input/) $ssModelRoot
 
     # # Step 0: Preprocess steady state data pcrglobwb data
     # mkdir -p $slurmDir_ss/0_preprocess_pcrglobwb
@@ -84,6 +82,7 @@ for simulation in "${simulations[@]}"; do
     # prep_mod_part_script=$model_job_scripts/1_prepare_model_partitioning/01_prep_model_part.slurm
     # sbatch -o $slurmDir_ss/1_prepare_model_partitioning/1_prep_model_part.out $prep_mod_part_script $ssModelRoot
 
+    #TODO writ eto scratch
     # Step 2: 2_write_model_input
     # mkdir -p $slurmDir_ss/2_write_model_input/
     # ss_writeInput_setup_script=$model_job_scripts/2_write_model_input/_setup_ss.slurm
@@ -118,15 +117,15 @@ for simulation in "${simulations[@]}"; do
     #TODO where you have have implimented zarr read an writes speed it up and check latlon order
     #TODO you need the upper layer pcraster map for post processing 
     #TODO copy what you did in the steady state using node-local storage
-    start_year=2013
-    end_year=2013
-    trModelRoot=$modelRoot/tr_historical
+    # start_year=2013
+    # end_year=2013
+    # trModelRoot=$modelRoot/tr_historical
 
-    slurmDir_tr=$trModelRoot/slurm_logs
-    mkdir -p $slurmDir_tr
+    # slurmDir_tr=$trModelRoot/slurm_logs
+    # mkdir -p $slurmDir_tr
 
-    # copy globgm input files ino simulation folder
-    cp -r $(realpath ../model_input/) $trModelRoot 
+    # # copy globgm input files ino simulation folder
+    # cp -r $(realpath ../model_input/) $trModelRoot 
 
     # Step 0: Preprocess steady state data pcrglobwb data
     # mkdir -p $slurmDir_tr/0_preprocess_pcrglobwb
@@ -165,11 +164,12 @@ for simulation in "${simulations[@]}"; do
     # #1 write initial zarr store
     # #2 Then for each month file
     # #3 convert to asc
-    # #4 convert to zarr and append to the initial zarr store. So you inut is essentially solution year and month. 
-    mkdir -p $slurmDir_tr/4_post-processing
-    run_script_post_tr=$model_job_scripts/4_post-processing/transient/04_post_globgm_tr.slurm
-    # sbatch -o $slurmDir_tr/5_post-processing/5_post_globgm_1_wtd.out --exclusive $run_script_post_tr $trModelRoot 1 $start_year $end_year wtd
-    # # sbatch -o $slurmDir_tr/5_post-processing/5_post_globgm_2_wtd.out --exclusive $run_script_post_tr $trModelRoot 2 $start_year $end_year wtd
-    sbatch -o $slurmDir_tr/4_post-processing/4_post_globgm_3_wtd.out $run_script_post_tr $trModelRoot 3 $start_year $end_year wtd
-    # sbatch -o $slurmDir_tr/4_post-processing/4_post_globgm_4_wtd.out --exclusive $run_script_post_tr $trModelRoot 4 $start_year $end_year wtd
+    # #4 convert to zarr and append to the initial zarr store. So you inut is essentially solution year and month.
+    #TODO if I slap it with an exclusive in genoa how mmuch faster will it be 
+    # mkdir -p $slurmDir_tr/4_post-processing
+    # run_script_post_tr=$model_job_scripts/4_post-processing/transient/04_post_globgm_tr.slurm
+    # sbatch -o $slurmDir_tr/4_post-processing/4_post_globgm_1_wtd.out $run_script_post_tr $trModelRoot 1 $start_year $end_year wtd
+    # sbatch -o $slurmDir_tr/4_post-processing/4_post_globgm_2_wtd.out $run_script_post_tr $trModelRoot 2 $start_year $end_year wtd
+    # sbatch -o $slurmDir_tr/4_post-processing/4_post_globgm_3_wtd.out $run_script_post_tr $trModelRoot 3 $start_year $end_year wtd
+    # sbatch -o $slurmDir_tr/4_post-processing/4_post_globgm_4_wtd.out $run_script_post_tr $trModelRoot 4 $start_year $end_year wtd
 done

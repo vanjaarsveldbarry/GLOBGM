@@ -15,8 +15,6 @@ startDate=sys.argv[4]
 endDate=sys.argv[5]
 var=sys.argv[6]
 
-print(startDate, endDate)
-
 _compressor = Blosc(cname='zstd', clevel=5, shuffle=Blosc.BITSHUFFLE)
 _encoding_dict={'dtype': 'float32', '_FillValue': -9999, 'compressor': _compressor}
 _chunks={'time': 1, 'latitude': 20000, 'longitude': 20000}
@@ -26,5 +24,4 @@ ds = xr.open_zarr(steadyStateFile)[[f'l1_{var}', f'l2_{var}']]
 time_dim = pd.date_range(start=f'{startDate}-01-31', end=f'{endDate}-12-31', freq='ME')
 ds = ds.reindex(time=time_dim)
 ds = ds.chunk(_chunks)
-print(ds)
 ds.to_zarr(saveDir / f"s0{solution}_{var}.zarr", mode='w', consolidated=True, encoding={f'l1_{var}': _encoding_dict, f'l2_{var}': _encoding_dict})
