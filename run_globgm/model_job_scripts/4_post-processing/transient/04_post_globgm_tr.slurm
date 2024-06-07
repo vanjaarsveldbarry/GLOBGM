@@ -18,14 +18,14 @@ _zarrWriter=$(realpath ./4_post-processing/transient/_zarrWriter.slurm)
 dir=$modelRoot/mf6_post
 mkdir -p $dir
 
-# Create empty final zarr store
+Create empty final zarr store
 python -u $to_zarrFolder/createZarr_tr.py $modelRoot $solution $dir $startDate $endDate $var
 wait
 
-# for ((year=startDate; year<=startDate; year++)); do
-#     outFile=$modelRoot/slurm_logs/4_post-processing/_s0${solution}_zarrWriter/${solution}_$year.out
-#     sbatch --exclusive -o $outFile $_zarrWriter $modelRoot $var $solution $year $startDate
-# done
+for ((year=startDate; year<=startDate; year++)); do
+    outFile=$modelRoot/slurm_logs/4_post-processing/_s0${solution}_zarrWriter/${solution}_$year.out
+    sbatch --exclusive -o $outFile $_zarrWriter $modelRoot $var $solution $year $startDate
+done
 
 #TODO for the hds variable, see if the memory allocaation allows for doing two variables at a time
 

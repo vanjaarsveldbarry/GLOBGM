@@ -22,10 +22,7 @@ dir=$modelRoot/mf6_post
 
 input_file=s0${solution}_${inp_tr}_$year
 
-# tempDir=$TMPDIR
-tempDir=/projects/0/einf4705/workflow/output/gfdl-esm4/tr_historical/testTemp
-mkdir -p tempDir
-# cd ${TMPDIR}
+tempDir=$TMPDIR
 cd $tempDir
 mkdir -p ./mod_files_s0${solution}_$year
 cd ./mod_files_s0${solution}_$year
@@ -55,11 +52,4 @@ python -u $_merge_zarr $dir $tempFolder $solution $year 09 $var &
 python -u $_merge_zarr $dir $tempFolder $solution $year 10 $var &
 python -u $_merge_zarr $dir $tempFolder $solution $year 11 $var &
 python -u $_merge_zarr $dir $tempFolder $solution $year 12 $var
-wait
-
-######################
-df -kh ${TMPDIR}
-mkdir -p /projects/0/einf4705/workflow/output/test/$solution
-cp -r ${TMPDIR} /projects/0/einf4705/workflow/output/test/$solution
-echo "done copy"
 wait
