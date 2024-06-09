@@ -120,6 +120,7 @@ def main():
             s = s.replace('FORCING_DIR',forcingDir)
             f = open(iniFileName,'w'); f.write(s); f.close()
         else:
+            print(sys.argv)
             inDir = sys.argv[5]
             outDir = sys.argv[6]
             forcingDir = sys.argv[7]

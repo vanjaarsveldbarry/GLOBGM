@@ -6,21 +6,17 @@
 #SBATCH --partition=genoa,rome
 #SBATCH --constraint=scratch-node
 
-
 source ${HOME}/.bashrc
 mamba activate globgm
 
-modelRoot=$1
-modelScratch=$2
-
-cmip6InputFolder=$(dirname $modelRoot)/cmip6_input/historical
-pcrglobInputFolder=$(realpath ../_data/globgm_input)
-saveFolder=$modelRoot/forcing_input
-
-mkdir -p $saveFolder
-
+modelScratch=$1
 tempdir=$TMPDIR/temp
+
+cmip6InputFolder=$(dirname $modelScratch)/cmip6_input/historical
+pcrglobInputFolder=$(realpath ../_data/globgm_input)
+saveFolder=$modelScratch/forcing_input
 mkdir -p $tempdir
+mkdir -p $saveFolder
 
 process_gwRecharge() {
     local inFile=$(find "$cmip6InputFolder" -type f -name "*gwRecharge*")
@@ -33,7 +29,6 @@ process_gwRecharge() {
     cdo -L -invertlat $tempdir/average_gwRecharge_m_per_day.map.nc $tempdir/average_gwRecharge_m_per_dayTemp.nc
     ncwa -O -a time $tempdir/average_gwRecharge_m_per_dayTemp.nc $tempdir/average_gwRecharge_m_per_day.nc
     mv $tempdir/average_gwRecharge_m_per_day.nc $saveFolder
-
 }
 
 process_totalRunoff_to_Discharge() {
@@ -75,4 +70,4 @@ process_totalRunoff_to_Discharge() {
 
 process_gwRecharge
 process_totalRunoff_to_Discharge
-# wait #&& rm -r $tempdir
+wait

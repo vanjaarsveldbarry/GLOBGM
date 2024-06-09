@@ -153,8 +153,6 @@ class DeterministicRunner(DynamicModel):
                 ds.to_zarr(savePath, region={"time": slice(index, index+1)}, consolidated=True)
 
             toZarr(self.discharge)
-            sys.exit()
-            
             # logger.info("Reporting for time %s", self.modelTime.currTime)
             # self.netcdf_report.data2NetCDF(self.model_setup["discharge_output_file"], \
                                         #    "discharge", \

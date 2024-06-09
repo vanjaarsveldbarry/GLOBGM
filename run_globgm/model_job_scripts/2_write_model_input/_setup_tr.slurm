@@ -5,40 +5,35 @@
 
 source ${HOME}/.bashrc
 mamba activate globgm
-scriptRoot=$(pwd)
 
 modelRoot=$1
-startDate=$2
-endDate=$3
+modelScratch=$2
+startDate=$3
+endDate=$4
 nSpin=1
 nMonths=$(((( $endDate - $startDate ) + 1) * 12))
-tempDir=$TMPDIR/job_${startTile}
 
-cd $scriptRoot
-inpdir=$(realpath $modelRoot/model_input/3_partition_and_write_model_input/transient/)
-ssFolder=$(dirname $modelRoot)/ss/mf6_mod/glob_ss/models/run_output_bin/
+
+inpdir=$(realpath $modelRoot/model_input/3_partition_and_write_model_input/transient)
 exe=$(realpath ../_bin/mf6ggm_181121)
 inpmod=mf6_mod_tr.inp
 inpexe=mf6ggm_tr.inp
 moddir=$modelRoot/mf6_mod
+globgmDir=$modelScratch
+ssFolder=$(dirname $modelRoot)/ss/mf6_mod/glob_ss/models/run_output_bin/
 
 mkdir -p $moddir
-i=1
-cp ${inpdir}/${inpmod} ${moddir}/mf6_mod_tr_${i}.inp
-cp ${inpdir}/${inpexe} ${moddir}/mf6ggm_tr_${i}.inp
-
-# # #REPLACE NECESSARY STRINGS
+cp ${inpdir}/${inpmod} ${moddir}/${inpmod}
+cp ${inpdir}/${inpexe} ${moddir}/${inpexe}
 yodaInput=$(realpath ../_data/globgm_input)
 globgm_dir=$modelRoot
-sed -i "s|{yoda_input}|${yodaInput}|g" ${moddir}/mf6_mod_tr_${i}.inp
-sed -i "s|{globgm_dir}|${tempDir}|g" ${moddir}/mf6_mod_tr_${i}.inp
-sed -i "s|{ssFolder}|${ssFolder}|g" ${moddir}/mf6_mod_tr_${i}.inp
-sed -i "s|{NUMBER_OF_MONTHS}|${nMonths}|g" ${moddir}/mf6_mod_tr_${i}.inp
-sed -i "s|{NUMBER_SPIN_YEARS}|${nSpin}|g" ${moddir}/mf6_mod_tr_${i}.inp
-sed -i "s|{START_DATE}|${startDate}|g" ${moddir}/mf6_mod_tr_${i}.inp
-sed -i "s|{ID}|${i}|g" ${moddir}/mf6ggm_tr_${i}.inp
+sed -i "s|{yoda_input}|${yodaInput}|g" ${moddir}/${inpmod}
+sed -i "s|{globgm_dir}|${globgmDir}|g" ${moddir}/${inpmod}
+sed -i "s|{ssFolder}|${ssFolder}|g" ${moddir}/${inpmod}
+sed -i "s|{NUMBER_OF_MONTHS}|${nMonths}|g" ${moddir}/${inpmod}
+sed -i "s|{NUMBER_SPIN_YEARS}|${nSpin}|g" ${moddir}/${inpmod}
+sed -i "s|{START_DATE}|${startDate}|g" ${moddir}/${inpmod}
 wait
 
 cd ${moddir}
-input_sub=${moddir}/mf6ggm_tr_${i}.inp
-${exe} ${input_sub} 0 
+${exe} ${inpexe} 0

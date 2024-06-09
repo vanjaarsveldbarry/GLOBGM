@@ -15,7 +15,7 @@ _chunks={'time': 1, 'latitude': 20000, 'longitude': 20000}
 
 inputFolder = sys.argv[1]
 solution = sys.argv[2]
-saveFolder=Path(inputFolder).parent
+saveFolder=sys.argv[3]
 input_files = Path(inputFolder).glob(f'*{solution}*.flt')
 
 def process_file(infile):
@@ -25,7 +25,6 @@ def process_file(infile):
     command = f"gdal_translate -of ZARR -co COMPRESS=ZSTD -co ZSTD_LEVEL=5 {infile} {savePath}"
     process = subprocess.Popen(command, shell=True, stdout=subprocess.PIPE)
     process.wait()
-    # os.remove(f"{infile}")
 
 with concurrent.futures.ProcessPoolExecutor() as executor:
     executor.map(process_file, input_files)
@@ -39,7 +38,6 @@ variable_names = list(l1_ds.data_vars.keys())[0]
 l1_ds = l1_ds.rename({'X': 'longitude', 'Y': 'latitude', variable_names: varName})
 l1_ds = l1_ds.expand_dims({'time': pd.date_range(f"{timeStamp}", periods=1)}).chunk(_chunks)
 l1_ds.to_zarr(f"{saveFolder}/{solution}.zarr", mode='w', consolidated=True, encoding={'l1_hds': _encoding_dict})
-# shutil.rmtree(f"{inputFolder}/_temp_{solution}/{solution}/{solution}_hds.ss.{timeStamp}_l1.zarr")
 
 varName='l2_hds'
 l2_ds = xr.open_zarr(f"{inputFolder}/_temp_{solution}/{solution}/{solution}_hds.ss.{timeStamp}_l2.zarr", chunks='auto')
@@ -47,7 +45,6 @@ variable_names = list(l2_ds.data_vars.keys())[0]
 l2_ds = l2_ds.rename({'X': 'longitude', 'Y': 'latitude', variable_names: varName})
 l2_ds = l2_ds.expand_dims({'time': pd.date_range(f"{timeStamp}", periods=1)}).chunk(_chunks)
 l2_ds.to_zarr(f"{saveFolder}/{solution}.zarr", mode='a', consolidated=True, encoding={'l2_hds': _encoding_dict})
-# shutil.rmtree(f"{inputFolder}/_temp_{solution}/{solution}/{solution}_hds.ss.{timeStamp}_l2.zarr")
 
 varName='l1_wtd'
 l1_ds = xr.open_zarr(f"{inputFolder}/_temp_{solution}/{solution}/{solution}_wtd.ss.{timeStamp}_l1.zarr", chunks='auto')
@@ -55,7 +52,6 @@ variable_names = list(l1_ds.data_vars.keys())[0]
 l1_ds = l1_ds.rename({'X': 'longitude', 'Y': 'latitude', variable_names: varName})
 l1_ds = l1_ds.expand_dims({'time': pd.date_range(f"{timeStamp}", periods=1)}).chunk(_chunks)
 l1_ds.to_zarr(f"{saveFolder}/{solution}.zarr", mode='a', consolidated=True, encoding={'l1_wtd': _encoding_dict})
-# shutil.rmtree(f"{inputFolder}/_temp_{solution}/{solution}/{solution}_wtd.ss.{timeStamp}_l1.zarr")
 
 varName='l2_wtd'
 l2_ds = xr.open_zarr(f"{inputFolder}/_temp_{solution}/{solution}/{solution}_wtd.ss.{timeStamp}_l2.zarr", chunks='auto')
@@ -63,4 +59,3 @@ variable_names = list(l2_ds.data_vars.keys())[0]
 l2_ds = l2_ds.rename({'X': 'longitude', 'Y': 'latitude', variable_names: varName})
 l2_ds = l2_ds.expand_dims({'time': pd.date_range(f"{timeStamp}", periods=1)}).chunk(_chunks)
 l2_ds.to_zarr(f"{saveFolder}/{solution}.zarr", mode='a', consolidated=True, encoding={'l2_wtd': _encoding_dict})
-# shutil.rmtree(f"{inputFolder}/_temp_{solution}")
