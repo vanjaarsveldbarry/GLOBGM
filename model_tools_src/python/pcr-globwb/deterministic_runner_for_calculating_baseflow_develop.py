@@ -144,7 +144,8 @@ river_flux_top_layer = pcr.ifthenelse(groundwaterHead2 > river_bottom_elevation,
 # -- from the river package of the bottom layer 
 river_flux_bot_layer = pcr.ifthenelse(groundwaterHead1 > river_bottom_elevation, river_bed_conductance * pcr.max(0.0, river_stage_elevation - groundwaterHead1),\
                                                                                  river_bed_conductance * pcr.max(0.0, river_stage_elevation - river_bottom_elevation))
-total_river_flux = river_flux_top_layer + river_flux_bot_layer
+# note that for GLOBGM with MODFLOW6, top_layer is only defined in the 'deklaag area'
+total_river_flux = pcr.cover(river_flux_top_layer, 0.0) + pcr.cover(river_flux_bot_layer, 0.0)
 
 
 # calculate flow from the drain package (unit: m3/day)
@@ -178,19 +179,20 @@ drain_flux_bot_layer_elevation_10 = pcr.scalar(-1.0) * drain_conductance_10 * pc
 drain_flux_bot_layer_elevation_11 = pcr.scalar(-1.0) * drain_conductance_11 * pcr.max(0.0, groundwaterHead1 - drain_elevation_lowermost_11)
 drain_flux_bot_layer_elevation_12 = pcr.scalar(-1.0) * drain_conductance_12 * pcr.max(0.0, groundwaterHead1 - drain_elevation_lowermost_12)
 
-total_drain_flux = drain_flux_top_layer_elevation_0  + drain_flux_bot_layer_elevation_0  + \
-                   drain_flux_top_layer_elevation_1  + drain_flux_bot_layer_elevation_1  + \
-                   drain_flux_top_layer_elevation_2  + drain_flux_bot_layer_elevation_2  + \
-                   drain_flux_top_layer_elevation_3  + drain_flux_bot_layer_elevation_3  + \
-                   drain_flux_top_layer_elevation_4  + drain_flux_bot_layer_elevation_4  + \
-                   drain_flux_top_layer_elevation_5  + drain_flux_bot_layer_elevation_5  + \
-                   drain_flux_top_layer_elevation_6  + drain_flux_bot_layer_elevation_6  + \
-                   drain_flux_top_layer_elevation_7  + drain_flux_bot_layer_elevation_7  + \
-                   drain_flux_top_layer_elevation_8  + drain_flux_bot_layer_elevation_8  + \
-                   drain_flux_top_layer_elevation_9  + drain_flux_bot_layer_elevation_9  + \
-                   drain_flux_top_layer_elevation_10 + drain_flux_bot_layer_elevation_10 + \
-                   drain_flux_top_layer_elevation_11 + drain_flux_bot_layer_elevation_11 + \
-                   drain_flux_top_layer_elevation_12 + drain_flux_bot_layer_elevation_12
+# note that for GLOBGM with MODFLOW6, top_layer is only defined in the 'deklaag area'
+total_drain_flux = pcr.cover(drain_flux_top_layer_elevation_0,  0.0) + drain_flux_bot_layer_elevation_0  + \
+                   pcr.cover(drain_flux_top_layer_elevation_1,  0.0) + drain_flux_bot_layer_elevation_1  + \
+                   pcr.cover(drain_flux_top_layer_elevation_2,  0.0) + drain_flux_bot_layer_elevation_2  + \
+                   pcr.cover(drain_flux_top_layer_elevation_3,  0.0) + drain_flux_bot_layer_elevation_3  + \
+                   pcr.cover(drain_flux_top_layer_elevation_4,  0.0) + drain_flux_bot_layer_elevation_4  + \
+                   pcr.cover(drain_flux_top_layer_elevation_5,  0.0) + drain_flux_bot_layer_elevation_5  + \
+                   pcr.cover(drain_flux_top_layer_elevation_6,  0.0) + drain_flux_bot_layer_elevation_6  + \
+                   pcr.cover(drain_flux_top_layer_elevation_7,  0.0) + drain_flux_bot_layer_elevation_7  + \
+                   pcr.cover(drain_flux_top_layer_elevation_8,  0.0) + drain_flux_bot_layer_elevation_8  + \
+                   pcr.cover(drain_flux_top_layer_elevation_9,  0.0) + drain_flux_bot_layer_elevation_9  + \
+                   pcr.cover(drain_flux_top_layer_elevation_10, 0.0) + drain_flux_bot_layer_elevation_10 + \
+                   pcr.cover(drain_flux_top_layer_elevation_11, 0.0) + drain_flux_bot_layer_elevation_11 + \
+                   pcr.cover(drain_flux_top_layer_elevation_12, 0.0) + drain_flux_bot_layer_elevation_12
 
 
 # total baseflow
