@@ -2595,12 +2595,18 @@ class GroundwaterModflow(object):
             surface_water_elevation          = pcr.rounddown(surface_water_elevation * 1000.)/1000.
             surface_water_bed_elevation_used = pcr.rounddown(surface_water_bed_elevation_used * 1000.)/1000.
             
+            # make sure that all maps are covered
+            bed_conductance_used             = pcr.cover(bed_conductance_used            , 0.0)
+            surface_water_bed_elevation_used = pcr.cover(surface_water_bed_elevation_used, 0.0)
+            surface_water_elevation          = pcr.cover(surface_water_elevation         , 0.0)
+            
             # make sure that surface_water_elevation >= surface_water_bed_elevation_used
             surface_water_elevation = pcr.max(surface_water_elevation, surface_water_bed_elevation_used)
             
-            pcr.report(surface_water_elevation,          self.iniItems.mapsDir + "/" + "surface_water_elevation" + self.getYearMonth(currTimeStep) + ".map") #JV
+            pcr.report(surface_water_elevation,          self.iniItems.mapsDir + "/" + "surface_water_elevation" + self.getYearMonth(currTimeStep) + ".map")          #JV
             pcr.report(surface_water_bed_elevation_used, self.iniItems.mapsDir + "/" + "surface_water_bed_elevation_used" + self.getYearMonth(currTimeStep) + ".map") #JV
-            pcr.report(bed_conductance_used,             self.iniItems.mapsDir + "/" + "bed_conductance_used" + self.getYearMonth(currTimeStep) + ".map") #JV
+            pcr.report(bed_conductance_used,             self.iniItems.mapsDir + "/" + "bed_conductance_used" + self.getYearMonth(currTimeStep) + ".map")             #JV
+            
             self.pcr_modflow.setRiver(surface_water_elevation, surface_water_bed_elevation_used, bed_conductance_used, self.number_of_layers)
 
         else:
@@ -2941,17 +2947,33 @@ class GroundwaterModflow(object):
                 
                 print(iCnt)
                 
-                # set the drain for the top and bottom layers
-                self.pcr_modflow.setDrain(pcr.cover(drain_mult_elevations[iCnt], 0.0), pcr.cover(drain_mult_conductances[iCnt], 0.0), 2)
-                self.pcr_modflow.setDrain(pcr.cover(drain_mult_elevations[iCnt], 0.0), pcr.cover(drain_mult_conductances[iCnt], 0.0), 1)
+                # drain conductance - make sure that all values are covered (with zero)
+                # - reset
+                drain_conductance = None
+                # - set it
+                drain_conductance = pcr.cover(drain_mult_conductances[iCnt], 0.0)
                 
+                # drain elevations - make sure that all drain elevation values are covered (with zero)
+                drain_elevation_lowermost_layer = None
+                drain_elevation_uppermost_layer = None
+                drain_elevation_lowermost_layer = pcr.cover(drain_mult_elevations[iCnt], 0.0)
+                drain_elevation_uppermost_layer = pcr.cover(drain_mult_elevations[iCnt], 0.0)
+                # - make sure that they are located above the bottom elevations
+                drain_elevation_lowermost_layer = pcr.max(drain_elevation_lowermost_layer, self.bottom_layer_1) 
+                drain_elevation_uppermost_layer = pcr.max(drain_elevation_uppermost_layer, self.bottom_layer_2) 
+
                 # save conductance to pcraster maps - note for all layers
                 conductance_file_name = self.iniItems.mapsDir + "/" + "drain_conductance_" +  str(iCnt) + ".map"
-                pcr.report(drain_mult_conductances[iCnt], conductance_file_name)
+                pcr.report(drain_conductance, conductance_file_name)
 
                 # save elevation to pcraster maps
                 pcr.report(drain_elevation_lowermost_layer, self.iniItems.mapsDir + "/" + "drain_elevation_lowermost_layer" + self.getYearMonth(currTimeStep) + str(iCnt) + ".map")
                 pcr.report(drain_elevation_uppermost_layer, self.iniItems.mapsDir + "/" + "drain_elevation_uppermost_layer" + self.getYearMonth(currTimeStep) + str(iCnt) + ".map")
+
+                # set the drain for the bottom and top layers
+                self.pcr_modflow.setDrain(drain_elevation_lowermost_layer, drain_conductance, 1)
+                self.pcr_modflow.setDrain(drain_elevation_uppermost_layer, drain_conductance, 2)
+                
 
                 if using_modflow_6 == False:
 
