@@ -120,10 +120,10 @@ for simulation in "${simulations[@]}"; do
     # tr_prep_mod_part_script=$model_job_scripts/1_prepare_model_partitioning/01_prep_model_part.slurm
     # sbatch -o $slurmDir_tr/1_prepare_model_partitioning/01prep_model_part.out $tr_prep_mod_part_script $trModelRoot
 
-    # Step 2: 2_write_model_input
-    # mkdir -p $slurmDir_tr/2_write_model_input
-    # tr_writeInput_script=$model_job_scripts/2_write_model_input/tr.slurm
-    # bash $tr_writeInput_script $model_job_scripts $slurmDir_tr $trModelRoot $trModelScratch $start_year $end_year
+    # Step 2: 2_write_model_input (Setup model and write tiles)
+    mkdir -p $slurmDir_tr/2_write_model_input
+    tr_writeInput_script=$model_job_scripts/2_write_model_input/tr.slurm
+    bash $tr_writeInput_script $model_job_scripts $slurmDir_tr $trModelRoot $trModelScratch $start_year $end_year
     # Step 2.1: 2_write_model_input
     # model_job_scripts_writeModels=$model_job_scripts/2_write_model_input/_writeModels_tr.slurm
     # jobid_s01=$(sbatch -o $slurmDir_tr/2_write_model_input/_writeModels_tr_1_%a.out --array=1-7 $model_job_scripts_writeModels $trModelRoot 1 | awk '{print $4}')
