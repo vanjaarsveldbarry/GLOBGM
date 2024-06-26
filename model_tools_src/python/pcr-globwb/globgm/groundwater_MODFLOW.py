@@ -2774,7 +2774,7 @@ class GroundwaterModflow(object):
         # for the transient simulation
         if simulation_type == "transient" and ('satAreaFracInputNC' in self.iniItems.modflowTransientInputOptions.keys() and self.iniItems.modflowTransientInputOptions['satAreaFracInputNC'] != "None"):
             consider_saturated_area_fraction = True
-		else:
+        else:
             # for the non-transient simulation
             if ('satAreaFracInputMap' in self.iniItems.modflowSteadyStateInputOptions.keys() and self.iniItems.modflowSteadyStateInputOptions['satAreaFracInputMap'] != "None"):
                 consider_saturated_area_fraction = True
