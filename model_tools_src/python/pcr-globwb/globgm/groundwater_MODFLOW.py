@@ -2753,13 +2753,17 @@ class GroundwaterModflow(object):
         # - estimate bottom of bank storage for flood plain areas
         drain_elevation = self.estimate_bottom_of_bank_storage()                               # unit: m
         
-        if ('satAreaFracInputNC' in self.iniItems.modflowTransientInputOptions.keys() and self.iniItems.modflowTransientInputOptions['satAreaFracInputNC'] != "None"):
+        
+        consider_saturated_area_fraction = False
+        # for the transient simulation
+        if simulation_type == "transient" and ('satAreaFracInputNC' in self.iniItems.modflowTransientInputOptions.keys() and self.iniItems.modflowTransientInputOptions['satAreaFracInputNC'] != "None"):
+            consider_saturated_area_fraction = True
+		else:
+            # for the non-transient simulation
+            if ('satAreaFracInputMap' in self.iniItems.modflowSteadyStateInputOptions.keys() and self.iniItems.modflowSteadyStateInputOptions['satAreaFracInputMap'] != "None"):
+                consider_saturated_area_fraction = True
 		
-		# TODO: At this moment works only for the transient purpose. We have to make this works for the steady state option as well. 
-		
-		# TODO: Check this whether this is correct (if we don´t use satAreaFracInputNC)
-		
-		
+        if consider_saturated_area_fraction:
             
             # - using satAreaFrac to estimate drain_elevation (based on satAreaFracInputNC provided in the configuration file)
             if simulation_type == "transient":
@@ -2800,7 +2804,6 @@ class GroundwaterModflow(object):
                 if iCnt > 0: relZ[iCnt] = pcr.max(relZ[iCnt], relZ[iCnt-1])
             
             relative_elevation_above_dem_minimum = relZ     
-		    
 		    
             # - reading minimumDEM
             minimumDEM = vos.readPCRmapClone(self.iniItems.modflowTransientInputOptions['minimumDEM'], self.cloneMap, self.tmpDir, self.inputDir)
@@ -2843,6 +2846,9 @@ class GroundwaterModflow(object):
                     relative_elevation_from_satAreaFrac = pcr.cover(relative_elevation_from_satAreaFrac, elevation) 
             
             elevation_from_satAreaFrac = minimumDEM + relative_elevation_from_satAreaFrac
+
+            # set the minimum elevation to the floodplain elevation
+            elevation_from_satAreaFrac = pcr.max(self.dem_floodplain, elevation_from_satAreaFrac)
             
             # drain elevation considering satAreaFrac
             # ~ # - limited by drain_elevation 
