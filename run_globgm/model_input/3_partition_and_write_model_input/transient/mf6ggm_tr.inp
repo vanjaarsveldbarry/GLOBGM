@@ -1,7 +1,7 @@
 43200 21600 2 -180 -90 8.333333333333E-003
 dummy.txt
 ./glob_tr/
-../mf6_map/map_glob
+../../mf6_map/map_glob
 -4 0
 1 224
 1 96

@@ -37,25 +37,25 @@ l1_ds = xr.open_zarr(f"{inputFolder}/_temp_{solution}/{solution}/{solution}_hds.
 variable_names = list(l1_ds.data_vars.keys())[0]
 l1_ds = l1_ds.rename({'X': 'longitude', 'Y': 'latitude', variable_names: varName})
 l1_ds = l1_ds.expand_dims({'time': pd.date_range(f"{timeStamp}", periods=1)}).chunk(_chunks)
-l1_ds.to_zarr(f"{saveFolder}/{solution}.zarr", mode='w', consolidated=True, encoding={'l1_hds': _encoding_dict})
+l1_ds.to_zarr(f"{saveFolder}/{solution}_hds.zarr", mode='w', consolidated=True, encoding={'l1_hds': _encoding_dict})
 
 varName='l2_hds'
 l2_ds = xr.open_zarr(f"{inputFolder}/_temp_{solution}/{solution}/{solution}_hds.ss.{timeStamp}_l2.zarr", chunks='auto')
 variable_names = list(l2_ds.data_vars.keys())[0]
 l2_ds = l2_ds.rename({'X': 'longitude', 'Y': 'latitude', variable_names: varName})
 l2_ds = l2_ds.expand_dims({'time': pd.date_range(f"{timeStamp}", periods=1)}).chunk(_chunks)
-l2_ds.to_zarr(f"{saveFolder}/{solution}.zarr", mode='a', consolidated=True, encoding={'l2_hds': _encoding_dict})
+l2_ds.to_zarr(f"{saveFolder}/{solution}_hds.zarr", mode='a', consolidated=True, encoding={'l2_hds': _encoding_dict})
 
 varName='l1_wtd'
 l1_ds = xr.open_zarr(f"{inputFolder}/_temp_{solution}/{solution}/{solution}_wtd.ss.{timeStamp}_l1.zarr", chunks='auto')
 variable_names = list(l1_ds.data_vars.keys())[0]
 l1_ds = l1_ds.rename({'X': 'longitude', 'Y': 'latitude', variable_names: varName})
 l1_ds = l1_ds.expand_dims({'time': pd.date_range(f"{timeStamp}", periods=1)}).chunk(_chunks)
-l1_ds.to_zarr(f"{saveFolder}/{solution}.zarr", mode='a', consolidated=True, encoding={'l1_wtd': _encoding_dict})
+l1_ds.to_zarr(f"{saveFolder}/{solution}_wtd.zarr", mode='w', consolidated=True, encoding={'l1_wtd': _encoding_dict})
 
 varName='l2_wtd'
 l2_ds = xr.open_zarr(f"{inputFolder}/_temp_{solution}/{solution}/{solution}_wtd.ss.{timeStamp}_l2.zarr", chunks='auto')
 variable_names = list(l2_ds.data_vars.keys())[0]
 l2_ds = l2_ds.rename({'X': 'longitude', 'Y': 'latitude', variable_names: varName})
 l2_ds = l2_ds.expand_dims({'time': pd.date_range(f"{timeStamp}", periods=1)}).chunk(_chunks)
-l2_ds.to_zarr(f"{saveFolder}/{solution}.zarr", mode='a', consolidated=True, encoding={'l2_wtd': _encoding_dict})
+l2_ds.to_zarr(f"{saveFolder}/{solution}_wtd.zarr", mode='a', consolidated=True, encoding={'l2_wtd': _encoding_dict})

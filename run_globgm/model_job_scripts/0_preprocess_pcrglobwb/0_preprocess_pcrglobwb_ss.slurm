@@ -9,12 +9,12 @@
 source ${HOME}/.bashrc
 mamba activate globgm
 
-modelScratch=$1
+modelRoot=$1
 tempdir=$TMPDIR/temp
-
-cmip6InputFolder=$(dirname $modelScratch)/cmip6_input/historical
+simulation=$(basename $(dirname $modelRoot))
+cmip6InputFolder=/scratch-shared/bvjaarsv/cmip6_input/$simulation/historical/natural
 pcrglobInputFolder=$(realpath ../_data/globgm_input)
-saveFolder=$modelScratch/forcing_input
+saveFolder=$modelRoot/forcing_input
 mkdir -p $tempdir
 mkdir -p $saveFolder
 

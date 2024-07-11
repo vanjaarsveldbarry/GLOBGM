@@ -25,6 +25,8 @@
 import os
 import sys
 import datetime
+import calendar
+from dateutil.relativedelta import relativedelta
 import glob
 
 import pcraster as pcr
@@ -120,12 +122,16 @@ def main():
             s = s.replace('FORCING_DIR',forcingDir)
             f = open(iniFileName,'w'); f.write(s); f.close()
         else:
-            print(sys.argv)
             inDir = sys.argv[5]
             outDir = sys.argv[6]
             forcingDir = sys.argv[7]
-            startYear = sys.argv[8]
-            endYear = sys.argv[9]
+            nMonths = sys.argv[9]
+            startDate = datetime.datetime.strptime(sys.argv[8], "%Y%m%d")
+            preliminary_endDate = startDate + relativedelta(months=(int(nMonths)-1))
+            _, last_day = calendar.monthrange(preliminary_endDate.year, preliminary_endDate.month)
+            endDate = datetime.datetime(preliminary_endDate.year, preliminary_endDate.month, last_day)
+            startDate = startDate.strftime("%Y-%m-%d")
+            endDate = endDate.strftime("%Y-%m-%d")
         
             iniFileName_new = os.path.join(os.path.dirname(iniFileName),'%s.ini'%tile)
             f = open(iniFileName,'r'); s = f.read(); f.close()
@@ -134,8 +140,8 @@ def main():
             s = s.replace('IN_DIR',inDir)
             s = s.replace('OUT_DIR',outDir)
             s = s.replace('FORCING_DIR',forcingDir)
-            s = s.replace('START_YEAR',startYear)
-            s = s.replace('END_YEAR',endYear)
+            s = s.replace('START_DATE',startDate)
+            s = s.replace('END_DATE',endDate)
             f = open(iniFileName,'w'); f.write(s); f.close()
     # object to handle configuration/ini file
     configuration = Configuration(iniFileName = iniFileName, \
