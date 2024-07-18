@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --nodes=1
 #SBATCH --time=12:00:00
-#SBATCH --partition=genoa
+#SBATCH --partition=genoa,rome
 #SBATCH --constraint=scratch-node
 #SBATCH --exclusive
 
@@ -13,18 +13,18 @@ var=$2
 solution=$3
 startDate=$4
 endDate=$5
+modDir=$6
 
 _merge_zarr=$(realpath ../model_tools_src/python/to_zarr/mergeZarr_tr.py)
 inpdir=$(realpath $modelRoot/model_input/5_post-processing/transient)
 inp_tr=mf6ggm_post_tr_$var.inp
-exe=$(realpath ../_bin/mf6ggmpost)
+exe=$(realpath ../_bin/mf6ggmpost_260624)
 yodaInput=$(realpath ../_data/globgm_input)
 dir=$modelRoot/mf6_post
 
 input_file=s0${solution}_${inp_tr}
 
-tempDir=$TMPDIR
-cd $tempDir
+cd $TMPDIR
 mkdir -p ./mod_files_s0${solution}
 cd ./mod_files_s0${solution}
 tempFolder=$(realpath ./temp) 
@@ -33,12 +33,12 @@ tempFolder=$(realpath ./temp)
 cp ${inpdir}/${inp_tr} ./$input_file
 sed -i "s|{yoda_input}|${yodaInput}|g" $input_file
 sed -i "s|{globgm_dir}|${modelRoot}|g" $input_file
+sed -i "s|{mod_dir}|${modDir}|g" $input_file
 sed -i "s|{solution}|${solution}|g" $input_file
 sed -i "s|{START_DATE}|${startDate}|g" $input_file
 sed -i "s|{END_DATE}|${endDate}|g" $input_file
 sed -i "s|{MOD_START_DATE}|${startDate}|g" $input_file
 wait
-
 ${exe} $input_file 
 wait
 time {

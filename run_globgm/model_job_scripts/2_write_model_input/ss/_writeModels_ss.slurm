@@ -1,73 +1,60 @@
 #!/bin/bash -l
-#SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
-#SBATCH --time=00:30:00
+#SBATCH -N 1
+#SBATCH -t 02:00:00
+#SBATCH --partition=genoa
+#SBATCH --exclusive
 #SBATCH --constraint=scratch-node
-#SBATCH --partition=genoa,rome
-
 
 source ${HOME}/.bashrc
 mamba activate globgm
 
+#Write tiles input
 modelRoot=$1
-slurmDir_tr=$2
-start_year=$3
-end_year=$4
 simulation=$(basename $(dirname $modelRoot))
+#TODO this too static
 cmip6InputFolder=/scratch-shared/bvjaarsv/cmip6_input/$simulation/historical/natural
-saveFolder=$modelRoot/forcing_input
 pcrglobInputFolder=$(realpath ../_data/globgm_input)
-PCR_GLOB_dir=$(realpath ../model_tools_src/python/pcr-globwb)
-trPreprocessingIni=$(realpath ../model_input/_2_preprocess_pcrglobwb/transient_preprocessing.ini)
-tempdir=$TMPDIR/temp
-mkdir -p $saveFolder
-mkdir -p $tempdir
+forcingDir=$TMPDIR/forcing_input
+mkdir -p $forcingDir
+model_input=$(realpath $modelRoot/model_input/1_write_tiled_parameter_data)
+OUT_DIR=$TMPDIR/input_map/steady-state
+IN_DIR=$(realpath ../_data/globgm_input)
+pcrlobwbDir=$(realpath ../model_tools_src/python/pcr-globwb)
 
-# Create initial zarr store
-zarrScripts=$(realpath ../model_tools_src/python/preprocess_zarr)
-python -u $zarrScripts/createZarr.py $pcrglobInputFolder $saveFolder $start_year $end_year
-wait
+#SUBMODELS INPUT
+exe=$(realpath ../_bin/mf6ggm_181121)
+inpmod=mf6_mod_ss.inp
+inpexe=mf6ggm_ss.inp
+moddir=$modelRoot/mf6_mod
+yodaInput=$(realpath ../_data/globgm_input)
+inpdir=$(realpath $modelRoot/model_input/3_partition_and_write_model_input/steady-state)
+globgmDir=$TMPDIR
 
-# #Preprocess discharge
-monthly_runoff_file=$(find "$cmip6InputFolder" -type f -name "*totalRunoff*")
-
-for ((year = start_year; year <= end_year; year+=1)); do
-    for ((month = 1; month <= 12; month++)); do
-        sbatch -o "$slurmDir_tr/0_preprocess_pcrglobwb/_discharge/tr_discharge_${year}${month}.out" $zarrScripts/_tr_writer.slurm $trPreprocessingIni $monthly_runoff_file $year $month $saveFolder $PCR_GLOB_dir
-    done
-done
-
-#copy transient files
-gwRechargeFile=$(find "$cmip6InputFolder" -type f -name "*gwRecharge*")
-cp $gwRechargeFile $saveFolder/gwRecharge_monthTot_output.nc
-
-totalGroundwaterAbstractionFile=$(find "$cmip6InputFolder" -type f -name "*totalGroundwaterAbstraction*")
-cp $totalGroundwaterAbstractionFile $saveFolder/totalGroundwaterAbstraction_monthTot_output.nc
-wait
-
-# #Process spinup input
+# Step 1 preprocess the 5 arcmin netcdf data to 30 arcseconds
 process_gwRecharge() {
+    local tempdir=${TMPDIR}/gwRecharge
     local inFile=$(find "$cmip6InputFolder" -type f -name "*gwRecharge*")
     local outFile=$tempdir/average_gwRecharge_m_per_day
-
+    mkdir -p $tempdir
     cdo -L -f nc4 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,1960/2014 $inFile $outFile.temp.nc
     gdal_translate -of GTiff $outFile.temp.nc $outFile.temp.tif
     gdal_translate -of PCRaster ${outFile}.temp.tif ${outFile}.temp.map
     gdal_translate -of NETCDF ${outFile}.temp.map $tempdir/average_gwRecharge_m_per_day.map.nc
     cdo -L -invertlat $tempdir/average_gwRecharge_m_per_day.map.nc $tempdir/average_gwRecharge_m_per_dayTemp.nc
     ncwa -O -a time $tempdir/average_gwRecharge_m_per_dayTemp.nc $tempdir/average_gwRecharge_m_per_day.nc
-    mv $tempdir/average_gwRecharge_m_per_day.nc $saveFolder
-
+    mv $tempdir/average_gwRecharge_m_per_day.nc $forcingDir
+    rm -r $tempdir
 }
 
 process_totalRunoff_to_Discharge() {
     # Process totalRunoff -> Discharge
+    local tempdir=${TMPDIR}/discharge
     local inFile=$(find "$cmip6InputFolder" -type f -name "*totalRunoff*")
     local outFile=$tempdir/average_totalRunoff_m_per_day
     local gridFile=$pcrglobInputFolder/cdo_gridarea_30sec.map
-    cdo -L -f nc4 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,1960/2014 $inFile $outFile.temp.nc
+    mkdir -p $tempdir
 
+    cdo -L -f nc4 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,1960/2014 $inFile $outFile.temp.nc
     local info=$(gdalinfo $gridFile)
     local xres=$(echo "$info" | grep "Pixel Size" | awk -F'=' '{print $2}' | awk -F',' '{print $1}' | tr -d '()')
     local yres=$(echo "$info" | grep "Pixel Size" | awk -F'=' '{print $2}' | awk -F',' '{print $2}' | tr -d '()')
@@ -78,7 +65,7 @@ process_totalRunoff_to_Discharge() {
     gdalwarp -tr $xres $yres -r bilinear -overwrite -te $ulx $lry $lrx $uly -of GTiff $outFile.temp.nc ${outFile}_30sec.tif
     gdal_translate -of PCRaster ${outFile}_30sec.tif ${outFile}.temp.map
 
-    # Calculate discharge
+    # # Calculate discharge
     cd $tempdir
     cp $pcrglobInputFolder/cdo_gridarea_30sec.map .
     cp $pcrglobInputFolder/lddsound_30sec_version_202005XX.map .
@@ -94,9 +81,54 @@ process_totalRunoff_to_Discharge() {
     pcrcalc average_discharge_m3_per_second.map = "cover(average_lake_reservoir_discharge_m3_per_second.map, average_river_discharge_m3_per_second.map)"
     gdal_translate -of NETCDF average_discharge_m3_per_second.map $tempdir/average_discharge_m3_per_second.map.nc
     cdo -L -invertlat $tempdir/average_discharge_m3_per_second.map.nc $tempdir/average_discharge_m3_per_second.nc
-    mv $tempdir/average_discharge_m3_per_second.nc $saveFolder
-    echo "Discharge Calculated"
+    mv $tempdir/average_discharge_m3_per_second.nc $forcingDir
+    rm -r $tempdir
 }
 
-process_gwRecharge
-process_totalRunoff_to_Discharge
+process_gwRecharge & process_totalRunoff_to_Discharge
+wait
+
+#Step 2 Write .map tiles
+cd $pcrlobwbDir
+counter=0
+for ((i=1; i<=163; i+=1)); do
+    num=$(printf "%03d" $((10#$i)))
+    python deterministic_runner_for_offline_monthly_modflow.py $model_input/steady-state_config.ini debug steady-state-only tile_${num}-163 $IN_DIR $OUT_DIR $forcingDir &
+    counter=$((counter+1))
+    if [ $counter -eq 27 ]; then
+        wait
+        counter=0
+    fi
+done
+wait
+
+# # Copy for post-processing
+for ((i=1; i<=163; i+=1));do
+    tile=$(printf "%03d" $i)
+    mkdir -p $modelRoot/input_map/steady-state/tile_${tile}-163/steady-state_only/maps && cp "${OUT_DIR}/tile_${tile}-163/steady-state_only/maps/top_uppermost_layer.map" "$modelRoot/input_map/steady-state/tile_${tile}-163/steady-state_only/maps" &
+done
+wait
+
+mkdir -p $moddir
+cp ${inpdir}/${inpmod} ${moddir}/${inpmod}
+cp ${inpdir}/${inpexe} ${moddir}/${inpexe}
+
+#REPLACE NECESSARY STRINGS
+sed -i "s|{yoda_input}|${yodaInput}|g" ${moddir}/${inpmod}
+sed -i "s|{globgm_dir}|${globgmDir}|g" ${moddir}/${inpmod}
+wait
+
+cd ${moddir}
+
+for ((i=1; i<=384; i+=12)); do
+    ii=$((i + 11))
+    if [ $ii -gt 384 ]; then
+        ii=384
+    fi
+    ${exe} ${inpexe} $i $ii &
+done
+wait
+
+cd $moddir/glob_ss/log
+num_files=$(ls | wc -l)
+[ $num_files -eq 384 ] || { echo "Some models are missing"; exit 1; }

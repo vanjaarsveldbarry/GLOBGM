@@ -87,11 +87,11 @@ def readDownscaling_gwRecharge_modflow(gwRechargeFile, correctionFile, cloneMap,
         gwRecharge = (gwRecharge * downScaleCF) * 100
         return pcr.numpy2pcr(pcr.Scalar, gwRecharge.values, MV)
         
-def read_discharge_zarr(dischargeFile, timeStamp, cloneMapFileName):    
+def read_zarr(file, varName, timeStamp, cloneMapFileName):    
     lat= pcr.pcr2numpy(pcr.ycoordinate(pcr.boolean(1)),MV)[:,0].ravel()
     lon= pcr.pcr2numpy(pcr.xcoordinate(pcr.boolean(1)),MV)[0,:].ravel()
     
-    f = zarr.convenience.open(dischargeFile)
+    f = zarr.convenience.open(file)
     
     attributeClone = getMapAttributesALL(cloneMapFileName)
     cellsizeClone = attributeClone['cellsize']
@@ -124,7 +124,7 @@ def read_discharge_zarr(dischargeFile, timeStamp, cloneMapFileName):
     yIdxEnd = int(math.ceil(yIdxSta + rowsClone /(factor)))
     timeStamp=timeStamp-1
     
-    data = f['discharge'].get_basic_selection((timeStamp, slice(yIdxSta,yIdxEnd), slice(xIdxSta,xIdxEnd)))[:]
+    data = f[varName].get_basic_selection((timeStamp, slice(yIdxSta,yIdxEnd), slice(xIdxSta,xIdxEnd)))[:]
     return pcr.numpy2pcr(pcr.Scalar, data, MV)
     
 def initialize_logging(log_file_location, log_file_front_name = "log", debug_mode = True):

@@ -12,6 +12,11 @@ end_year=$3
 nSpin=$4
 nMonths=$(((( $end_year - $start_year ) + 1) * 12))
 
+if [ ! -f "${modelRoot}/forcing_input/log/done_${end_year}-12.txt" ]; then
+    echo "Error: Model input file not found!"
+    exit 1
+fi
+
 inpdir=$(realpath $modelRoot/model_input/3_partition_and_write_model_input/transient)
 exe=$(realpath ../_bin/mf6ggm_181121)
 inpmod=mf6_mod_tr.inp
@@ -20,7 +25,6 @@ moddir=$modelRoot/mf6_mod/mf6_mod_${end_year}
 ssFolder=$(dirname $modelRoot)/ss/mf6_mod/glob_ss/models/run_output_bin/
 yodaInput=$(realpath ../_data/globgm_input)
 globgmDir=$modelRoot
-
 mkdir -p $moddir
 cp ${inpdir}/${inpmod} ${moddir}/${inpmod}
 cp ${inpdir}/${inpexe} ${moddir}/${inpexe}
@@ -33,4 +37,5 @@ sed -i "s|{START_DATE}|${start_year}|g" ${moddir}/${inpmod}
 wait
 
 cd ${moddir}
+ls
 ${exe} ${inpexe} 0

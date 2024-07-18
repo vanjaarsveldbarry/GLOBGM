@@ -20,6 +20,10 @@ ds=xr.open_dataset(input_folder / 'lddsound_30sec_version_202005XX_correct_lat.n
 ds = ds.expand_dims({'time': time_dim})
 ds = ds.rename({'Band1': 'discharge'})
 ds = ds.chunk(_chunks)
-print(ds)
 ds.to_zarr(saveFolder / f"discharge.zarr", compute=False, mode='w', consolidated=True, encoding={'discharge': _encoding_dict})
 
+ds = ds.rename({'discharge': 'gwRecharge'})
+ds.to_zarr(saveFolder / f"gwRecharge.zarr", compute=False, mode='w', consolidated=True, encoding={'gwRecharge': _encoding_dict})
+
+ds = ds.rename({'gwRecharge': 'gwAbstraction'})
+ds.to_zarr(saveFolder / f"gwAbstraction.zarr", compute=False, mode='w', consolidated=True, encoding={'gwAbstraction': _encoding_dict})

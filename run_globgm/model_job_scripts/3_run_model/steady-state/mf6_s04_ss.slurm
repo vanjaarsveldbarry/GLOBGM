@@ -13,14 +13,19 @@ module load 2022
 module load OpenMPI/4.1.4-GCC-11.3.0
 
 modelRoot=$1
-
-sol=s04
-mod=glob_ss
-
-dir=$modelRoot/mf6_mod/${mod}/solutions/run_output/
+model_job_scripts=$2
+slurmDir_ss=$3
+dir=$modelRoot/mf6_mod/glob_ss/solutions/run_output/
 exe=$(realpath ../_bin/mf6_rel_openmpi-4.1.4-gcc-11.3.0)
-nam=${sol}.par.mfsim.ic_sh0.nam
+nam=s04.par.mfsim.ic_sh0.nam
+startDir=$(pwd)
 
+#Run jobs
 cd ${dir}
-
 srun ${exe} -s ../run_input/${nam}
+wait
+
+#Post process files
+cd $startDir
+run_script_post_ss=$model_job_scripts/4_post-processing/steady-state/04_post_globgm_ss.slurm
+sbatch -o $slurmDir_ss/4_post-processing/4_post_globgm_4.out $run_script_post_ss $modelRoot 4

@@ -3,10 +3,8 @@ import sys
 from pathlib import Path
 from numcodecs import Blosc
 import pandas as pd
-import os
-import subprocess
-import shutil
-import concurrent.futures
+import dask
+dask.config.set(**{'array.slicing.split_large_chunks': False})
 
 modelRoot=Path(sys.argv[1])
 solution=Path(sys.argv[2])
@@ -19,7 +17,7 @@ _compressor = Blosc(cname='zstd', clevel=5, shuffle=Blosc.BITSHUFFLE)
 _encoding_dict={'dtype': 'float32', '_FillValue': -9999, 'compressor': _compressor}
 _chunks={'time': 1, 'latitude': 20000, 'longitude': 20000}
 
-steadyStateFile=modelRoot.parent / f'ss/mf6_post/s0{solution}.zarr'
+steadyStateFile=modelRoot.parent / f'ss/mf6_post/s0{solution}_{var}.zarr'
 ds = xr.open_zarr(steadyStateFile)[[f'l1_{var}', f'l2_{var}']]
 time_dim = pd.date_range(start=f'{startDate}-01-31', end=f'{endDate}-12-31', freq='ME')
 ds = ds.reindex(time=time_dim)

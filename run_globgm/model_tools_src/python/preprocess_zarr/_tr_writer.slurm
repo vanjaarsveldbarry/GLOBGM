@@ -2,9 +2,7 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
-#SBATCH --mem-per-cpu=1750
 #SBATCH --time=00:30:00
-#SBATCH --constraint=scratch-node
 #SBATCH --partition=genoa,rome
 
 tempDir=$TMPDIR/temp
@@ -14,11 +12,13 @@ source ${HOME}/.bashrc
 mamba activate globgm
 
 trPreprocessingIni=$1
-monthly_runoff_file=$2
-year=$3
-month=$4
-saveFolder=$5
-PCR_GLOB_dir=$6
+year=$2
+month=$3
+saveFolder=$4
+PCR_GLOB_dir=$5
+monthly_runoff_file=$6
+monthly_recharge_file=$7
+monthly_abstraction_file=$8
 
 cd $PCR_GLOB_dir
-python deterministic_runner_for_calculating_discharge_from_runoff.py $trPreprocessingIni $monthly_runoff_file $tempDir $year $month $saveFolder
+python deterministic_runner_for_calculating_discharge_from_runoff.py $tempDir $trPreprocessingIni $year $month $saveFolder $monthly_runoff_file $monthly_recharge_file $monthly_abstraction_file

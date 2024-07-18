@@ -38,7 +38,6 @@ input_files = sorted(Path(directory).parent.glob(f'*{solution}*{year}{month}*.fl
 with concurrent.futures.ProcessPoolExecutor(2) as executor:
     futures = {executor.submit(convert_file, file) for file in input_files}
     tempZarrPaths = [f.result() for f in concurrent.futures.as_completed(futures)]
-
 for f in tempZarrPaths:
     timeStamp=Path(f).stem[-11:-3]
     date_object = datetime.strptime(timeStamp, '%Y%m%d')
@@ -55,7 +54,7 @@ for f in tempZarrPaths:
         variable_names = list(l2_ds.data_vars.keys())[0]
         l2_ds = l2_ds.rename({'X': 'longitude', 'Y': 'latitude', variable_names: varName})
         l2_ds = l2_ds.expand_dims({'time': pd.date_range(f"{timeStamp}", periods=1)}).chunk(_chunks)  
-
+        
 ds = xr.merge([l1_ds, l2_ds])
 ds = ds.chunk(_chunks)
 ds = ds.drop_vars(['latitude', 'longitude'])

@@ -2,26 +2,52 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=16
-#SBATCH --time=00:20:00
-#SBATCH --partition=genoa,rome
+#SBATCH --time=00:30:00
 #SBATCH --constraint=scratch-node
+#SBATCH --partition=genoa,rome
+#SBATCH --job-name=_writeInput
+
 
 source ${HOME}/.bashrc
 mamba activate globgm
-
+startDir=$(pwd)
 modelRoot=$1
-tempdir=$TMPDIR/temp
+slurmDir_tr=$2
+start_year=$3
+end_year=$4
 simulation=$(basename $(dirname $modelRoot))
-cmip6InputFolder=/scratch-shared/bvjaarsv/cmip6_input/$simulation/historical/natural
-pcrglobInputFolder=$(realpath ../_data/globgm_input)
+cmip6InputFolder=/scratch-shared/bvjaarsv/cmip6_input/$simulation/historical
 saveFolder=$modelRoot/forcing_input
-mkdir -p $tempdir
+pcrglobInputFolder=$(realpath ../_data/globgm_input)
+PCR_GLOB_dir=$(realpath ../model_tools_src/python/pcr-globwb)
+zarrScripts=$(realpath ../model_tools_src/python/preprocess_zarr)
+trPreprocessingIni=$modelRoot/model_input/1_write_tiled_parameter_data/transient_preprocessing.ini
+
 mkdir -p $saveFolder
 
-process_gwRecharge() {
-    local inFile=$(find "$cmip6InputFolder" -type f -name "*gwRecharge*")
-    local outFile=$tempdir/average_gwRecharge_m_per_day
+cd $startDir
+# Preprocess discharge
+python -u $zarrScripts/createZarr.py $pcrglobInputFolder $saveFolder $start_year $end_year
+wait
+monthly_runoff_file=$(find "$cmip6InputFolder" -maxdepth 1 -type f -name "*totalRunoff*")
+monthly_recharge_file=$(find "$cmip6InputFolder" -maxdepth 1 -type f -name "*gwRecharge*")
+monthly_abstraction_file=$(find "$cmip6InputFolder" -maxdepth 1 -type f -name "*totalGroundwaterAbstraction*")
+for ((year = start_year; year <= end_year; year+=1)); do
+    for ((month = 1; month <= 12; month++)); do
+        sbatch -o "$slurmDir_tr/2_write_model_input/_input/_input_${year}${month}.out" $zarrScripts/_tr_writer.slurm $trPreprocessingIni $year $month $saveFolder $PCR_GLOB_dir $monthly_runoff_file $monthly_recharge_file $monthly_abstraction_file
+    done
+done
+wait
 
+#Process spinup input
+process_gwRecharge() {
+    local tempdir=${TMPDIR}/gwRecharge
+    local inFile=$(find "$cmip6InputFolder" -maxdepth 1 -type f -name "*gwRecharge*")
+    local outFile=$tempdir/average_gwRecharge_m_per_day
+    mkdir -p $tempdir
+    cp $inFile $tempdir
+    fileName=$(basename "$inFile")
+    inFile=$tempdir/$fileName
     cdo -L -f nc4 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,1960/2014 $inFile $outFile.temp.nc
     gdal_translate -of GTiff $outFile.temp.nc $outFile.temp.tif
     gdal_translate -of PCRaster ${outFile}.temp.tif ${outFile}.temp.map
@@ -29,15 +55,23 @@ process_gwRecharge() {
     cdo -L -invertlat $tempdir/average_gwRecharge_m_per_day.map.nc $tempdir/average_gwRecharge_m_per_dayTemp.nc
     ncwa -O -a time $tempdir/average_gwRecharge_m_per_dayTemp.nc $tempdir/average_gwRecharge_m_per_day.nc
     mv $tempdir/average_gwRecharge_m_per_day.nc $saveFolder
+    rm -r $tempdir
 }
 
 process_totalRunoff_to_Discharge() {
     # Process totalRunoff -> Discharge
-    local inFile=$(find "$cmip6InputFolder" -type f -name "*totalRunoff*")
+    local tempdir=${TMPDIR}/discharge
+    local inFile=$(find "$cmip6InputFolder" -maxdepth 1 -type f -name "*totalRunoff*")
     local outFile=$tempdir/average_totalRunoff_m_per_day
     local gridFile=$pcrglobInputFolder/cdo_gridarea_30sec.map
-    cdo -L -f nc4 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,1960/2014 $inFile $outFile.temp.nc
+    mkdir -p $tempdir
 
+    cp $inFile $tempdir
+    cp $gridFile $tempdir
+    fileName=$(basename "$inFile")
+    inFile=$tempdir/$fileName
+
+    cdo -L -f nc4 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,1960/2014 $inFile $outFile.temp.nc
     local info=$(gdalinfo $gridFile)
     local xres=$(echo "$info" | grep "Pixel Size" | awk -F'=' '{print $2}' | awk -F',' '{print $1}' | tr -d '()')
     local yres=$(echo "$info" | grep "Pixel Size" | awk -F'=' '{print $2}' | awk -F',' '{print $2}' | tr -d '()')
@@ -65,9 +99,8 @@ process_totalRunoff_to_Discharge() {
     gdal_translate -of NETCDF average_discharge_m3_per_second.map $tempdir/average_discharge_m3_per_second.map.nc
     cdo -L -invertlat $tempdir/average_discharge_m3_per_second.map.nc $tempdir/average_discharge_m3_per_second.nc
     mv $tempdir/average_discharge_m3_per_second.nc $saveFolder
-    echo "Discharge Calculated"
+    rm -r $tempdir
 }
 
-process_gwRecharge
-process_totalRunoff_to_Discharge
+process_gwRecharge & process_totalRunoff_to_Discharge
 wait
