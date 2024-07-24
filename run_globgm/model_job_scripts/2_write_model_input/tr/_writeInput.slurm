@@ -1,106 +1,52 @@
 #!/bin/bash -l
 #SBATCH --nodes=1
-#SBATCH --ntasks=1
-#SBATCH --cpus-per-task=16
-#SBATCH --time=00:30:00
-#SBATCH --constraint=scratch-node
-#SBATCH --partition=genoa,rome
+#SBATCH --exclusive
+#SBATCH --time=06:00:00
+#SBATCH --partition=fat_genoa
 #SBATCH --job-name=_writeInput
 
 
 source ${HOME}/.bashrc
 mamba activate globgm
-startDir=$(pwd)
+
 modelRoot=$1
-slurmDir_tr=$2
-start_year=$3
-end_year=$4
+start_year=$2
+end_year=$3
 simulation=$(basename $(dirname $modelRoot))
 cmip6InputFolder=/scratch-shared/bvjaarsv/cmip6_input/$simulation/historical
 saveFolder=$modelRoot/forcing_input
-pcrglobInputFolder=$(realpath ../_data/globgm_input)
 PCR_GLOB_dir=$(realpath ../model_tools_src/python/pcr-globwb)
-zarrScripts=$(realpath ../model_tools_src/python/preprocess_zarr)
 trPreprocessingIni=$modelRoot/model_input/1_write_tiled_parameter_data/transient_preprocessing.ini
 
-mkdir -p $saveFolder
+diff=$(($end_year - $start_year))
+if [ $SLURM_ARRAY_TASK_ID -eq 1 ]; then
+    start_year=$start_year
+    if [ $diff -lt 50 ]; then
+        end_year=$end_year
+    else
+        end_year=$(($start_year + 49))
+    fi
+fi
 
-cd $startDir
-# Preprocess discharge
-python -u $zarrScripts/createZarr.py $pcrglobInputFolder $saveFolder $start_year $end_year
-wait
+if [ $SLURM_ARRAY_TASK_ID -eq 2 ]; then
+    start_year=$(($start_year + 50))
+    if [ $diff -lt 100 ]; then
+        end_year=$end_year
+    fi
+fi
+mkdir -p $saveFolder
+cd $PCR_GLOB_dir
 monthly_runoff_file=$(find "$cmip6InputFolder" -maxdepth 1 -type f -name "*totalRunoff*")
 monthly_recharge_file=$(find "$cmip6InputFolder" -maxdepth 1 -type f -name "*gwRecharge*")
 monthly_abstraction_file=$(find "$cmip6InputFolder" -maxdepth 1 -type f -name "*totalGroundwaterAbstraction*")
-for ((year = start_year; year <= end_year; year+=1)); do
-    for ((month = 1; month <= 12; month++)); do
-        sbatch -o "$slurmDir_tr/2_write_model_input/_input/_input_${year}${month}.out" $zarrScripts/_tr_writer.slurm $trPreprocessingIni $year $month $saveFolder $PCR_GLOB_dir $monthly_runoff_file $monthly_recharge_file $monthly_abstraction_file
-    done
+for ((year = start_year; year <= end_year; year+=2)); do
+    yearStart=$year
+    yearEnd=$(($yearStart + 1))
+    if [ $yearEnd -gt $end_year ]; then
+        yearEnd=$end_year
+    fi
+    tempDir=$TMPDIR/temp_${yearEnd}
+    mkdir -p $tempDir
+    python deterministic_runner_for_calculating_discharge_from_runoff.py $tempDir $trPreprocessingIni $yearStart $yearEnd $saveFolder $monthly_runoff_file $monthly_recharge_file $monthly_abstraction_file &
 done
-wait
-
-#Process spinup input
-process_gwRecharge() {
-    local tempdir=${TMPDIR}/gwRecharge
-    local inFile=$(find "$cmip6InputFolder" -maxdepth 1 -type f -name "*gwRecharge*")
-    local outFile=$tempdir/average_gwRecharge_m_per_day
-    mkdir -p $tempdir
-    cp $inFile $tempdir
-    fileName=$(basename "$inFile")
-    inFile=$tempdir/$fileName
-    cdo -L -f nc4 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,1960/2014 $inFile $outFile.temp.nc
-    gdal_translate -of GTiff $outFile.temp.nc $outFile.temp.tif
-    gdal_translate -of PCRaster ${outFile}.temp.tif ${outFile}.temp.map
-    gdal_translate -of NETCDF ${outFile}.temp.map $tempdir/average_gwRecharge_m_per_day.map.nc
-    cdo -L -invertlat $tempdir/average_gwRecharge_m_per_day.map.nc $tempdir/average_gwRecharge_m_per_dayTemp.nc
-    ncwa -O -a time $tempdir/average_gwRecharge_m_per_dayTemp.nc $tempdir/average_gwRecharge_m_per_day.nc
-    mv $tempdir/average_gwRecharge_m_per_day.nc $saveFolder
-    rm -r $tempdir
-}
-
-process_totalRunoff_to_Discharge() {
-    # Process totalRunoff -> Discharge
-    local tempdir=${TMPDIR}/discharge
-    local inFile=$(find "$cmip6InputFolder" -maxdepth 1 -type f -name "*totalRunoff*")
-    local outFile=$tempdir/average_totalRunoff_m_per_day
-    local gridFile=$pcrglobInputFolder/cdo_gridarea_30sec.map
-    mkdir -p $tempdir
-
-    cp $inFile $tempdir
-    cp $gridFile $tempdir
-    fileName=$(basename "$inFile")
-    inFile=$tempdir/$fileName
-
-    cdo -L -f nc4 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,1960/2014 $inFile $outFile.temp.nc
-    local info=$(gdalinfo $gridFile)
-    local xres=$(echo "$info" | grep "Pixel Size" | awk -F'=' '{print $2}' | awk -F',' '{print $1}' | tr -d '()')
-    local yres=$(echo "$info" | grep "Pixel Size" | awk -F'=' '{print $2}' | awk -F',' '{print $2}' | tr -d '()')
-    local ulx=$(echo "$info" | grep "Upper Left"  | awk '{print $3}' | tr -d ',' | tr -d '()')
-    local uly=$(echo "$info" | grep "Upper Left"  | awk '{print $4}' | tr -d ',' | tr -d '()')
-    local lrx=$(echo "$info" | grep "Lower Right" | awk '{print $4}' | tr -d ',' | tr -d '()')
-    local lry=$(echo "$info" | grep "Lower Right" | awk '{print $5}' | tr -d ',' | tr -d '()')
-    gdalwarp -tr $xres $yres -r bilinear -overwrite -te $ulx $lry $lrx $uly -of GTiff $outFile.temp.nc ${outFile}_30sec.tif
-    gdal_translate -of PCRaster ${outFile}_30sec.tif ${outFile}.temp.map
-
-    # Calculate discharge
-    cd $tempdir
-    cp $pcrglobInputFolder/cdo_gridarea_30sec.map .
-    cp $pcrglobInputFolder/lddsound_30sec_version_202005XX.map .
-    cp $pcrglobInputFolder/waterBodyIds_lakes_and_reservoirs_30sec_global_2019_version_202005XX.map .
-
-    local cdo_gridarea_30sec=cdo_gridarea_30sec.map
-    local lddsound_30sec_version_202005XX=lddsound_30sec_version_202005XX.map
-    local average_totalRunoff_m_per_day_30sec=average_totalRunoff_m_per_day.temp.map
-    local waterBodyIds_lakes_and_reservoirs_30sec_global_2019_version_202005XX=waterBodyIds_lakes_and_reservoirs_30sec_global_2019_version_202005XX.map
-
-    pcrcalc average_river_discharge_m3_per_second.map = "cover(max(0.0, catchmenttotal($average_totalRunoff_m_per_day_30sec * $cdo_gridarea_30sec, ldd($lddsound_30sec_version_202005XX)) / (24.*3600.)), 0.0)"
-    pcrcalc average_lake_reservoir_discharge_m3_per_second.map = "if(scalar($waterBodyIds_lakes_and_reservoirs_30sec_global_2019_version_202005XX) gt 0, areamaximum(average_river_discharge_m3_per_second.map, nominal($waterBodyIds_lakes_and_reservoirs_30sec_global_2019_version_202005XX)))"
-    pcrcalc average_discharge_m3_per_second.map = "cover(average_lake_reservoir_discharge_m3_per_second.map, average_river_discharge_m3_per_second.map)"
-    gdal_translate -of NETCDF average_discharge_m3_per_second.map $tempdir/average_discharge_m3_per_second.map.nc
-    cdo -L -invertlat $tempdir/average_discharge_m3_per_second.map.nc $tempdir/average_discharge_m3_per_second.nc
-    mv $tempdir/average_discharge_m3_per_second.nc $saveFolder
-    rm -r $tempdir
-}
-
-process_gwRecharge & process_totalRunoff_to_Discharge
 wait

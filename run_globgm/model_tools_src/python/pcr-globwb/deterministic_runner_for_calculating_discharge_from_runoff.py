@@ -140,18 +140,14 @@ class DeterministicRunner(DynamicModel):
             self.discharge = pcr.cover(self.lake_and_reservoir_discharge, self.river_discharge)
             # reporting 
             toZarr(self.discharge, file=self.model_setup["discharge_output_file"], varName='discharge')
-
-            logPath = Path(self.model_setup["discharge_output_file"]).parent / 'log'
-            logPath.mkdir(parents=True, exist_ok=True)
-            open(logPath / f'done_{self.model_setup["end_date"][:7]}.txt', 'w').close()
            
 
 def main():
     
     TEMPDIR=sys.argv[1]
     config_file = sys.argv[2]
-    YEAR = sys.argv[3]
-    MONTH = sys.argv[4]
+    YEAR_START = sys.argv[3]
+    YEAR_END = sys.argv[4]
     SAVEFOLDER=sys.argv[5]
 
     config = ConfigParser()
@@ -166,20 +162,22 @@ def main():
     model_setup["monthly_runoff_file"] = sys.argv[6]
     model_setup["monthly_recharge_file"] = sys.argv[7]
     model_setup["monthly_abstraction_file"] = sys.argv[8]
-    model_setup["output_dir"] = f"{TEMPDIR}/{YEAR}_{MONTH}"
+    model_setup["output_dir"] = f"{TEMPDIR}/{YEAR_START}_{YEAR_END}"
     
-    if MONTH == "2":
-        model_setup["start_date"] = f"{YEAR}-{str(MONTH).zfill(2)}-28"
-        model_setup["end_date"] = f"{YEAR}-{str(MONTH).zfill(2)}-28"
+    # if MONTH == "2":
+    #     model_setup["start_date"] = f"{YEAR}-{str(MONTH).zfill(2)}-28"
+    #     model_setup["end_date"] = f"{YEAR}-{str(MONTH).zfill(2)}-28"
         
-    else:
-        if MONTH in ["4", "6", "9", "11"]:
-            model_setup["start_date"] = f"{YEAR}-{str(MONTH).zfill(2)}-30"
-            model_setup["end_date"] = f"{YEAR}-{str(MONTH).zfill(2)}-30"  
+    # else:
+    #     if MONTH in ["4", "6", "9", "11"]:
+    #         model_setup["start_date"] = f"{YEAR}-{str(MONTH).zfill(2)}-30"
+    #         model_setup["end_date"] = f"{YEAR}-{str(MONTH).zfill(2)}-30"  
     
-        else:
-            model_setup["start_date"] = f"{YEAR}-{str(MONTH).zfill(2)}-31"
-            model_setup["end_date"] = f"{YEAR}-{str(MONTH).zfill(2)}-31"
+    #     else:
+    #         model_setup["start_date"] = f"{YEAR}-{str(MONTH).zfill(2)}-31"
+    #         model_setup["end_date"] = f"{YEAR}-{str(MONTH).zfill(2)}-31"
+    model_setup["start_date"] = f"{YEAR_START}-01-31"
+    model_setup["end_date"] = f"{YEAR_END}-12-31"
     
     model_setup["discharge_output_file"] = f"{SAVEFOLDER}/discharge.zarr"
     model_setup["recharge_output_file"] = f"{SAVEFOLDER}/gwRecharge.zarr"

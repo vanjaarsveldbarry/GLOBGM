@@ -22,4 +22,4 @@ ds = xr.open_zarr(steadyStateFile)[[f'l1_{var}', f'l2_{var}']]
 time_dim = pd.date_range(start=f'{startDate}-01-31', end=f'{endDate}-12-31', freq='ME')
 ds = ds.reindex(time=time_dim)
 ds = ds.chunk(_chunks)
-ds.to_zarr(saveDir / f"s0{solution}_{var}.zarr", mode='w', consolidated=True, encoding={f'l1_{var}': _encoding_dict, f'l2_{var}': _encoding_dict})
+ds.to_zarr(saveDir / f"s0{solution}_{var}.zarr", mode='w', consolidated=True, compute=False, encoding={f'l1_{var}': _encoding_dict, f'l2_{var}': _encoding_dict})

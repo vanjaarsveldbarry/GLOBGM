@@ -1,10 +1,11 @@
 #!/bin/bash
 #SBATCH --nodes=1
 #SBATCH --time=12:00:00
-#SBATCH --partition=genoa,rome
+#SBATCH --partition=genoa
 #SBATCH --constraint=scratch-node
 #SBATCH --exclusive
 
+df -kh $TMPDIR
 source ${HOME}/.bashrc
 mamba activate globgm
 
@@ -21,41 +22,55 @@ inp_tr=mf6ggm_post_tr_$var.inp
 exe=$(realpath ../_bin/mf6ggmpost_260624)
 yodaInput=$(realpath ../_data/globgm_input)
 dir=$modelRoot/mf6_post
-
+tempFolder=$(realpath ./temp) 
 input_file=s0${solution}_${inp_tr}
 
-cd $TMPDIR
-mkdir -p ./mod_files_s0${solution}
-cd ./mod_files_s0${solution}
-tempFolder=$(realpath ./temp) 
+counter=0
+for ((year=$startDate; year<=$endDate; year++));do
+    counter=$((counter+1))
+    modFlowTemp=$TMPDIR/output
+    mkdir -p $modFlowTemp
+    cd $modFlowTemp
+    mkdir -p ./mod_files_s0${solution}_${year} ./out
+    cd ./mod_files_s0${solution}_${year}
+    echo $(pwd)
+    # #Convert output to .flt
+    sub_input=${input_file}_${year}
+    cp ${inpdir}/${inp_tr} ./$sub_input
+    sed -i "s|{yoda_input}|${yodaInput}|g" $sub_input
+    sed -i "s|{globgm_dir}|${modelRoot}|g" $sub_input
+    sed -i "s|{mod_dir}|${modDir}|g" $sub_input
+    sed -i "s|{solution}|${solution}|g" $sub_input
+    sed -i "s|{START_DATE}|${year}|g" $sub_input
+    sed -i "s|{END_DATE}|${year}|g" $sub_input
+    sed -i "s|{MOD_START_DATE}|${startDate}|g" $sub_input
+    ${exe} $sub_input &
+    if [ $counter -eq 6 ]; then
+        wait
+        counter=0
+    fi
+done
+wait
 
-#Convert output to .flt
-cp ${inpdir}/${inp_tr} ./$input_file
-sed -i "s|{yoda_input}|${yodaInput}|g" $input_file
-sed -i "s|{globgm_dir}|${modelRoot}|g" $input_file
-sed -i "s|{mod_dir}|${modDir}|g" $input_file
-sed -i "s|{solution}|${solution}|g" $input_file
-sed -i "s|{START_DATE}|${startDate}|g" $input_file
-sed -i "s|{END_DATE}|${endDate}|g" $input_file
-sed -i "s|{MOD_START_DATE}|${startDate}|g" $input_file
+counter=0
+for ((year=$startDate; year<=$endDate; year++));do
+    counter=$((counter+1))
+    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 01 $var &
+    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 02 $var &
+    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 03 $var &
+    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 04 $var &
+    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 05 $var &
+    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 06 $var &
+    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 07 $var &
+    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 08 $var &
+    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 09 $var &
+    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 10 $var &
+    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 11 $var &
+    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 12 $var
+    if [ $counter -eq 3 ]; then
+        wait
+        counter=0
+    fi
+done
 wait
-${exe} $input_file 
-wait
-time {
-  for ((year=$startDate; year<=$endDate; year++));do
-     python -u $_merge_zarr $dir $tempFolder $solution $year 01 $var &
-     python -u $_merge_zarr $dir $tempFolder $solution $year 02 $var &
-     python -u $_merge_zarr $dir $tempFolder $solution $year 03 $var &
-     python -u $_merge_zarr $dir $tempFolder $solution $year 04 $var &
-     python -u $_merge_zarr $dir $tempFolder $solution $year 05 $var &
-     python -u $_merge_zarr $dir $tempFolder $solution $year 06 $var &
-     python -u $_merge_zarr $dir $tempFolder $solution $year 07 $var &
-     python -u $_merge_zarr $dir $tempFolder $solution $year 08 $var &
-     python -u $_merge_zarr $dir $tempFolder $solution $year 09 $var &
-     python -u $_merge_zarr $dir $tempFolder $solution $year 10 $var &
-     python -u $_merge_zarr $dir $tempFolder $solution $year 11 $var &
-     python -u $_merge_zarr $dir $tempFolder $solution $year 12 $var
-     wait
-  done
-  wait
-}
+df -kh $TMPDIR

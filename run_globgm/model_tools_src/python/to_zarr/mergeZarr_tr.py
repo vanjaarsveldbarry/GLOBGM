@@ -34,7 +34,7 @@ def convert_file(infile):
     process.wait()
     return savePath
 
-input_files = sorted(Path(directory).parent.glob(f'*{solution}*{year}{month}*.flt'))
+input_files = sorted(Path(directory).glob(f'*{solution}*{year}{month}*.flt'))
 with concurrent.futures.ProcessPoolExecutor(2) as executor:
     futures = {executor.submit(convert_file, file) for file in input_files}
     tempZarrPaths = [f.result() for f in concurrent.futures.as_completed(futures)]
