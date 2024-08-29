@@ -1,0 +1,31 @@
+[edwinmod@int5 _example_map_files_from_jarno_scripts]$ ls -lah *
+
+!!! DONE:
+!!! TODO - NOT YET DONE!!!
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 primary_storage_coefficient_lowermost_layer.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 primary_storage_coefficient_uppermost_layer.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 horizontal_conductivity_lowermost_layer.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 horizontal_conductivity_uppermost_layer.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:03 vertical_conductivity_lowermost_layer.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 abstraction_lowermost_layer_195801.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 abstraction_lowermost_layer.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 abstraction_uppermost_layer_195801.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 abstraction_uppermost_layer.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 surface_water_bed_elevation_used_195801.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 surface_water_bed_elevation_used.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:03 surface_water_elevation_195801.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:03 surface_water_elevation.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 bed_conductance_used_195801.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 bed_conductance_used.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 bottom_lowermost_layer.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 bottom_uppermost_layer.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:03 top_uppermost_layer.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 net_RCH_195801.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 net_RCH.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 initial_head_lowermost_layer.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 initial_head_uppermost_layer.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 drain_elevation_lowermost_layer_195801.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 drain_elevation_lowermost_layer.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 drain_elevation_uppermost_layer_195801.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 drain_elevation_uppermost_layer.map
+-rw-r--r-- 1 edwinmod edwinmod 13M Apr 22 10:02 drain_conductance.map
