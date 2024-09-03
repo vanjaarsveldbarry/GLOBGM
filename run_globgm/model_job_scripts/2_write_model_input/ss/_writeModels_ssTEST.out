@@ -1,0 +1,245 @@
+2024-09-03 11:07:43,590 globgm.configuration_for_modflow INFO Model run started at 2024-09-03 11:07:43.558897
+2024-09-03 11:07:43,590 globgm.configuration_for_modflow INFO Logging output to /scratch-shared/bvjaarsv/_writeModelTest/input_map/steady-state/tile_001-163//steady-state_only/log/tile_001-163.ini_2024-09-03T11.07.43.558897.log
+2024-09-03 11:07:43,590 globgm.configuration_for_modflow INFO Debugging output to /scratch-shared/bvjaarsv/_writeModelTest/input_map/steady-state/tile_001-163//steady-state_only/log/tile_001-163.ini_2024-09-03T11.07.43.558897.dbg
+2024-09-03 11:07:43,590 globgm.disclaimer INFO 
+
+ PCR-GLOBWB (PCRaster Global Water Balance) Global Hydrological Model                       
+
+ Copyright (C) 2016, Edwin H. Sutanudjaja, Rens van Beek, Niko Wanders, Yoshihide Wada,     
+ Joyce H. C. Bosmans, Niels Drost, Ruud J. van der Ent, Inge E. M. de Graaf, Jannis M. Hoch,
+ Kor de Jong, Derek Karssenberg, Patricia Lopez Lopez, Stefanie Pessenteiner, Oliver Schmitz,
+ Menno W. Straatsma, Ekkamol Vannametee, Dominik Wisser, and Marc F. P. Bierkens            
+ Faculty of Geosciences, Utrecht University, Utrecht, The Netherlands                       
+
+ This program comes with ABSOLUTELY NO WARRANTY                                             
+ This is free software, and you are welcome to redistribute it under certain conditions     
+ See the LICENSE file for more details                                                      
+
+
+2024-09-03 11:07:43,619 globgm.currTimeStep INFO number of time steps: 1
+2024-09-03 11:07:43,619 __main__ INFO Model run starts.
+2024-09-03 11:07:43,690 globgm.virtualOS DEBUG read file/value: lddsound_30sec_version_202005XX_correct_lat.nc
+2024-09-03 11:07:43,690 globgm.virtualOS DEBUG read netcdf file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/lddsound_30sec_version_202005XX_correct_lat.nc
+2024-09-03 11:07:43,690 globgm.virtualOS DEBUG reading variable: automatic from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/lddsound_30sec_version_202005XX_correct_lat.nc
+2024-09-03 11:07:43,756 globgm.virtualOS DEBUG reading variable: Band1 from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/lddsound_30sec_version_202005XX_correct_lat.nc
+2024-09-03 11:07:47,539 globgm.virtualOS DEBUG reading variable: dem_minimum from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/topography_parameters_30sec_february_2021_global_covered_with_zero.nc
+2024-09-03 11:07:49,803 globgm.virtualOS DEBUG reading variable: dem_average from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/topography_parameters_30sec_february_2021_global_covered_with_zero.nc
+2024-09-03 11:07:52,100 globgm.virtualOS DEBUG reading variable: gradient from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/channel_parameters_30sec_february_2021_global_covered_with_zero.nc
+2024-09-03 11:07:54,473 globgm.virtualOS DEBUG reading variable: bankfull_width from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/channel_parameters_30sec_february_2021_global_covered_with_zero.nc
+2024-09-03 11:08:07,468 globgm.virtualOS DEBUG reading variable: bankfull_depth from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/channel_parameters_30sec_february_2021_global_covered_with_zero.nc
+2024-09-03 11:08:22,500 globgm.virtualOS DEBUG reading variable: dem_floodplain from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/channel_parameters_30sec_february_2021_global_covered_with_zero.nc
+2024-09-03 11:08:24,754 globgm.virtualOS DEBUG reading variable: dem_riverbed from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/channel_parameters_30sec_february_2021_global_covered_with_zero.nc
+2024-09-03 11:08:29,050 globgm.virtualOS DEBUG read file/value: 0.04
+2024-09-03 11:08:29,051 globgm.virtualOS DEBUG read file/value: cdo_grid_area_30sec_map_correct_lat.nc
+2024-09-03 11:08:29,098 globgm.virtualOS DEBUG read netcdf file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/cdo_grid_area_30sec_map_correct_lat.nc
+2024-09-03 11:08:29,098 globgm.virtualOS DEBUG reading variable: automatic from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/cdo_grid_area_30sec_map_correct_lat.nc
+2024-09-03 11:08:29,180 globgm.virtualOS DEBUG reading variable: cell_area from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/cdo_grid_area_30sec_map_correct_lat.nc
+2024-09-03 11:08:31,374 globgm.virtualOS DEBUG read file/value: lddsound_30sec_version_202005XX_correct_lat.nc
+2024-09-03 11:08:31,374 globgm.virtualOS DEBUG read netcdf file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/lddsound_30sec_version_202005XX_correct_lat.nc
+2024-09-03 11:08:31,374 globgm.virtualOS DEBUG reading variable: automatic from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/lddsound_30sec_version_202005XX_correct_lat.nc
+2024-09-03 11:08:31,374 globgm.virtualOS DEBUG reading variable: Band1 from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/lddsound_30sec_version_202005XX_correct_lat.nc
+2024-09-03 11:08:34,551 globgm.groundwater_MODFLOW INFO Exclude river infiltration (RIV behaves as DRN) for rivers with widths smaller than: 10.0
+2024-09-03 11:08:34,552 globgm.virtualOS DEBUG read file/value: 10.0
+2024-09-03 11:08:34,640 globgm.groundwater_MODFLOW INFO Obtain the default groundwater properties based on PCR-GLOBWB setting.
+2024-09-03 11:08:34,641 globgm.virtualOS DEBUG read file/value: specific_yield_aquifer_filled_30sec.nc
+2024-09-03 11:08:34,641 globgm.virtualOS DEBUG read netcdf file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/specific_yield_aquifer_filled_30sec.nc
+2024-09-03 11:08:34,641 globgm.virtualOS DEBUG reading variable: automatic from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/specific_yield_aquifer_filled_30sec.nc
+2024-09-03 11:08:34,711 globgm.virtualOS DEBUG reading variable: specific_yield_aquifer_filled_map from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/specific_yield_aquifer_filled_30sec.nc
+2024-09-03 11:08:36,186 globgm.groundwater WARNING The option "minSpecificYield" is not defined in the "groundwaterOptions" of the configuration file. This run assumes 0.01 for this option.
+2024-09-03 11:08:36,191 globgm.virtualOS DEBUG read file/value: k_conductivity_aquifer_filled_30sec.nc
+2024-09-03 11:08:36,191 globgm.virtualOS DEBUG read netcdf file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/k_conductivity_aquifer_filled_30sec.nc
+2024-09-03 11:08:36,191 globgm.virtualOS DEBUG reading variable: automatic from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/k_conductivity_aquifer_filled_30sec.nc
+2024-09-03 11:08:36,266 globgm.virtualOS DEBUG reading variable: k_conductivity_aquifer_filled_map from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/k_conductivity_aquifer_filled_30sec.nc
+2024-09-03 11:08:37,755 globgm.groundwater WARNING The option "minAquiferSatConductivity" is not defined in the "groundwaterOptions" of the configuration file. This run assumes 0.01 for this option.
+2024-09-03 11:08:37,759 globgm.groundwater WARNING The 'recessionCoeff' cannot be read from the file: None
+2024-09-03 11:08:37,759 globgm.groundwater INFO The 'recessionCoeff' is be obtained from the file: recession_coefficient_30sec.nc
+2024-09-03 11:08:37,759 globgm.virtualOS DEBUG read file/value: recession_coefficient_30sec.nc
+2024-09-03 11:08:37,759 globgm.virtualOS DEBUG read netcdf file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/recession_coefficient_30sec.nc
+2024-09-03 11:08:37,759 globgm.virtualOS DEBUG reading variable: automatic from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/recession_coefficient_30sec.nc
+2024-09-03 11:08:37,827 globgm.virtualOS DEBUG reading variable: recession_coefficient_30sec_map from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/recession_coefficient_30sec.nc
+2024-09-03 11:08:39,271 globgm.groundwater WARNING This run assumes riverBedConductivity = kSatAquifer.
+2024-09-03 11:08:39,271 globgm.groundwater WARNING The option "maximumRiverBedConductivity" is not defined in the "groundwaterOptions" of the configuration file. This run assumes "0.1" (m/day) for this option.
+2024-09-03 11:08:39,271 globgm.virtualOS DEBUG read file/value: 0.1
+2024-09-03 11:08:39,314 globgm.virtualOS DEBUG read file/value: 0.1
+2024-09-03 11:08:39,352 globgm.virtualOS DEBUG read file/value: 1.0
+2024-09-03 11:08:39,407 globgm.virtualOS DEBUG read file/value: thickness_05min_remapbil_to_30sec_filled_with_pcr_correct_lat.nc
+2024-09-03 11:08:39,408 globgm.virtualOS DEBUG read netcdf file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/thickness_05min_remapbil_to_30sec_filled_with_pcr_correct_lat.nc
+2024-09-03 11:08:39,408 globgm.virtualOS DEBUG reading variable: automatic from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/thickness_05min_remapbil_to_30sec_filled_with_pcr_correct_lat.nc
+2024-09-03 11:08:39,474 globgm.virtualOS DEBUG reading variable: thickness from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/thickness_05min_remapbil_to_30sec_filled_with_pcr_correct_lat.nc
+2024-09-03 11:08:44,597 globgm.virtualOS DEBUG read file/value: 50.
+2024-09-03 11:08:44,617 globgm.virtualOS DEBUG read file/value: confining_layer_thickness_version_2016_remapbil_to_30sec.nc
+2024-09-03 11:08:44,618 globgm.virtualOS DEBUG read netcdf file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/confining_layer_thickness_version_2016_remapbil_to_30sec.nc
+2024-09-03 11:08:44,618 globgm.virtualOS DEBUG reading variable: automatic from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/confining_layer_thickness_version_2016_remapbil_to_30sec.nc
+2024-09-03 11:08:44,683 globgm.virtualOS DEBUG reading variable: thickness_deklaag from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/confining_layer_thickness_version_2016_remapbil_to_30sec.nc
+2024-09-03 11:08:46,951 globgm.virtualOS DEBUG read file/value: 0.005
+2024-09-03 11:08:46,956 globgm.virtualOS DEBUG read file/value: 100000.
+2024-09-03 11:08:46,960 globgm.groundwater_MODFLOW INFO Negative groundwater recharge is ignored (set to zero).
+2024-09-03 11:08:46,960 globgm.groundwater_MODFLOW INFO The "accesibleDepth" option is not defined in the "modflowParameterOptions" of the ini/configuration file. This value is set to 1000. (m).
+2024-09-03 11:08:47,390 globgm.modflow INFO Get initial head values (based on a steady-state simulation or a pre-defined pcraster map.
+2024-09-03 11:08:47,390 globgm.groundwater_MODFLOW INFO Estimating initial conditions based on the steady state simulation using the input as defined in the ini/configuration file.
+2024-09-03 11:08:47,390 globgm.groundwater_MODFLOW INFO Initializing pcraster modflow.
+2024-09-03 11:08:50,546 globgm.groundwater_MODFLOW INFO Preparing transmissivity values (TRAN) for the BCF package).
+2024-09-03 11:08:50,547 globgm.groundwater_MODFLOW INFO Adjustment factor: 1.0
+2024-09-03 11:08:50,547 globgm.groundwater_MODFLOW INFO The minimum transmissivity value is limited to (m2/day) 10.0
+2024-09-03 11:08:50,547 globgm.groundwater_MODFLOW INFO The maximum transmissivity value is limited to (m2/day) 100000.0
+2024-09-03 11:08:50,547 globgm.groundwater_MODFLOW INFO Assign horizontal conductivities of the upper layer (used for calculating transmissivity (TRAN) for the BCF package).
+2024-09-03 11:08:50,550 globgm.groundwater_MODFLOW INFO Constrained by minimum and maximum transmissity values.
+2024-09-03 11:08:50,586 globgm.groundwater_MODFLOW INFO Assign horizontal conductivities of the lower layer (used for calculating transmissivity (TRAN) for the BCF package).
+2024-09-03 11:08:50,591 globgm.groundwater_MODFLOW INFO Constrained by minimum and maximum transmissity values.
+2024-09-03 11:08:50,628 globgm.groundwater_MODFLOW INFO Preparing VCONT (day-1) values (1/resistance) between upper and lower layers for the BCF package (including the correction due to the lat/lon usage).
+2024-09-03 11:08:50,629 globgm.groundwater_MODFLOW INFO Adjustment factor for resistance: 1.0
+2024-09-03 11:08:50,633 globgm.groundwater_MODFLOW INFO The minimum resistance (days) between upper and lower layers (1/VCONT) is limited to 1.0
+2024-09-03 11:08:50,633 globgm.groundwater_MODFLOW INFO The maximum resistance (days) between upper and lower layers (1/VCONT) is limited to <pcraster._pcraster.Field object at 0x1522815e5c70>
+2024-09-03 11:08:50,633 globgm.groundwater_MODFLOW INFO Assign vertical conductivities to determine VCONT values (1/resistance) between upper and lower layers (used for calculating VCONT for the BCF package).
+2024-09-03 11:08:50,633 globgm.groundwater_MODFLOW INFO In areas with confining layer, limit vertical conductivity to the given map/value of maximumConfiningLayerVerticalConductivity
+2024-09-03 11:08:50,654 globgm.groundwater_MODFLOW INFO Constrained by minimum and maximum resistance values.
+2024-09-03 11:08:50,690 globgm.groundwater_MODFLOW INFO In areas with confining layer, we increase resistance in order to conceptualize aquitard layers. The additional resistance value is estimated by dividing half of (0.5) bottom layer thickness over kSatAquifer (defined in groundwaterPropertiesNC). Moreover, it is assumed that the extent of aquitard is the same as confining layer thickness (confiningLayerThickness > 0).
+2024-09-03 11:08:50,730 globgm.groundwater_MODFLOW INFO Correction due to the lat/lon usage.
+2024-09-03 11:08:50,752 globgm.groundwater_MODFLOW INFO Assign conductivity values to the MODFLOW (BCF package).
+2024-09-03 11:08:50,900 globgm.groundwater_MODFLOW INFO Set storage coefficients for the upper and bottom layers (including lat/lon correction).
+2024-09-03 11:08:50,900 globgm.groundwater_MODFLOW INFO Adjustment factor: 1.0
+2024-09-03 11:08:50,900 globgm.groundwater_MODFLOW INFO The minimum storage coefficient value is limited to (-) 1e-10
+2024-09-03 11:08:50,900 globgm.groundwater_MODFLOW INFO The maximum storage coefficient value is limited to (-) 0.5
+2024-09-03 11:08:50,900 globgm.groundwater_MODFLOW INFO Set storage coefficient for the upper layer (including lat/lon correction).
+2024-09-03 11:08:50,927 globgm.groundwater_MODFLOW INFO Set storage coefficient for the lower layer (including lat/lon correction).
+2024-09-03 11:08:50,928 globgm.groundwater_MODFLOW INFO Set storage coefficient for the aquifer layer based on the input in 'aquiferLayerPrimaryStorageCoefficient'.
+2024-09-03 11:08:50,928 globgm.virtualOS DEBUG read file/value: 0.003
+2024-09-03 11:08:50,928 globgm.groundwater_MODFLOW INFO Note that this is for the confined aquifer layer only (aquifer covered by the confining layer)'.
+2024-09-03 11:08:50,997 globgm.groundwater_MODFLOW INFO Assign storage coefficient values to the MODFLOW (BCF package).
+2024-09-03 11:08:51,306 globgm.groundwater_MODFLOW INFO Saving some pcraster maps (MODFLOW parameters/input files) to the folder
+2024-09-03 11:08:51,377 globgm.groundwater_MODFLOW INFO Preparing MODFLOW input for a steady-state simulation.
+2024-09-03 11:08:51,447 globgm.virtualOS DEBUG read file/value: /scratch-shared/bvjaarsv/_writeModelTest/forcing_input/average_discharge_m3_per_second.nc
+2024-09-03 11:08:51,447 globgm.virtualOS DEBUG read netcdf file: /scratch-shared/bvjaarsv/_writeModelTest/forcing_input/average_discharge_m3_per_second.nc
+2024-09-03 11:08:51,447 globgm.virtualOS DEBUG reading variable: automatic from the file: /scratch-shared/bvjaarsv/_writeModelTest/forcing_input/average_discharge_m3_per_second.nc
+2024-09-03 11:08:51,512 globgm.virtualOS DEBUG reading variable: Band1 from the file: /scratch-shared/bvjaarsv/_writeModelTest/forcing_input/average_discharge_m3_per_second.nc
+2024-09-03 11:08:56,884 globgm.virtualOS DEBUG read file/value: /scratch-shared/bvjaarsv/_writeModelTest/forcing_input/average_gwRecharge_m_per_day.nc
+2024-09-03 11:08:56,886 globgm.virtualOS DEBUG read netcdf file: /scratch-shared/bvjaarsv/_writeModelTest/forcing_input/average_gwRecharge_m_per_day.nc
+2024-09-03 11:08:56,886 globgm.virtualOS DEBUG reading variable: automatic from the file: /scratch-shared/bvjaarsv/_writeModelTest/forcing_input/average_gwRecharge_m_per_day.nc
+2024-09-03 11:08:57,055 globgm.virtualOS DEBUG reading variable: groundwater_recharge from the file: /scratch-shared/bvjaarsv/_writeModelTest/forcing_input/average_gwRecharge_m_per_day.nc
+2024-09-03 11:08:57,199 globgm.virtualOS DEBUG Resample: input cell size = 0.08333331684625023 ; output/clone cell size = 0.008333333333333333
+2024-09-03 11:08:57,261 globgm.virtualOS DEBUG read file/value: 0.0
+2024-09-03 11:08:57,266 globgm.groundwater_MODFLOW INFO Estimating surface water level and bed elevations, as well as be conductance (RIV package).
+2024-09-03 11:08:57,266 globgm.virtualOS DEBUG read file/value: lddsound_30sec_version_202005XX_correct_lat.nc
+2024-09-03 11:08:57,266 globgm.virtualOS DEBUG read netcdf file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/lddsound_30sec_version_202005XX_correct_lat.nc
+2024-09-03 11:08:57,266 globgm.virtualOS DEBUG reading variable: automatic from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/lddsound_30sec_version_202005XX_correct_lat.nc
+2024-09-03 11:08:57,266 globgm.virtualOS DEBUG reading variable: Band1 from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/lddsound_30sec_version_202005XX_correct_lat.nc
+2024-09-03 11:09:00,454 globgm.waterBodies INFO The 'routingOptions' are not defined in the configuration ini file. We will adopt them from the 'modflowParameterOptions'.
+2024-09-03 11:09:00,456 globgm.virtualOS DEBUG reading variable: fracWaterInp from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/lakes_and_reservoirs_30sec_global_2019_version_202005XX.nc
+2024-09-03 11:09:00,545 globgm.virtualOS WARNING 
+WARNING related to the netcdf file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/lakes_and_reservoirs_30sec_global_2019_version_202005XX.nc ; variable: fracWaterInp !!!!!!
+The date 1960-01-01 is NOT available. The date 2019-1-1 is used.
+
+2024-09-03 11:09:00,547 globgm.virtualOS DEBUG The date 2019-1-1 00:00:00 is available. The 'exact' option is used while selecting netcdf time.
+2024-09-03 11:09:00,547 globgm.virtualOS DEBUG Using the date index 0
+2024-09-03 11:09:00,547 globgm.virtualOS DEBUG Using the datetime 2019-01-01 00:00:00
+2024-09-03 11:09:05,363 globgm.virtualOS DEBUG reading variable: waterBodyIds from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/lakes_and_reservoirs_30sec_global_2019_version_202005XX.nc
+2024-09-03 11:09:05,364 globgm.virtualOS WARNING 
+WARNING related to the netcdf file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/lakes_and_reservoirs_30sec_global_2019_version_202005XX.nc ; variable: waterBodyIds !!!!!!
+The date 1960-01-01 is NOT available. The date 2019-1-1 is used.
+
+2024-09-03 11:09:05,365 globgm.virtualOS DEBUG The date 2019-1-1 00:00:00 is available. The 'exact' option is used while selecting netcdf time.
+2024-09-03 11:09:05,365 globgm.virtualOS DEBUG Using the date index 0
+2024-09-03 11:09:05,366 globgm.virtualOS DEBUG Using the datetime 2019-01-01 00:00:00
+2024-09-03 11:09:10,134 globgm.virtualOS DEBUG reading variable: resSfAreaInp from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/lakes_and_reservoirs_30sec_global_2019_version_202005XX.nc
+2024-09-03 11:09:10,138 globgm.virtualOS WARNING 
+WARNING related to the netcdf file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/lakes_and_reservoirs_30sec_global_2019_version_202005XX.nc ; variable: resSfAreaInp !!!!!!
+The date 1960-01-01 is NOT available. The date 2019-1-1 is used.
+
+2024-09-03 11:09:10,139 globgm.virtualOS DEBUG The date 2019-1-1 00:00:00 is available. The 'exact' option is used while selecting netcdf time.
+2024-09-03 11:09:10,193 globgm.virtualOS DEBUG Using the date index 0
+2024-09-03 11:09:10,194 globgm.virtualOS DEBUG Using the datetime 2019-01-01 00:00:00
+2024-09-03 11:09:15,440 globgm.virtualOS DEBUG reading variable: waterBodyTyp from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/lakes_and_reservoirs_30sec_global_2019_version_202005XX.nc
+2024-09-03 11:09:15,443 globgm.virtualOS WARNING 
+WARNING related to the netcdf file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/lakes_and_reservoirs_30sec_global_2019_version_202005XX.nc ; variable: waterBodyTyp !!!!!!
+The date 1960-01-01 is NOT available. The date 2019-1-1 is used.
+
+2024-09-03 11:09:15,444 globgm.virtualOS DEBUG The date 2019-1-1 00:00:00 is available. The 'exact' option is used while selecting netcdf time.
+2024-09-03 11:09:15,444 globgm.virtualOS DEBUG Using the date index 0
+2024-09-03 11:09:15,445 globgm.virtualOS DEBUG Using the datetime 2019-01-01 00:00:00
+2024-09-03 11:09:20,141 globgm.virtualOS DEBUG reading variable: resMaxCapInp from the file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/lakes_and_reservoirs_30sec_global_2019_version_202005XX.nc
+2024-09-03 11:09:20,142 globgm.virtualOS WARNING 
+WARNING related to the netcdf file: /gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/_data/globgm_input/lakes_and_reservoirs_30sec_global_2019_version_202005XX.nc ; variable: resMaxCapInp !!!!!!
+The date 1960-01-01 is NOT available. The date 2019-1-1 is used.
+
+2024-09-03 11:09:20,143 globgm.virtualOS DEBUG The date 2019-1-1 00:00:00 is available. The 'exact' option is used while selecting netcdf time.
+2024-09-03 11:09:20,143 globgm.virtualOS DEBUG Using the date index 0
+2024-09-03 11:09:20,143 globgm.virtualOS DEBUG Using the datetime 2019-01-01 00:00:00
+2024-09-03 11:09:24,760 globgm.groundwater_MODFLOW INFO Estimating or re-estimating surface water bed and conductance due to new lakes/reservoirs.
+2024-09-03 11:09:24,760 globgm.groundwater_MODFLOW INFO (Re-)Estimating surface water bed elevation.
+2024-09-03 11:09:24,872 globgm.groundwater_MODFLOW INFO (Re-)Estimating surface water bed conductance.
+2024-09-03 11:09:24,961 globgm.groundwater_MODFLOW INFO Estimating surface water elevation.
+2024-09-03 11:09:24,961 globgm.groundwater_MODFLOW INFO River water levels based on PCR-GLOBWB discharge output (converted to water levels using Manning's equation)
+2024-09-03 11:09:25,188 globgm.groundwater_MODFLOW INFO Set the RIVER package.
+2024-09-03 11:09:25,681 globgm.groundwater_MODFLOW INFO Set the drain package (for the release of over bank storage).
+2024-09-03 11:09:25,758 globgm.virtualOS DEBUG read file/value: /scratch-shared/bvjaarsv/_writeModelTest/forcing_input/estimateSatAreaFrac_time_avg.map
+2024-09-03 11:09:25,769 globgm.virtualOS WARNING Re-try to read file/value: /scratch-shared/bvjaarsv/_writeModelTest/forcing_input/estimateSatAreaFrac_time_avg.map
+2024-09-03 11:09:25,770 globgm.virtualOS DEBUG read file/value: /scratch-shared/bvjaarsv/_writeModelTest/forcing_input/estimateSatAreaFrac_time_avg.map
+2024-09-03 11:09:25,776 globgm.virtualOS WARNING Re-try to read file/value: /scratch-shared/bvjaarsv/_writeModelTest/forcing_input/estimateSatAreaFrac_time_avg.map
+2024-09-03 11:09:25,777 globgm.virtualOS DEBUG read file/value: /scratch-shared/bvjaarsv/_writeModelTest/forcing_input/estimateSatAreaFrac_time_avg.map
+2024-09-03 11:09:25,782 globgm.virtualOS WARNING Re-try to read file/value: /scratch-shared/bvjaarsv/_writeModelTest/forcing_input/estimateSatAreaFrac_time_avg.map
+2024-09-03 11:09:25,782 globgm.virtualOS DEBUG read file/value: /scratch-shared/bvjaarsv/_writeModelTest/forcing_input/estimateSatAreaFrac_time_avg.map
+2024-09-03 11:09:25,788 globgm.virtualOS WARNING Re-try to read file/value: /scratch-shared/bvjaarsv/_writeModelTest/forcing_input/estimateSatAreaFrac_time_avg.map
+2024-09-03 11:09:25,788 globgm.virtualOS DEBUG read file/value: /scratch-shared/bvjaarsv/_writeModelTest/forcing_input/estimateSatAreaFrac_time_avg.map
+2024-09-03 11:09:25,794 globgm.virtualOS WARNING Re-try to read file/value: /scratch-shared/bvjaarsv/_writeModelTest/forcing_input/estimateSatAreaFrac_time_avg.map
+2024-09-03 11:09:25,795 globgm.virtualOS ERROR CANNOT READ file: /scratch-shared/bvjaarsv/_writeModelTest/forcing_input/estimateSatAreaFrac_time_avg.map
+2024-09-03 11:09:25,795 globgm.virtualOS DEBUG read file/value: /scratch-shared/bvjaarsv/_writeModelTest/forcing_input/estimateSatAreaFrac_time_avg.map
+
+
+ PCR-GLOBWB (PCRaster Global Water Balance) Global Hydrological Model                       
+
+ Copyright (C) 2016, Edwin H. Sutanudjaja, Rens van Beek, Niko Wanders, Yoshihide Wada,     
+ Joyce H. C. Bosmans, Niels Drost, Ruud J. van der Ent, Inge E. M. de Graaf, Jannis M. Hoch,
+ Kor de Jong, Derek Karssenberg, Patricia Lopez Lopez, Stefanie Pessenteiner, Oliver Schmitz,
+ Menno W. Straatsma, Ekkamol Vannametee, Dominik Wisser, and Marc F. P. Bierkens            
+ Faculty of Geosciences, Utrecht University, Utrecht, The Netherlands                       
+
+ This program comes with ABSOLUTELY NO WARRANTY                                             
+ This is free software, and you are welcome to redistribute it under certain conditions     
+ See the LICENSE file for more details                                                      
+
+
+Traceback (most recent call last):
+  File "/gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/model_tools_src/python/pcr-globwb/deterministic_runner_for_monthly_offline_globgm.py", line 167, in <module>
+    sys.exit(main())
+  File "/gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/model_tools_src/python/pcr-globwb/deterministic_runner_for_monthly_offline_globgm.py", line 162, in main
+    dynamic_framework.run()
+  File "/home/bvjaarsv/miniconda3/envs/globgm/lib/python3.10/site-packages/pcraster/framework/dynamicFramework.py", line 63, in run
+    self._runInitial()
+  File "/home/bvjaarsv/miniconda3/envs/globgm/lib/python3.10/site-packages/pcraster/framework/frameworkBase.py", line 354, in _runInitial
+    self._userModel().initial()
+  File "/gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/model_tools_src/python/pcr-globwb/deterministic_runner_for_monthly_offline_globgm.py", line 71, in initial
+    self.globgm.get_initial_heads()
+  File "/gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/model_tools_src/python/pcr-globwb/globgm/modflow.py", line 190, in get_initial_heads
+    self.modflow.get_initial_heads()
+  File "/gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/model_tools_src/python/pcr-globwb/globgm/groundwater_MODFLOW.py", line 1244, in get_initial_heads
+    self.modflow_simulation("steady-state", groundwaterHead, None, 1, 1)
+  File "/gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/model_tools_src/python/pcr-globwb/globgm/groundwater_MODFLOW.py", line 1964, in modflow_simulation
+    self.set_drain_and_river_package(discharge, channelStorage, currTimeStep, simulation_type)
+  File "/gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/model_tools_src/python/pcr-globwb/globgm/groundwater_MODFLOW.py", line 2368, in set_drain_and_river_package
+    self.set_drain_package(simulation_type, currTimeStep)                                         
+  File "/gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/model_tools_src/python/pcr-globwb/globgm/groundwater_MODFLOW.py", line 2751, in set_drain_package
+    satAreaFrac = vos.readPCRmapClone(self.iniItems.modflowSteadyStateInputOptions['satAreaFracInputMap'], self.cloneMap, self.tmpDir, self.inputDir)
+  File "/gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/model_tools_src/python/pcr-globwb/globgm/virtualOS.py", line 1679, in readPCRmapClone
+    return singleTryReadPCRmapClone(v, cloneMapFileName, tmpDir, absolutePath, isLddMap, cover, isNomMap)
+  File "/gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/model_tools_src/python/pcr-globwb/globgm/virtualOS.py", line 1724, in singleTryReadPCRmapClone
+    sameClone = isSameClone(v,cloneMapFileName)
+  File "/gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/model_tools_src/python/pcr-globwb/globgm/virtualOS.py", line 1805, in isSameClone
+    attributeInput = getMapAttributesALL(inputMapFileName)
+  File "/gpfs/work2/0/einf4705/workflow/GLOBGM/run_globgm/model_tools_src/python/pcr-globwb/globgm/virtualOS.py", line 2029, in getMapAttributesALL
+    cellsize = float(cOut.split()[7])
+IndexError: list index out of range
+
+
+JOB STATISTICS
+==============
+Job ID: 7710284
+Cluster: snellius
+User/Group: bvjaarsv/bvjaarsv
+State: COMPLETED (exit code 0)
+Nodes: 1
+Cores per node: 192
+CPU Utilized: 00:01:23
+CPU Efficiency: 0.34% of 06:46:24 core-walltime
+Job Wall-clock time: 00:02:07
+Memory Utilized: 1.36 GB
+Memory Efficiency: 0.41% of 336.00 GB

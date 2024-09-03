@@ -4,20 +4,21 @@
 #SBATCH --partition=genoa
 #SBATCH --exclusive
 #SBATCH --constraint=scratch-node
+#SBATCH -o /projects/0/einf4705/workflow/GLOBGM/run_globgm/model_job_scripts/2_write_model_input/ss/_writeModels_ssTEST.out
 
 source ${HOME}/.bashrc
 mamba activate globgm
 
 #Write tiles input
-modelRoot=$1
+modelRoot=/projects/0/einf4705/workflow/output/gfdl-esm4/ss
 simulation=$(basename $(dirname $modelRoot))
 #TODO this too static
 cmip6InputFolder=/scratch-shared/bvjaarsv/cmip6_input/$simulation/historical/natural
 pcrglobInputFolder=$(realpath ../_data/globgm_input)
-forcingDir=$TMPDIR/forcing_input
+forcingDir=/scratch-shared/bvjaarsv/_writeModelTest/forcing_input
 mkdir -p $forcingDir
 model_input=$(realpath $modelRoot/model_input/1_write_tiled_parameter_data)
-OUT_DIR=$TMPDIR/input_map/steady-state
+OUT_DIR=/scratch-shared/bvjaarsv/_writeModelTest/input_map/steady-state
 IN_DIR=$(realpath ../_data/globgm_input)
 pcrlobwbDir=$(realpath ../model_tools_src/python/pcr-globwb)
 
@@ -85,50 +86,51 @@ process_totalRunoff_to_Discharge() {
     rm -r $tempdir
 }
 
-process_gwRecharge & process_totalRunoff_to_Discharge
+# process_gwRecharge & process_totalRunoff_to_Discharge
 wait
-
-#Step 2 Write .map tiles
+# #Step 2 Write .map tiles
 cd $pcrlobwbDir
+cp /projects/0/einf4705/workflow/GLOBGM/run_globgm/model_input/1_write_tiled_parameter_data/steady-state_config.ini $model_input/steady-state_config.ini
 counter=0
-for ((i=1; i<=163; i+=1)); do
-    num=$(printf "%03d" $((10#$i)))
-    python deterministic_runner_for_monthly_offline_globgm.py $model_input/steady-state_config.ini debug steady-state-only tile_${num}-163 $IN_DIR $OUT_DIR $forcingDir &
-    counter=$((counter+1))
-    if [ $counter -eq 27 ]; then
-        wait
-        counter=0
-    fi
-done
-wait
+# for ((i=1; i<=163; i+=1)); do
+num=001
+python deterministic_runner_for_monthly_offline_globgm.py $model_input/steady-state_config.ini debug steady-state-only tile_${num}-163 $IN_DIR $OUT_DIR $forcingDir &
+    # break
+    # counter=$((counter+1))
+    # if [ $counter -eq 27 ]; then
+    #     wait
+    #     counter=0
+    # fi
+# done
+# wait
 
-# # Copy for post-processing
-for ((i=1; i<=163; i+=1));do
-    tile=$(printf "%03d" $i)
-    mkdir -p $modelRoot/input_map/steady-state/tile_${tile}-163/steady-state_only/maps && cp "${OUT_DIR}/tile_${tile}-163/steady-state_only/maps/top_uppermost_layer.map" "$modelRoot/input_map/steady-state/tile_${tile}-163/steady-state_only/maps" &
-done
-wait
+# # # Copy for post-processing
+# for ((i=1; i<=163; i+=1));do
+#     tile=$(printf "%03d" $i)
+#     mkdir -p $modelRoot/input_map/steady-state/tile_${tile}-163/steady-state_only/maps && cp "${OUT_DIR}/tile_${tile}-163/steady-state_only/maps/top_uppermost_layer.map" "$modelRoot/input_map/steady-state/tile_${tile}-163/steady-state_only/maps" &
+# done
+# wait
 
-mkdir -p $moddir
-cp ${inpdir}/${inpmod} ${moddir}/${inpmod}
-cp ${inpdir}/${inpexe} ${moddir}/${inpexe}
+# mkdir -p $moddir
+# cp ${inpdir}/${inpmod} ${moddir}/${inpmod}
+# cp ${inpdir}/${inpexe} ${moddir}/${inpexe}
 
-#REPLACE NECESSARY STRINGS
-sed -i "s|{yoda_input}|${yodaInput}|g" ${moddir}/${inpmod}
-sed -i "s|{globgm_dir}|${globgmDir}|g" ${moddir}/${inpmod}
-wait
+# #REPLACE NECESSARY STRINGS
+# sed -i "s|{yoda_input}|${yodaInput}|g" ${moddir}/${inpmod}
+# sed -i "s|{globgm_dir}|${globgmDir}|g" ${moddir}/${inpmod}
+# wait
 
-cd ${moddir}
+# cd ${moddir}
 
-for ((i=1; i<=384; i+=12)); do
-    ii=$((i + 11))
-    if [ $ii -gt 384 ]; then
-        ii=384
-    fi
-    ${exe} ${inpexe} $i $ii &
-done
-wait
+# for ((i=1; i<=384; i+=12)); do
+#     ii=$((i + 11))
+#     if [ $ii -gt 384 ]; then
+#         ii=384
+#     fi
+#     ${exe} ${inpexe} $i $ii &
+# done
+# wait
 
-cd $moddir/glob_ss/log
-num_files=$(ls | wc -l)
-[ $num_files -eq 384 ] || { echo "Some models are missing"; exit 1; }
+# cd $moddir/glob_ss/log
+# num_files=$(ls | wc -l)
+# [ $num_files -eq 384 ] || { echo "Some models are missing"; exit 1; }

@@ -25,6 +25,8 @@
 import os
 import sys
 import datetime
+import calendar
+from dateutil.relativedelta import relativedelta
 import glob
 import shutil
 
@@ -48,7 +50,7 @@ class DeterministicRunner(DynamicModel):
         DynamicModel.__init__(self)
 
         # model time object
-        self.modelTime = modelTime        
+        self.modelTime = modelTime      
         
         # make the configuration available for the other method/function
         self.configuration = configuration
@@ -103,24 +105,40 @@ def main():
 
     if len(sys.argv) > 4: #JV
         tile = sys.argv[4]
-        print('Writing ini-file for tile %s'%tile)
-        
-        if len(sys.argv) > 5:
-            new_folder_for_ini_file = str(sys.argv[5]) 
-            if os.path.exists(new_folder_for_ini_file) == False:
-                try:
-                    os.makedirs(new_folder_for_ini_file)
-                except:
-                    pass
+        if steady_state_only == True:
+            inDir = sys.argv[5]
+            outDir = sys.argv[6]
+            forcingDir = sys.argv[7]
+            iniFileName_new = os.path.join(os.path.dirname(iniFileName),'%s.ini'%tile)
+            f = open(iniFileName,'r'); s = f.read(); f.close()
+            iniFileName = iniFileName_new
+            s = s.replace('$tile$',tile)
+            s = s.replace('IN_DIR',inDir)
+            s = s.replace('OUT_DIR',outDir)
+            s = s.replace('FORCING_DIR',forcingDir)
+            f = open(iniFileName,'w'); f.write(s); f.close()
         else:
-            new_folder_for_ini_file = os.path.dirname(iniFileName)
+            inDir = sys.argv[5]
+            outDir = sys.argv[6]
+            forcingDir = sys.argv[7]
+            nMonths = sys.argv[9]
+            startDate = datetime.datetime.strptime(sys.argv[8], "%Y%m%d")
+            preliminary_endDate = startDate + relativedelta(months=(int(nMonths)-1))
+            _, last_day = calendar.monthrange(preliminary_endDate.year, preliminary_endDate.month)
+            endDate = datetime.datetime(preliminary_endDate.year, preliminary_endDate.month, last_day)
+            startDate = startDate.strftime("%Y-%m-%d")
+            endDate = endDate.strftime("%Y-%m-%d")
         
-        iniFileName_new = os.path.join(new_folder_for_ini_file, '%s.ini' %tile)
-        f = open(iniFileName,'r'); s = f.read(); f.close()
-        iniFileName = iniFileName_new
-        s = s.replace('$tile$',tile)
-        f = open(iniFileName,'w'); f.write(s); f.close()
-
+            iniFileName_new = os.path.join(os.path.dirname(iniFileName),'%s.ini'%tile)
+            f = open(iniFileName,'r'); s = f.read(); f.close()
+            iniFileName = iniFileName_new
+            s = s.replace('$tile$',tile)
+            s = s.replace('IN_DIR',inDir)
+            s = s.replace('OUT_DIR',outDir)
+            s = s.replace('FORCING_DIR',forcingDir)
+            s = s.replace('START_DATE',startDate)
+            s = s.replace('END_DATE',endDate)
+            f = open(iniFileName,'w'); f.write(s); f.close()
     # object to handle configuration/ini file
     configuration = globgm.Configuration(iniFileName = iniFileName, \
                                          debug_mode = debug_mode, \

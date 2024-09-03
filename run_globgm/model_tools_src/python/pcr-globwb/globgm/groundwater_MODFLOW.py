@@ -53,17 +53,17 @@ class GroundwaterModflow(object):
 
     def getState(self):
         result = {}
-        
+
         # groundwater head (unit: m) for all layers
         for i in range(1, self.number_of_layers+1):
             var_name = 'groundwaterHeadLayer'+str(i)
             result[var_name] = vars(self)[var_name]
-        
+
         return result
 
     def getGroundwaterDepth(self):
         result = {}
-        
+
         # groundwater head (unit: m) for all layers
         for i in range(1, self.number_of_layers+1):
             var_name = 'groundwaterDepthLayer'+str(i)
@@ -73,18 +73,19 @@ class GroundwaterModflow(object):
         return result
 
     def getVariableValuesForPCRGLOBWB(self):
-        
+
         result = {}
-        
+        return result #JV
+
         result['relativeGroundwaterHead'] = pcr.ifthen(self.landmask, self.relativeGroundwaterHead) 
         result['baseflow']                = pcr.ifthen(self.landmask, self.baseflow)
         result['storGroundwater']         = pcr.ifthen(self.landmask, self.storGroundwater)
-        
+
         return result
 
     def __init__(self, iniItems, landmask, groundwater_pcrglobwb = None):
         object.__init__(self)
-        
+
         # configuration from the ini file
         self.iniItems = iniItems
 
@@ -92,10 +93,6 @@ class GroundwaterModflow(object):
         self.cloneMap = self.iniItems.cloneMap
         self.tmpDir   = self.iniItems.tmpDir
         self.inputDir = self.iniItems.globalOptions['inputDir']
-        
-        print(self.inputDir) 
-        
-        #~ bla
 
         # using varying DELR and DELC in order to correct horizontal anisotrophy of lat/lon cells (experimental)
         self.using_varying_DELR_DELC = False
@@ -106,7 +103,7 @@ class GroundwaterModflow(object):
              self.using_varying_DELR_DELC = True
              self.estimate_of_cell_horizontal_size_in_meter = vos.readPCRmapClone(iniItems.modflowParameterOptions['estimate_of_cell_horizontal_size_in_meter'], self.cloneMap, self.tmpDir, self.inputDir)
              self.estimate_of_cell_vertical_size_in_meter   = vos.readPCRmapClone(iniItems.modflowParameterOptions['estimate_of_cell_vertical_size_in_meter'],   self.cloneMap, self.tmpDir, self.inputDir)
-        
+
         # using constant and equal DELR and DELC in meter
         self.using_constant_equal_DELR_and_DELC_in_meter = False
         if "using_constant_equal_DELR_and_DELC_in_meter" in iniItems.modflowParameterOptions.keys() and \
@@ -130,7 +127,6 @@ class GroundwaterModflow(object):
         # go to the temporary directory for the modflow calculation (so that all calculation will be saved in that folder)  
         os.chdir(self.tmp_modflow_dir)
         # In the future, this is not necessary anymore, given the new option provided by Oliver.  
-    
 
         # option for the daily modflow (and daily coupling between pcrglobwb and modflow)
         if groundwater_pcrglobwb is None:
@@ -170,12 +166,11 @@ class GroundwaterModflow(object):
                                                                     True, 
                                                                     None,
                                                                     self.inputDir)
-            else:                                                   
+            else:
                 # read from pcraster file, if topographyNC == None
                 vars(self)[var] = vos.readPCRmapClone(self.iniItems.modflowParameterOptions[var],\
                                                       self.cloneMap, self.tmpDir, self.inputDir)
             vars(self)[var] = pcr.cover(vars(self)[var], 0.0)
-
 
         # channel properties: read several variables from the netcdf file
         if 'channelNC' in self.iniItems.modflowParameterOptions.keys():
@@ -184,7 +179,7 @@ class GroundwaterModflow(object):
                 if self.iniItems.modflowParameterOptions['channelNC'] != "None":
                     vars(self)[var] = vos.netcdf2PCRobjCloneWithoutTime(self.iniItems.modflowParameterOptions['channelNC'], \
                                                                     var, self.cloneMap, True, None, self.inputDir)
-                else:                                                   
+                else:
                     # read from pcraster file, if channelNC == None
                     if var == 'dem_riverbed' and self.iniItems.modflowParameterOptions["dem_riverbed"] == "EstimateFromFloodPlainElevationAndDepth":
                         self.dem_riverbed = None 
@@ -199,7 +194,6 @@ class GroundwaterModflow(object):
             logger.warning(msg)
             pass
 
-
         # for multiple drains, reading DEM percentiles 
         self.multiple_drains = False
         if "multiple_drains" in self.iniItems.modflowParameterOptions.keys() and\
@@ -211,8 +205,6 @@ class GroundwaterModflow(object):
             self.varying_drain_conductances = True
             if "varying_drain_conductances" in self.iniItems.modflowParameterOptions.keys() and\
                self.iniItems.modflowParameterOptions['varying_drain_conductances'] == "False": self.varying_drain_conductances = False
-           
-
         if self.multiple_drains:
 
             logger.info("Using multiple drains.")
@@ -257,7 +249,6 @@ class GroundwaterModflow(object):
             self.areaFractions = areaFractions
             self.nrZLevels     = nrZLevels
 
-
         minimumChannelWidth = 0.0
         if 'minimumChannelWidth' in self.iniItems.modflowParameterOptions.keys():
             minimumChannelWidth = float(self.iniItems.modflowParameterOptions['minimumChannelWidth'])
@@ -266,7 +257,7 @@ class GroundwaterModflow(object):
             logger.info(msg)
             minimumChannelWidth = float(self.iniItems.routingOptions['minimumChannelWidth'])
         self.bankfull_width = pcr.max(minimumChannelWidth, self.bankfull_width)
-        
+
         if 'minimumChannelGradient' in self.iniItems.modflowParameterOptions.keys():
             minimumChannelGradient = float(self.iniItems.modflowParameterOptions['minimumChannelGradient'])
         elif 'routingOptions' in self.iniItems.allSections and 'minimumChannelGradient' in self.iniItems.routingOptions.keys():
@@ -292,12 +283,12 @@ class GroundwaterModflow(object):
         # define river bed elevation if not defined
         if self.dem_riverbed is None: self.dem_riverbed = self.dem_floodplain - self.bankfull_depth
 
-        # cellAreaMap and lddMap 
-        if 'routingOptions' not in self.iniItems.allSections: 
+        # cellAreaMap and lddMap
+        if 'routingOptions' not in self.iniItems.allSections:
             self.iniItems.routingOptions = {}
             self.iniItems.routingOptions['lddMap'] = self.iniItems.modflowParameterOptions['lddMap']
             self.iniItems.routingOptions['cellAreaMap'] = self.iniItems.modflowParameterOptions['cellAreaMap']
-            
+
         # cell area (unit: m2)
         self.cellAreaMap = vos.readPCRmapClone(self.iniItems.routingOptions['cellAreaMap'],
                                                self.cloneMap, self.tmpDir, self.inputDir)
@@ -316,8 +307,7 @@ class GroundwaterModflow(object):
         self.convert_channel_discharge_to_water_level = False
         # This conversion is definitely needed for a run with monthly MODFLOW stress period.
         if self.online_daily_coupling_between_pcrglobwb_and_modflow == False: self.convert_channel_discharge_to_water_level = True
-        
-        
+
         # configuration for lakes and reservoirs
         if 'waterBodyInputNC' not in self.iniItems.modflowParameterOptions.keys():
             msg = 'The "waterBodyInputNC" option is taken from the "routingOptions" of the ini/configuration file.'
@@ -333,8 +323,7 @@ class GroundwaterModflow(object):
         if self.iniItems.modflowParameterOptions['onlyNaturalWaterBodies'] == "True": self.onlyNaturalWaterBodies = True
         #
         # PS: WaterBodies will be initiated within the method "modflow_simulation".
-        
-        
+
         # option to exclude river infiltration
         self.minimumWidthOfRiversWithInfiltration = 0.0
         if 'minimumWidthOfRiversWithInfiltration' in self.iniItems.modflowParameterOptions.keys():
@@ -343,7 +332,7 @@ class GroundwaterModflow(object):
             self.minimumWidthOfRiversWithInfiltration = pcr.cover(
                                                         vos.readPCRmapClone(self.iniItems.modflowParameterOptions['minimumWidthOfRiversWithInfiltration'],
                                                                             self.cloneMap, self.tmpDir, self.inputDir), 0.0)
-                                                                            
+
 
         # TODO: Refactor the configuration file, particularly to merge some double fields defined in the "routingOptions" and "modflowParameterOptions"
         # - One of the ideas is to keep all channel properties in the routingOptions (so that ini files for offline modflow runs will still need them). 
@@ -356,10 +345,9 @@ class GroundwaterModflow(object):
         self.mountainous_extent  = pcr.cover(\
                                    pcr.ifthen((self.dem_average - self.dem_floodplain) > mountainous_thresh, pcr.boolean(1.0)), pcr.boolean(0.0))
 
-
-        # cell dimensions: length, width, diagonal, etc. (in various units) 
+        # cell dimensions: length, width, diagonal, etc. (in various units)
         self.get_cell_dimensions()
-        
+
         # estimate channel length (m) - needed for calculating river bed conductance
         self.channelLength = self.cell_diagonal
 
@@ -376,14 +364,14 @@ class GroundwaterModflow(object):
         self.totalGroundwaterThickness = groundwater_pcrglobwb.totalGroundwaterThickness
         self.productive_aquifer        = groundwater_pcrglobwb.productive_aquifer
         self.riverBedConductivity      = groundwater_pcrglobwb.riverBedConductivity
-        self.riverBedThickness         = groundwater_pcrglobwb.riverBedThickness   
+        self.riverBedThickness         = groundwater_pcrglobwb.riverBedThickness
         self.bed_resistance            = groundwater_pcrglobwb.bed_resistance
 
         extrapolateParameters = True
         if "doNotExtrapolateParameters" in iniItems.modflowParameterOptions.keys() and \
                                            iniItems.modflowParameterOptions["doNotExtrapolateParameters"] == "True":  
             extrapolateParameters = False
-        
+
         if extrapolateParameters:
 
             # Perform extrapolation for the following variables:
@@ -396,9 +384,9 @@ class GroundwaterModflow(object):
                 vars(self)[var] = pcr.cover(pcr.cover(vars(self)[var], pcr.windowaverage(vars(self)[var], 0.5)), vars(groundwater_pcrglobwb)[var])
                 #~ pcr.aguila(vars(self)[var])
                 #~ raw_input("Press Enter to continue...")
-        
-        #~ # remove isolated cells - a productive aquifer cell must be surrounded by at least a minimum number of cells - OPTIONAL (NOT RECOMMENDED) # TODO: Find a better method that this one. 
-        #~ if "minimizeIsolatedAquiferCellsUnderGroundwaterAbstraction" in iniItems.modflowParameterOptions.keys() and iniItems.modflowParameterOptions['minimizeIsolatedAquiferCellsUnderGroundwaterAbstraction'] == "True": 
+
+        #~ # remove isolated cells - a productive aquifer cell must be surrounded by at least a minimum number of cells - OPTIONAL (NOT RECOMMENDED) # TODO: Find a better method that this one.
+        #~ if "minimizeIsolatedAquiferCellsUnderGroundwaterAbstraction" in iniItems.modflowParameterOptions.keys() and iniItems.modflowParameterOptions['minimizeIsolatedAquiferCellsUnderGroundwaterAbstraction'] == "True":
             #~ pcr.aguila(pcr.ifthen(self.landmask, self.productive_aquifer))
             #~ raw_input("Press Enter to continue...")
             #~ minimum_surrounding_cells = 3.0
@@ -416,7 +404,7 @@ class GroundwaterModflow(object):
             self.confiningLayerThickness = pcr.cover(\
                                            vos.readPCRmapClone(self.iniItems.modflowParameterOptions['confiningLayerThickness'],\
                                                                self.cloneMap, self.tmpDir, self.inputDir), 0.0)
-            
+
             # maximum confining layer vertical conductivity (unit: m/day)
             self.maximumConfiningLayerVerticalConductivity = pcr.cover(\
                                            vos.readPCRmapClone(self.iniItems.modflowParameterOptions['maximumConfiningLayerVerticalConductivity'],\
@@ -426,7 +414,7 @@ class GroundwaterModflow(object):
                                                    vos.readPCRmapClone(self.iniItems.modflowParameterOptions['maximumConfiningLayerResistance'],\
                                                                        self.cloneMap, self.tmpDir, self.inputDir), 0.0)
         ##############################################################################################################################################
-        
+
 
 
         #####################################################################################################################################################
@@ -434,12 +422,12 @@ class GroundwaterModflow(object):
         self.ignoreCapRise = False
         if 'ignoreCapRise' in self.iniItems.modflowParameterOptions.keys() and \
             self.iniItems.modflowParameterOptions['ignoreCapRise'] == "True": self.ignoreCapRise = True
-        if self.ignoreCapRise:    
+        if self.ignoreCapRise:
             msg = "Negative groundwater recharge is ignored (set to zero)."
             logger.info(msg)
         #####################################################################################################################################################
 
-        
+
 
         #####################################################################################################################################################
         # assumption for the thickness (m) of accessible groundwater
@@ -453,7 +441,7 @@ class GroundwaterModflow(object):
             logger.info(msg)
             accesibleDepth = 1000.0
         self.max_accesible_elevation = self.dem_average - accesibleDepth
-        
+
 
         # list of the convergence criteria for HCLOSE (unit: m)
         # - Deltares default's value is 0.001 m                         # check this value with Jarno
@@ -596,8 +584,6 @@ class GroundwaterModflow(object):
             self.using_built_up_area_correction_for_recharge = True
         # NOTE: For online coupling, YOU CANNOT USE THIS.    
 
-
-
     def get_cell_dimensions(self):
 
         cellSizeInArcMin = np.round(pcr.clone().cellSize()*60.) 
@@ -677,8 +663,6 @@ class GroundwaterModflow(object):
             
             print(np.mean(self.listOfAssumedHorizontalSize))
             print(np.mean(self.listOfAssumedVerticalSize))
-            
-
         
     def initiate_modflow(self):
 
@@ -957,7 +941,6 @@ class GroundwaterModflow(object):
         # pcr.report(secondary_2, self.iniItems.mapsDir + "/" + "secondary_storage_coefficient_uppermost_layer.map") #JV
         self.pcr_modflow.setStorage(primary_2, secondary_2, 2)
 
-
     def set_conductivities_for_two_layer_model(self):
 
         msg = "Preparing transmissivity values (TRAN) for the BCF package)."
@@ -1162,11 +1145,8 @@ class GroundwaterModflow(object):
         #~ pcr.aguila(horizontal_conductivity_layer_2)
         #~ pcr.aguila(vertical_conductivity_layer_2)
         #~ raw_input("Press Enter to continue...")
-        
         pcr.report(horizontal_conductivity_layer_2, self.iniItems.mapsDir + "/" + "horizontal_conductivity_uppermost_layer.map")
         pcr.report(vertical_conductivity_layer_2, self.iniItems.mapsDir + "/" + "vertical_conductivity_uppermost_layer.map")
-
-        # for the lower layer
         if "aquiferLayerSecondaryStorageCoefficient" in self.iniItems.modflowParameterOptions.keys() and\
             self.iniItems.modflowParameterOptions['aquiferLayerSecondaryStorageCoefficient'] not in ["None", "False"]:
             msg = "Using the layer type (LAYCON) 2 for the aquifer layer."
@@ -1182,18 +1162,14 @@ class GroundwaterModflow(object):
             #~ self.pcr_modflow.setConductivity(00, horizontal_conductivity_layer_1, \
                                                  #~ vertical_conductivity_layer_1, 1)              
         else:
-
             pcr.report(horizontal_conductivity_layer_1, self.iniItems.mapsDir + "/" + "horizontal_conductivity_lowermost_layer.map") #JV
             pcr.report(vertical_conductivity_layer_1, self.iniItems.mapsDir + "/" + "vertical_conductivity_lowermost_layer.map") #JV
-
             # ~ self.pcr_modflow.setConductivity(00, horizontal_conductivity_layer_1, \
                                                  # ~ vertical_conductivity_layer_1, 1)              
-
             # QUICK FIX to avoid missing values
             self.pcr_modflow.setConductivity(00, pcr.cover(horizontal_conductivity_layer_1, 10.0), \
                                                  pcr.cover(vertical_conductivity_layer_1  , 10.0), 1)
             # TODO: Trace where the missing values do come from? They occur if landmask is activated.                                                    
-
             #~ self.pcr_modflow.setConductivity(20, horizontal_conductivity_layer_1, \
                                                  #~ vertical_conductivity_layer_1, 1)              
 
@@ -1204,12 +1180,8 @@ class GroundwaterModflow(object):
         self.pcr_modflow.setConductivity(00, pcr.cover(horizontal_conductivity_layer_2, 10.0), \
                                              pcr.cover(vertical_conductivity_layer_2  , 10.0), 2)
         # TODO: Trace where the missing values do come from? They occur if landmask is activated.                                                    
-
-
         #~ self.pcr_modflow.setConductivity(2, horizontal_conductivity_layer_2, \
                                              #~ vertical_conductivity_layer_2, 2)              
-
-
 
     def set_bcf_for_two_layer_model(self):
 
@@ -1218,9 +1190,8 @@ class GroundwaterModflow(object):
 
         # specification for storage coefficient (BCF package)
         self.set_storages_for_two_layer_model()
-        
-        # TODO: Please check whether the lat/lon correction is necessary for the MODFLOW6. 
 
+        # TODO: Please check whether the lat/lon correction is necessary for the MODFLOW6. 
 
     def get_initial_heads(self, initialHeadsFromSpinUp = None):
 
@@ -1369,7 +1340,6 @@ class GroundwaterModflow(object):
                     file_name = extra_spin_up_directory + "/gwhead" + str(i) + "m." + extension
                     pcr.report(pcr.ifthen(self.landmask, groundwaterHead[var_name]), file_name)
 
-
     def transient_simulation_with_constant_input_with_yearly_stress_period(self):
 
         time_step_length            = 365                     # unit: days
@@ -1511,7 +1481,6 @@ class GroundwaterModflow(object):
         
         return bottom_of_bank_storage
 
-
     def estimate_bottom_of_bank_storage(self):
 
         # 20 March 2018, Edwin simplifies the concept as follows:
@@ -1545,7 +1514,6 @@ class GroundwaterModflow(object):
         # TODO: We may want to improve this concept, see e.g. the paper sent by John Selker during the review of Sutanudjaja et al. (2014). 
         
         return bottom_of_bank_storage
-
 
     def initiate_old_style_reporting(self,iniItems):
 
@@ -1628,7 +1596,6 @@ class GroundwaterModflow(object):
                                                 str(var)+"_annuaEnd.nc",\
                                                     var,"undefined")
 
-
     def update(self, currTimeStep, groundwater_recharge = None, \
                                    groundwater_abstraction = None, \
                                    surface_water_discharge = None, \
@@ -1705,7 +1672,6 @@ class GroundwaterModflow(object):
             # for debugging
             #~ pcr.aguila(self.transmissivity_layer_1)
             #~ raw_input("Press Enter to continue...")
-
 
     def save_some_pcraster_static_maps(self):
 
@@ -1929,16 +1895,6 @@ class GroundwaterModflow(object):
             if 'ignoreCapRiseSteadyState' in self.iniItems.modflowSteadyStateInputOptions.keys() and\
                 self.iniItems.modflowSteadyStateInputOptions['ignoreCapRiseSteadyState'] == "False": self.ignoreCapRise = False
         #####################################################################################################################################################
-
-
-        # ~ # THE FOLLOWING IS NOT NEEDED AND MAY CREATE BUGS FOR OFFLINE TRANSIENT MODFLOW SIMULATION # TODO: REMOVE THIS
-        # ~ #####################################################################################################################################################
-        # ~ # for a steady-state simulation, making sure that the recharge and abstraction values should be at daily resolution (m per day) 
-        # ~ if (simulation_type == "steady-state" or\
-            # ~ simulation_type == "steady-state-extra"):
-            # ~ self.valuesRechargeAndAbstractionInMonthlyTotal = False
-        # ~ #####################################################################################################################################################
-
 
         # number of days within a stress period
         self.PERLEN = PERLEN
@@ -2186,7 +2142,6 @@ class GroundwaterModflow(object):
         
         # calculate some variables that will be accessed from PCR-GLOBWB (for online coupling purpose)
         if using_modflow_6 == False: self.calculate_values_for_pcrglobwb()
-
         
     def calculate_values_for_pcrglobwb(self):
 
@@ -2231,8 +2186,7 @@ class GroundwaterModflow(object):
         # - TODO: Make this flexible for a model that has more than two layers. 
         # - storGroundwater (unit: m) that can be accessed for abstraction
         self.storGroundwater = accesibleGroundwaterThickness                                                                                                
-
-                
+       
     def get_all_modflow_results(self, simulation_type):
         
         logger.info("Get all modflow results.")
@@ -2289,7 +2243,6 @@ class GroundwaterModflow(object):
         #~ pcr.report(self.groundwaterHeadLayer1 , "gw_head_layer_1.map")
         #~ pcr.report(self.groundwaterDepthLayer1, "gw_depth_layer_1.map")
 
-
     def old_check_modflow_convergence(self, file_name = "pcrmf.lst"):
         
         # open and read the lst file
@@ -2312,7 +2265,6 @@ class GroundwaterModflow(object):
         
         return modflow_converged    
 
-
     def estimate_river_water_elevations_based_on_pcrglobwb_river_water_levels(self, channelStorage, dynamicFracWat, bankfullDepth, floodDepth):
 
         # water levels in channels  
@@ -2327,8 +2279,6 @@ class GroundwaterModflow(object):
         river_water_elevation = pcr.min(river_water_elevation, self.dem_floodplain) 
         
         return river_water_elevation
-
-
 
     def estimate_surface_water_bed_properties(self):
 
@@ -2395,7 +2345,6 @@ class GroundwaterModflow(object):
         self.bed_conductance = pcr.cover(bed_conductance, 0.0)
         ############################################################################################################################################
 
-
     def set_drain_and_river_package(self, discharge, channel_storage, currTimeStep, simulation_type, stress_period = "monthly", \
                                                                                                      estimate_river_water_level_from_discharge = True, \
                                                                                                      dynamicFracWat = None, \
@@ -2417,8 +2366,6 @@ class GroundwaterModflow(object):
         
         # set drain package
         self.set_drain_package(simulation_type, currTimeStep)                                         
-
-
 
     def set_river_package(self, discharge, channel_storage, currTimeStep, simulation_type, \
                                                                           exclude_river_infiltration = True, \
@@ -2640,8 +2587,6 @@ class GroundwaterModflow(object):
         #~ bed_conductance_lower_layer = pcr.ifthenelse(surface_water_bed_elevation_used < self.bottom_layer_2, bed_conductance_used, 0.0)
         #~ self.pcr_modflow.setRiver(surface_water_elevation, surface_water_bed_elevation_used, bed_conductance_used, 1)
 
-
-
     # ~ def set_recharge_package(self, \
                              # ~ gwRecharge, gwAbstraction = 0.0, 
                              # ~ gwAbstractionReturnFlow = 0.0):            # Note: We ignored the latter as MODFLOW should capture this part as well.
@@ -2651,7 +2596,6 @@ class GroundwaterModflow(object):
     def set_recharge_package(self, gwRecharge, currTimeStep, \
                              gwAbstraction = 0.0, \
                              gwAbstractionReturnFlow = 0.0):
-
 
         logger.info("Set the recharge package.")
 
@@ -2803,13 +2747,13 @@ class GroundwaterModflow(object):
             if simulation_type == "transient":
                 satAreaFrac = vos.netcdf2PCRobjClone(vos.getFullPath(self.iniItems.modflowTransientInputOptions['satAreaFracInputNC'], self.inputDir),
                                                                      "satAreaFrac", str(currTimeStep.fulldate), None, self.cloneMap)
-            else:                                                         
-                satAreaFrac = vos.readPCRmapClone(self.iniItems.modflowSteadyStateInputOptions['satAreaFracInputMap'], self.cloneMap, self.tmpDir, self.inputDir)
-            
+            else: 
+                satAreaFrac = vos.readPCRmapClone(vos.getFullPath(self.iniItems.modflowSteadyStateInputOptions['satAreaFracInputMap'], self.inputDir), self.cloneMap, self.tmpDir, self.inputDir)
+                print(vos.getFullPath(self.iniItems.modflowSteadyStateInputOptions['satAreaFracInputMap'], self.inputDir))
+                import sys; sys.exit()
             
             # - reading relative_elevation_above_dem_minimum
-            relZFileName = vos.getFullPath(self.iniItems.modflowTransientInputOptions['relativeElevationFiles'],\
-                                           self.iniItems.globalOptions['inputDir'])
+            relZFileName = vos.getFullPath(self.iniItems.modflowTransientInputOptions['relativeElevationFiles'], self.iniItems.globalOptions['inputDir'])
 		    
             # a dictionary contains areaFractions (dimensionless): fractions of flooded/innundated areas  
             areaFractions = list(map(float, str(self.iniItems.modflowTransientInputOptions['relativeElevationLevels']).split(',')))
@@ -3038,11 +2982,11 @@ class GroundwaterModflow(object):
             pcr.report(drain_elevation_uppermost_layer, self.iniItems.mapsDir + "/" + "drain_elevation_uppermost_layer" + self.getYearMonth(currTimeStep) + ".map") #JV
             self.pcr_modflow.setDrain(drain_elevation_uppermost_layer, drain_conductance, 2)
 
+
             # for reporting
             self.drain_conductance = drain_conductance
             self.drain_elevation_lowermost_layer = drain_elevation_lowermost_layer
             self.drain_elevation_uppermost_layer = drain_elevation_uppermost_layer
-
 
     def dummy_drain_package(self,relative_water_height):
 
@@ -3078,8 +3022,6 @@ class GroundwaterModflow(object):
             os.system(cmd)
             
             stop_test
-
-
 
     def return_innundation_fraction(self,relative_water_height):
 
@@ -3232,4 +3174,3 @@ class GroundwaterModflow(object):
                                          var,\
                           pcr2numpy(self.__getattribute__(var),vos.MV),\
                                          timeStamp,currTimeStep.annuaIdx-1)
-
