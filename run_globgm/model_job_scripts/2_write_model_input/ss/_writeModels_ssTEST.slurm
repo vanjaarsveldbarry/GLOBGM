@@ -87,22 +87,17 @@ process_totalRunoff_to_Discharge() {
 }
 
 # process_gwRecharge & process_totalRunoff_to_Discharge
-wait
-# #Step 2 Write .map tiles
+# wait
+
+# # #Step 2 Write .map tiles
 cd $pcrlobwbDir
 cp /projects/0/einf4705/workflow/GLOBGM/run_globgm/model_input/1_write_tiled_parameter_data/steady-state_config.ini $model_input/steady-state_config.ini
-counter=0
-# for ((i=1; i<=163; i+=1)); do
+
+#EDWIN MODIFY OUTPUT DIRECTORY
+OUT_DIR=/scratch-shared/bvjaarsv/_writeModelTest/input_map/steady-state
 num=001
 python deterministic_runner_for_monthly_offline_globgm.py $model_input/steady-state_config.ini debug steady-state-only tile_${num}-163 $IN_DIR $OUT_DIR $forcingDir &
-    # break
-    # counter=$((counter+1))
-    # if [ $counter -eq 27 ]; then
-    #     wait
-    #     counter=0
-    # fi
-# done
-# wait
+wait
 
 # # # Copy for post-processing
 # for ((i=1; i<=163; i+=1));do
