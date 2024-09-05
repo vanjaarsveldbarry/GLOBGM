@@ -47,7 +47,7 @@ for simulation in "${simulations[@]}"; do
     # Step 2: 2_write_model_input
     # sbatch -o $slurmDir_ss/2_write_model_input/_setup_ss.out $model_job_scripts/2_write_model_input/ss/_setup_ss.slurm $ssModelRoot
     sbatch -o $slurmDir_ss/2_write_model_input/_writeModels_ss.out $model_job_scripts/2_write_model_input/ss/_writeModels_ss.slurm $ssModelRoot
-    # sbatch -o $slurmDir_ss/2_write_model_input/_writeModels_ss.out $model_job_scripts/2_write_model_input/ss/_writeModels_ssTEST.slurm $ssModelRoot
+    # bash $model_job_scripts/2_write_model_input/ss/_writeModels_ss.slurm $ssModelRoot
     
     # Step 3: 3_run_model
     # sbatch -o $slurmDir_ss/3_run_model/3_run_globgm_s01.out $model_job_scripts/3_run_model/steady-state/mf6_s01_ss.slurm $ssModelRoot $model_job_scripts $slurmDir_ss

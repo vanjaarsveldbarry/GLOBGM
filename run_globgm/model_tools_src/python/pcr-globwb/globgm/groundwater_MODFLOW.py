@@ -2749,8 +2749,6 @@ class GroundwaterModflow(object):
                                                                      "satAreaFrac", str(currTimeStep.fulldate), None, self.cloneMap)
             else: 
                 satAreaFrac = vos.readPCRmapClone(vos.getFullPath(self.iniItems.modflowSteadyStateInputOptions['satAreaFracInputMap'], self.inputDir), self.cloneMap, self.tmpDir, self.inputDir)
-                print(vos.getFullPath(self.iniItems.modflowSteadyStateInputOptions['satAreaFracInputMap'], self.inputDir))
-                import sys; sys.exit()
             
             # - reading relative_elevation_above_dem_minimum
             relZFileName = vos.getFullPath(self.iniItems.modflowTransientInputOptions['relativeElevationFiles'], self.iniItems.globalOptions['inputDir'])
