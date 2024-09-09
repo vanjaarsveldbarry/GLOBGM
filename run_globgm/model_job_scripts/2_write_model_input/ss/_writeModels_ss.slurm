@@ -10,8 +10,8 @@ mamba activate globgm
 
 #Write tiles input
 modelRoot=$1
+outFile=$2
 simulation=$(basename $(dirname $modelRoot))
-#TODO this too static
 cmip6InputFolder=/scratch-shared/bvjaarsv/cmip6_input/$simulation/historical/natural
 pcrglobInputFolder=$(realpath ../_data/globgm_input)
 forcingDir=$TMPDIR/forcing_input
@@ -132,3 +132,6 @@ wait
 cd $moddir/glob_ss/log
 num_files=$(ls | wc -l)
 [ $num_files -eq 384 ] || { echo "Some models are missing"; exit 1; }
+
+wait 
+touch $outFile

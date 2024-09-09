@@ -18,6 +18,7 @@ solution = sys.argv[2]
 saveFolder=sys.argv[3]
 input_files = Path(inputFolder).glob(f'*{solution}*.flt')
 
+
 def process_file(infile):
     savePath=f"{inputFolder}/_temp_{solution}/{solution}/{infile.stem}.zarr"
     if os.path.exists(savePath): shutil.rmtree(savePath)

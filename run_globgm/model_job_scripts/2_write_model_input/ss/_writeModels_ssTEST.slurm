@@ -87,7 +87,7 @@ process_totalRunoff_to_Discharge() {
 }
 
 # process_gwRecharge & process_totalRunoff_to_Discharge
-# wait
+wait
 
 # # #Step 2 Write .map tiles
 cd $pcrlobwbDir

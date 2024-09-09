@@ -11,6 +11,7 @@ mamba activate globgm
 
 modelRoot=$1
 solution=$2
+outFile=$3
 saveDir=$TMPDIR/mf6_post/temp_s0${solution}
 mkdir -p $saveDir $modelRoot/mf6_post
 
@@ -32,3 +33,4 @@ wait
 
 python -u $zarrScripts/createZarr_ss.py $saveDir s0$solution $modelRoot/mf6_post
 wait
+touch $outFile

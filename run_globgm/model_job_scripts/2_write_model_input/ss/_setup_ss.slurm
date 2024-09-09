@@ -1,20 +1,19 @@
 #!/bin/bash -l
 #SBATCH -N 1
-#SBATCH -t 00:45:00
 #SBATCH -J _ssSetup
+#SBATCH -t 00:05:00
 #SBATCH --partition=genoa
 
 source ${HOME}/.bashrc
 mamba activate globgm
 
 modelRoot=$1
-modelScratch=$2
+outFile=$2
 inpdir=$(realpath $modelRoot/model_input/3_partition_and_write_model_input/steady-state)
 exe=$(realpath ../_bin/mf6ggm_181121)
 inpmod=mf6_mod_ss.inp
 inpexe=mf6ggm_ss.inp
 moddir=$modelRoot/mf6_mod
-# globgmDir=$modelScratch
 
 mkdir -p $moddir
 cp ${inpdir}/${inpmod} ${moddir}/${inpmod}
@@ -28,3 +27,6 @@ wait
 
 cd ${moddir}
 ${exe} ${inpexe} 0 
+
+wait 
+touch $outFile
