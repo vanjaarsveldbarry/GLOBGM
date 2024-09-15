@@ -66,7 +66,7 @@ rule write_model_input_setup:
 
 rule write_model_input:
     input:
-        rules.prepare_model_partitioning.output.outFile
+        rules.write_model_input_setup.output.outFile
     output:
         outFile=f"{SLURMDIR_SS}/2_write_model_input/_writeModels_ss_complete"
 
@@ -95,12 +95,16 @@ rule run_models:
         run_script=f"{RUN_GLOBGM_DIR}/model_job_scripts/3_run_model/steady-state/_runall.sh",
         model_job_scripts=f"{RUN_GLOBGM_DIR}/model_job_scripts",
         slurm_log_file=f"{SLURMDIR_SS}",
-        outFile=f"{SLURMDIR_SS}/4_post-processing/_runModels_complete"
+        outFile=f"{SLURMDIR_SS}/4_post-processing/_runModels_complete",
+        errorFile=f"{SLURMDIR_SS}/4_post-processing/_runModels_complete_ERROR"
 
     shell:
         '''
         bash {params.run_script} {MODELROOT_SS} {params.model_job_scripts} {params.slurm_log_file} {params.outFile}
         while [ ! -e {output.outFile1} ] || [ ! -e {output.outFile2} ] || [ ! -e {output.outFile3} ] || [ ! -e {output.outFile4} ]; do
+            if [ -e {params.errorFile} ]; then
+                exit 1
+            fi
             sleep 10
         done
         '''

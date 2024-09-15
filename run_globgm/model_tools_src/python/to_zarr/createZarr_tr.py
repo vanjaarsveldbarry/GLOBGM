@@ -13,6 +13,7 @@ startDate=sys.argv[4]
 endDate=sys.argv[5]
 var=sys.argv[6]
 
+
 _compressor = Blosc(cname='zstd', clevel=5, shuffle=Blosc.BITSHUFFLE)
 _encoding_dict={'dtype': 'float32', '_FillValue': -9999, 'compressor': _compressor}
 _chunks={'time': 1, 'latitude': 20000, 'longitude': 20000}

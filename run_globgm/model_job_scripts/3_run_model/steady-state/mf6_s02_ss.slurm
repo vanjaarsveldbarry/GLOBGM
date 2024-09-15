@@ -5,7 +5,7 @@
 #SBATCH --time=00:30:00
 #SBATCH --cpus-per-task=1
 #SBATCH --gres=cpu:1
-#SBATCH --partition=genoa,rome
+#SBATCH --partition=rome
 #SBATCH --job-name=run_s02
 
 # load modules

@@ -50,3 +50,43 @@ wait
 #     # sbatch -o $slurmDir_ss/3_run_model/3_run_globgm_s03.out $model_job_scripts/3_run_model/steady-state/mf6_s03_ss.slurm $ssModelRoot $model_job_scripts $slurmDir_ss
 #     # sbatch -o $slurmDir_ss/3_run_model/3_run_globgm_s04.out $model_job_scripts/3_run_model/steady-state/mf6_s04_ss.slurm $ssModelRoot $model_job_scripts $slurmDir_ss
 # done
+
+#     start_year=1960
+#     end_year=1974
+#     trModelRoot=$modelRoot/tr_historical
+#     slurmDir_tr=$trModelRoot/slurm_logs
+#     steps=15
+#     nSpin=1
+#     mkdir -p $slurmDir_tr/1_prepare_model_partitioning $slurmDir_tr/2_write_model_input $slurmDir_tr/3_run_model $slurmDir_tr/4_post-processing
+    
+#     # copy globgm input files ino simulation folder
+#     cp -r $(realpath ../model_input) $trModelRoot
+
+#     # Step 1: prepare_model_partitioning
+#     # sbatch -o $slurmDir_tr/1_prepare_model_partitioning/1_prep_model_part.out $model_job_scripts/1_prepare_model_partitioning/01_prep_model_part.slurm $trModelRoot
+
+#     # Step 2: 2_write_model_input (Setup model and write tiles)
+#     # sbatch -o $slurmDir_tr/2_write_model_input/_writeInput/writeInput_ini.out $model_job_scripts/2_write_model_input/tr/_writeInput_ini.slurm $trModelRoot $start_year $end_year
+#     # sbatch -o $slurmDir_tr/2_write_model_input/_writeInput/_writeInput_%a.out --array=1-2 $model_job_scripts/2_write_model_input/tr/_writeInput.slurm $trModelRoot $start_year $end_year
+
+#     _writeModels_tr=$model_job_scripts/2_write_model_input/tr/_writeModels_tr.slurm
+#     for ((year=start_year; year<=end_year; year+=steps)); do
+#         yearStart=$year
+#         yearEnd=$((year+steps-1))
+#         if [ $yearEnd -gt $end_year ]; then
+#             yearEnd=$end_year
+#         fi     
+#         # jobid=$(sbatch -o $slurmDir_tr/2_write_model_input/_setup/_setup${yearEnd}.out $model_job_scripts/2_write_model_input/tr/_setup_tr.slurm $trModelRoot $yearStart $yearEnd $nSpin| awk '{print $4}')
+#         #   wait
+#         #   sbatch -o $slurmDir_tr/2_write_model_input/_writeModels/1_${yearEnd}wMod_%a.out --array=1 $_writeModels_tr $trModelRoot $yearStart $yearEnd 1
+#         #   sbatch -o $slurmDir_tr/2_write_model_input/_writeModels/2_${yearEnd}wMod_%a.out --array=1 $_writeModels_tr $trModelRoot $yearStart $yearEnd 2
+#         #   sbatch -o $slurmDir_tr/2_write_model_input/_writeModels/3_${yearEnd}wMod_%a.out --array=1 $_writeModels_tr $trModelRoot $yearStart $yearEnd 3
+#         #   sbatch -o $slurmDir_tr/2_write_model_input/_writeModels/4_${yearEnd}wMod_%a.out --array=1 $_writeModels_tr $trModelRoot $yearStart $yearEnd 4
+#     done
+
+# #     # # Step 3: 3_run_model
+#     sbatch -o $slurmDir_tr/3_run_model/3_run_globgm_1.out $model_job_scripts/3_run_model/transient/mf6_s01_tr.slurm $trModelRoot $model_job_scripts $slurmDir_tr $start_year $end_year
+#     sbatch -o $slurmDir_tr/3_run_model/3_run_globgm_2.out $model_job_scripts/3_run_model/transient/mf6_s02_tr.slurm $trModelRoot $model_job_scripts $slurmDir_tr $start_year $end_year
+#     sbatch -o $slurmDir_tr/3_run_model/3_run_globgm_3.out $model_job_scripts/3_run_model/transient/mf6_s03_tr.slurm $trModelRoot $model_job_scripts $slurmDir_tr $start_year $end_year
+#     sbatch -o $slurmDir_tr/3_run_model/3_run_globgm_4.out $model_job_scripts/3_run_model/transient/mf6_s04_tr.slurm $trModelRoot $model_job_scripts $slurmDir_tr $start_year $end_year
+# done

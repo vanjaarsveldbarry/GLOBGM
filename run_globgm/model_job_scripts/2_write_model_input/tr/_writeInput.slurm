@@ -12,6 +12,7 @@ mamba activate globgm
 modelRoot=$1
 start_year=$2
 end_year=$3
+outFile=$4
 simulation=$(basename $(dirname $modelRoot))
 cmip6InputFolder=/scratch-shared/bvjaarsv/cmip6_input/$simulation/historical
 saveFolder=$modelRoot/forcing_input
@@ -50,3 +51,6 @@ for ((year = start_year; year <= end_year; year+=2)); do
     python deterministic_runner_for_calculating_discharge_from_runoff.py $tempDir $trPreprocessingIni $yearStart $yearEnd $saveFolder $monthly_runoff_file $monthly_recharge_file $monthly_abstraction_file &
 done
 wait
+
+outFile="${outFile%?}"
+touch "${outFile}$SLURM_ARRAY_TASK_ID"

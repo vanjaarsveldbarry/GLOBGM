@@ -1,0 +1,112 @@
+Building DAG of jobs...
+Using shell: /usr/bin/bash
+Provided cores: 16
+Rules claiming more threads will be scaled down.
+Job stats:
+job                                 count
+--------------------------------  -------
+all                                     1
+post_model_solution1                    1
+post_model_solution1_run2               1
+post_model_solution1_run3               1
+post_model_solution2                    1
+post_model_solution2_run2               1
+post_model_solution2_run3               1
+post_model_solution3                    1
+post_model_solution3_run2               1
+post_model_solution3_run3               1
+post_model_solution4                    1
+post_model_solution4_run2               1
+post_model_solution4_run3               1
+prepare_model_partitioning              1
+run_model_solution1                     1
+run_model_solution1_run2                1
+run_model_solution1_run3                1
+run_model_solution2                     1
+run_model_solution2_run2                1
+run_model_solution2_run3                1
+run_model_solution3                     1
+run_model_solution3_run2                1
+run_model_solution3_run3                1
+run_model_solution4                     1
+run_model_solution4_run2                1
+run_model_solution4_run3                1
+setup_simulation                        1
+wrap_up                                 1
+write_model_forcing                     1
+write_model_forcing_setup               1
+write_model_input_setup                 1
+write_model_input_solution1             1
+write_model_input_solution1_run2        1
+write_model_input_solution1_run3        1
+write_model_input_solution2             1
+write_model_input_solution2_run2        1
+write_model_input_solution2_run3        1
+write_model_input_solution3             1
+write_model_input_solution3_run2        1
+write_model_input_solution3_run3        1
+write_model_input_solution4             1
+write_model_input_solution4_run2        1
+write_model_input_solution4_run3        1
+total                                  43
+
+Select jobs to execute...
+
+[Fri Sep 13 19:27:43 2024]
+rule setup_simulation:
+    output: /projects/0/einf4705/workflow/output/gswp3-w5e5/tr/slurm_logs/1_prepare_model_partitioning/setup_complete
+    jobid: 9
+    reason: Missing output files: /projects/0/einf4705/workflow/output/gswp3-w5e5/tr/slurm_logs/1_prepare_model_partitioning/setup_complete
+    resources: tmpdir=/scratch-local/bvjaarsv.7832728
+
+[Fri Sep 13 19:27:43 2024]
+Finished job 9.
+1 of 43 steps (2%) done
+Select jobs to execute...
+
+[Fri Sep 13 19:27:43 2024]
+rule prepare_model_partitioning:
+    input: /projects/0/einf4705/workflow/output/gswp3-w5e5/tr/slurm_logs/1_prepare_model_partitioning/setup_complete
+    output: /projects/0/einf4705/workflow/output/gswp3-w5e5/tr/slurm_logs/1_prepare_model_partitioning/prepare_model_partitioning_complete
+    jobid: 8
+    reason: Missing output files: /projects/0/einf4705/workflow/output/gswp3-w5e5/tr/slurm_logs/1_prepare_model_partitioning/prepare_model_partitioning_complete; Input files updated by another job: /projects/0/einf4705/workflow/output/gswp3-w5e5/tr/slurm_logs/1_prepare_model_partitioning/setup_complete
+    resources: tmpdir=/scratch-local/bvjaarsv.7832728
+
+sbatch: Single-node jobs run on a shared node by default. Add --exclusive if you want to use a node exclusively.
+sbatch: A full node consists of 192 CPU cores, 344064 MiB of memory and 0 GPUs and can be shared by up to 12 jobs.
+sbatch: By default shared jobs get 1792 MiB of memory per CPU core, unless explicitly overridden with --mem-per-cpu, --mem-per-gpu or --mem.
+sbatch: You will be charged for 16 CPUs, based on the number of CPUs and the amount memory that you've requested.
+Submitted batch job 7832732
+[Fri Sep 13 19:30:03 2024]
+Finished job 8.
+2 of 43 steps (5%) done
+Select jobs to execute...
+
+[Fri Sep 13 19:30:04 2024]
+rule write_model_forcing_setup:
+    input: /projects/0/einf4705/workflow/output/gswp3-w5e5/tr/slurm_logs/1_prepare_model_partitioning/prepare_model_partitioning_complete
+    output: /projects/0/einf4705/workflow/output/gswp3-w5e5/tr/slurm_logs/2_write_model_input/write_model_input_setup_complete
+    jobid: 7
+    reason: Missing output files: /projects/0/einf4705/workflow/output/gswp3-w5e5/tr/slurm_logs/2_write_model_input/write_model_input_setup_complete; Input files updated by another job: /projects/0/einf4705/workflow/output/gswp3-w5e5/tr/slurm_logs/1_prepare_model_partitioning/prepare_model_partitioning_complete
+    resources: tmpdir=/scratch-local/bvjaarsv.7832728
+
+sbatch: Single-node jobs run on a shared node by default. Add --exclusive if you want to use a node exclusively.
+sbatch: A full node consists of 192 CPU cores, 344064 MiB of memory and 0 GPUs and can be shared by up to 12 jobs.
+sbatch: By default shared jobs get 1792 MiB of memory per CPU core, unless explicitly overridden with --mem-per-cpu, --mem-per-gpu or --mem.
+sbatch: You will be charged for 16 CPUs, based on the number of CPUs and the amount memory that you've requested.
+Submitted batch job 7832738
+slurmstepd: error: *** JOB 7832728 ON tcn586 CANCELLED AT 2024-09-13T19:35:42 ***
+
+JOB STATISTICS
+==============
+Job ID: 7832728
+Cluster: snellius
+User/Group: bvjaarsv/bvjaarsv
+State: CANCELLED (exit code 0)
+Nodes: 1
+Cores per node: 16
+CPU Utilized: 00:00:01
+CPU Efficiency: 0.01% of 02:14:24 core-walltime
+Job Wall-clock time: 00:08:24
+Memory Utilized: 117.86 MB
+Memory Efficiency: 0.41% of 28.00 GB

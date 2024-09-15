@@ -95,7 +95,7 @@ for ((i=1; i<=163; i+=1)); do
     num=$(printf "%03d" $((10#$i)))
     python deterministic_runner_for_monthly_offline_globgm.py $model_input/steady-state_config.ini debug steady-state-only tile_${num}-163 $IN_DIR $OUT_DIR $forcingDir &
     counter=$((counter+1))
-    if [ $counter -eq 27 ]; then
+    if [ $counter -eq 24 ]; then
         wait
         counter=0
     fi

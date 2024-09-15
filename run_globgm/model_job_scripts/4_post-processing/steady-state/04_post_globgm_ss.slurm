@@ -31,6 +31,9 @@ cd $saveDir
 ${exe} "s0${solution}_${inp_ss}"
 wait 
 
-python -u $zarrScripts/createZarr_ss.py $saveDir s0$solution $modelRoot/mf6_post
-wait
-touch $outFile
+python -u $zarrScripts/createZarr_ss.py $saveDir s0$solution $modelRoot/mf6_post && touch $outFile
+
+if [ $? -ne 0 ]; then
+    outFile="${outFile%?}"
+    touch "${outFile}ERROR"
+fi

@@ -1,6 +1,5 @@
 import flopy as fp
 from pathlib import Path
-from tqdm import tqdm
 import sys
 
 ## Write the binary files
@@ -29,34 +28,3 @@ for file in files:
                                          ilay=1, pertim=pertim,
                                          totim=totim, kstp=kstp, kper=kper)
     fp.utils.Util2d.write_bin(_shape, savePath, aa, header_data=header)
-
-##CHANGE THE PATHS
-modDir=inputFolder.parent.parent.parent.parent
-currentModDir=inputFolder.parent.parent.parent.name[-4:]
-directories = [d for d in modDir.iterdir() if d.is_dir()]
-dirPool=[]
-for directory in directories:
-    dirName=directory.name[-4:]
-    if int(currentModDir) <= int(dirName):
-        dirPool.append(dirName)
-        
-maxDir= max(dirPool)
-dirPool = [d for d in dirPool if d != dirName and d != maxDir]
-if len(dirPool) !=0:
-    targetDir= min(dirPool)
-    targetDir=modDir / f'mf6_mod_{targetDir}'
-    iniFilesDir=targetDir / 'glob_tr/models/run_input'
-    files = [path for path in Path(iniFilesDir).rglob("m*.spu.ic")]
-    iniHDSFolder=iniFilesDir / 'ini_hds'
-    for file in files:
-        model=file.name[:-7]
-        newPath=inputFolder/f'_ini_hds/{model}.tr.hds (BINARY)'
-        line=f"  OPEN/CLOSE {newPath}"
-        with open(file, 'r') as f:
-            lines = f.readlines()
-        with open(file, 'w') as f:
-            for l in lines:
-                if "OPEN/CLOSE" in l:
-                    f.write(line + "\n")
-                else:
-                    f.write(l)

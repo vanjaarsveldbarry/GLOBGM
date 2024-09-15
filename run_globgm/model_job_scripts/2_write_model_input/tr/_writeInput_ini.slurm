@@ -14,6 +14,7 @@ mamba activate globgm
 modelRoot=$1
 start_year=$2
 end_year=$3
+outFile=$4
 simulation=$(basename $(dirname $modelRoot))
 cmip6InputFolder=/scratch-shared/bvjaarsv/cmip6_input/$simulation/historical
 saveFolder=$modelRoot/forcing_input
@@ -90,3 +91,5 @@ wait
 
 python -u $zarrScripts/createZarr.py $pcrglobInputFolder $saveFolder $start_year $end_year
 wait
+
+touch $outFile

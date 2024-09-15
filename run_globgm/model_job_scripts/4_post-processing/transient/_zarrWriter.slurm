@@ -15,6 +15,7 @@ solution=$3
 startDate=$4
 endDate=$5
 modDir=$6
+outFile=$7
 
 _merge_zarr=$(realpath ../model_tools_src/python/to_zarr/mergeZarr_tr.py)
 inpdir=$(realpath $modelRoot/model_input/5_post-processing/transient)
@@ -22,8 +23,8 @@ inp_tr=mf6ggm_post_tr_$var.inp
 exe=$(realpath ../_bin/mf6ggmpost_260624)
 yodaInput=$(realpath ../_data/globgm_input)
 dir=$modelRoot/mf6_post
-tempFolder=$(realpath ./temp) 
 input_file=s0${solution}_${inp_tr}
+
 
 counter=0
 for ((year=$startDate; year<=$endDate; year++));do
@@ -33,7 +34,6 @@ for ((year=$startDate; year<=$endDate; year++));do
     cd $modFlowTemp
     mkdir -p ./mod_files_s0${solution}_${year} ./out
     cd ./mod_files_s0${solution}_${year}
-    echo $(pwd)
     # #Convert output to .flt
     sub_input=${input_file}_${year}
     cp ${inpdir}/${inp_tr} ./$sub_input
@@ -51,6 +51,7 @@ for ((year=$startDate; year<=$endDate; year++));do
     fi
 done
 wait
+cp $sub_input /scratch-shared/bvjaarsv/test
 
 counter=0
 for ((year=$startDate; year<=$endDate; year++));do
@@ -74,3 +75,5 @@ for ((year=$startDate; year<=$endDate; year++));do
 done
 wait
 df -kh $TMPDIR
+
+touch ${outFile}
