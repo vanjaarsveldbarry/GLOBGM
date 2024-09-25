@@ -43,6 +43,7 @@ if [ "$runType" = "start" ]; then
     srun ${exe} -s ../run_input/${nam1}
 fi
 srun ${exe} -s ../run_input/${nam2}
+wait
 python $iniConditionsScript $dir_run
 wait
 touch $outFile
