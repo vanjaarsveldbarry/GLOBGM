@@ -48,6 +48,9 @@ import pcraster as pcr
 import xarray as xr
 import zarr
 
+import pyinterp
+import pyinterp.backends.xarray
+
 import logging
 
 from six.moves import range
@@ -70,22 +73,116 @@ netcdf_suffixes = ('.nc4','.nc')
 # maximum number of tries for reading files:
 max_num_of_tries = 5
 
-def readDownscaling_gwRecharge_modflow(gwRechargeFile, correctionFile, cloneMap, timeStamp=None):    
-    lat= pcr.pcr2numpy(pcr.ycoordinate(pcr.boolean(1)),MV)[:,0].ravel()
-    lon= pcr.pcr2numpy(pcr.xcoordinate(pcr.boolean(1)),MV)[0,:].ravel()
+def readDownscaling_gwRecharge_modflow(gwRechargeFile, correctionFile, cloneMap): 
+
+    def _read_correctionFactor(correctionFile, cloneMap):
+        f = zarr.convenience.open(correctionFile)
+        attributeClone = getMapAttributesALL(cloneMap)
+        cellsizeClone = attributeClone['cellsize']
+        rowsClone = attributeClone['rows']
+        colsClone = attributeClone['cols']
+        xULClone = attributeClone['xUL']
+        yULClone = attributeClone['yUL']
+        #get the attributes of input (netCDF) 
+        cellsizeInput = f['lat'][0] - f['lat'][1] 
+        cellsizeInput = float(cellsizeInput)
+
+        factor = 1                                 # needed in regridData2FinerGrid
+        minX    = min(abs(f['lon'][:] - (xULClone + 0.5*cellsizeInput)))
+        xIdxSta = int(np.where(abs(f['lon'][:] - (xULClone + 0.5*cellsizeInput)) == minX)[0])
+
+        xIdxEnd = int(math.ceil(xIdxSta + colsClone /(factor)))
+
+        minY    = min(abs(f['lat'][:] - (yULClone - 0.5*cellsizeInput))) # ; print(minY)
+
+        yIdxSta = int(np.where(abs(f['lat'][:] - (yULClone - 0.5*cellsizeInput)) == minY)[0])
+
+        yIdxEnd = int(math.ceil(yIdxSta + rowsClone /(factor)))
+        correctionFactor = f['groundwater_recharge'].get_basic_selection((slice(yIdxSta,yIdxEnd), slice(xIdxSta,xIdxEnd)))[:]
+        return pcr.numpy2pcr(pcr.Scalar, correctionFactor, MV)
+
+    def _read_gwRecharge(gwRechargeFile, cloneMap):
+        varName = 'groundwater_recharge'
+
+        if gwRechargeFile in list(filecache.keys()):
+            f = filecache[gwRechargeFile]
+        else:
+            f = nc.Dataset(gwRechargeFile)
+            filecache[gwRechargeFile] = f
+
+        # sameClone = False
+        attributeClone = getMapAttributesALL(cloneMap)
+        cellsizeClone = attributeClone['cellsize']
+        rowsClone = attributeClone['rows']
+        colsClone = attributeClone['cols']
+        xULClone = attributeClone['xUL']
+        yULClone = attributeClone['yUL']
+        # get the attributes of input (netCDF) 
+        cellsizeInput = f.variables['lat'][0]- f.variables['lat'][1]
+        cellsizeInput = float(cellsizeInput)
+
+        factor = 1                                 # needed in regridData2FinerGrid
+        factor = int(round(float(cellsizeInput)/float(cellsizeClone)))
+        # crop to cloneMap:
+        minX    = min(abs(f.variables['lon'][:] - (xULClone + 0.5*cellsizeInput)))# ; print(minX)
+        xIdxSta = int(np.where(abs(f.variables['lon'][:] - (xULClone + 0.5*cellsizeInput)) == minX)[0]) -1
+        if xIdxSta == -1: xIdxSta = 0 
+
+        #~ xIdxSta = int(np.where(np.abs(f.variables['lon'][:] - (xULClone - cellsizeInput/2)) == minX)[0][0])
+        #~ # see: https://github.com/UU-Hydro/PCR-GLOBWB_model/pull/13
+
+        #~ xIdxEnd = int(math.ceil(xIdxSta + colsClone /(cellsizeInput/cellsizeClone)))
+        xIdxEnd = int(math.ceil((xIdxSta +1 ) + colsClone /(factor))) + 1 
+
+        minY    = min(abs(f.variables['lat'][:] - (yULClone - 0.5*cellsizeInput))) # ; print(minY)
+
+        yIdxSta = int(np.where(abs(f.variables['lat'][:] - (yULClone - 0.5*cellsizeInput)) == minY)[0])
+
+        #~ yIdxSta = int(np.where(np.abs(f.variables['lat'][:] - (yULClone - cellsizeInput/2)) == minY)[0][0])
+        #~ # see: https://github.com/UU-Hydro/PCR-GLOBWB_model/pull/13
+
+        # ~ yIdxEnd = int(math.ceil(yIdxSta + rowsClone /(cellsizeInput/cellsizeClone)))
+        yIdxEnd = int(math.ceil((yIdxSta +1) + rowsClone /(factor))) 
+        
+        yIdxEnd = min(len(f.variables['lat'][:]), yIdxEnd+1)
+        yIdxSta = max(0, yIdxSta-1) 
+
+        # standard nc file
+        cropData = f.variables[varName][yIdxSta:yIdxEnd,xIdxSta:xIdxEnd] 
+        cropData = xr.DataArray(cropData, dims=['latitude', 'longitude'],
+                                    coords=dict(latitude=f.variables['lat'][yIdxSta:yIdxEnd],
+                                                 longitude=f.variables['lon'][xIdxSta:xIdxEnd])).sortby('latitude')
+
+        lon = pcr.pcr2numpy(pcr.xcoordinate(pcr.defined(cloneMap)), np.nan)[0, :]
+        lat = np.sort(pcr.pcr2numpy(pcr.ycoordinate(pcr.defined(cloneMap)), np.nan)[:, 0])
+
+        cropData = pyinterp.backends.xarray.Grid2D(cropData, geodetic=False)
+        mx, my = np.meshgrid(lon, lat, indexing="ij")
+        cropData = cropData.bicubic(coords=dict(longitude=mx.ravel(), latitude=my.ravel()), num_threads=1)
+        cropData = cropData.reshape(mx.shape).T
+       
+        return pcr.numpy2pcr(pcr.Scalar, cropData, MV)
+
+    correctionFactor = _read_correctionFactor(correctionFile, cloneMap)
+    gwRecharge = _read_gwRecharge(gwRechargeFile, cloneMap)
+
+    gwRecharge = gwRecharge * correctionFactor
+    return gwRecharge
+
+    ####################
+
+    # print(np.max(lat), np.min(lat), np.min(lon), np.max(lon))
     
-    if timeStamp == None:
-        gwRecharge = xr.open_dataset(gwRechargeFile).groundwater_recharge.sel(lon=slice(lon[0]-1, lon[-1]+1), lat=slice(lat[0]+1, lat[-1]-1))
-        gwRecharge = gwRecharge.reindex(lat=lat, lon=lon, method='nearest')
-        downScaleCF = xr.open_zarr(correctionFile).groundwater_recharge.sel(lon=slice(lon[0], lon[-1]), lat=slice(lat[0], lat[-1])).compute()
-        gwRecharge = (gwRecharge * downScaleCF) * 100
-        return pcr.numpy2pcr(pcr.Scalar, gwRecharge.values, MV)
-    else:
-        gwRecharge = xr.open_dataset(gwRechargeFile).groundwater_recharge.sel(time=timeStamp, lon=slice(lon[0]-1, lon[-1]+1), lat=slice(lat[0]+1, lat[-1]-1))
-        gwRecharge = gwRecharge.reindex(lat=lat, lon=lon, method='nearest')
-        downScaleCF = xr.open_zarr(correctionFile).groundwater_recharge.sel(lon=slice(lon[0], lon[-1]), lat=slice(lat[0], lat[-1])).compute()
-        gwRecharge = (gwRecharge * downScaleCF) * 100
-        return pcr.numpy2pcr(pcr.Scalar, gwRecharge.values, MV)
+    # # gwRecharge = xr.open_dataset(gwRechargeFile).groundwater_recharge.sel(lon=slice(lon[0]-1, lon[-1]+1), lat=slice(lat[0]+1, lat[-1]-1))
+    # # print(gwRecharge)
+    # # gwRecharge = netcdf2PCRobjCloneWithoutTime(gwRechargeFile, "groundwater_recharge", cloneMap, True, None, None)
+    # sys.exit()
+    
+    # gwRecharge = gwRecharge.reindex(lat=lat, lon=lon, method='nearest')
+    # downScaleCF = xr.open_zarr(correctionFile).groundwater_recharge.sel(lon=slice(lon[0], lon[-1]), lat=slice(lat[0], lat[-1])).compute()
+    # gwRecharge = (gwRecharge * downScaleCF) * 100
+    # return pcr.numpy2pcr(pcr.Scalar, gwRecharge.values, MV)
+
         
 def read_zarr(file, varName, timeStamp, cloneMapFileName):    
     lat= pcr.pcr2numpy(pcr.ycoordinate(pcr.boolean(1)),MV)[:,0].ravel()
