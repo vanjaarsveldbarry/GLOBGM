@@ -1124,8 +1124,8 @@ class GroundwaterModflow(object):
         vertical_conductivity_layer_2  = pcr.min(self.thickness_of_layer_2/minResistance,\
                                                      vertical_conductivity_layer_2)
 
-        # for areas outside confining layer, assume very high conductivity
-        vertical_conductivity_layer_2  = pcr.ifthenelse(self.confiningLayerThickness > 0.0, vertical_conductivity_layer_2, pcr.spatial(pcr.scalar(1e99)))
+        # ~ # for areas outside confining layer, assume very high conductivity
+        # ~ vertical_conductivity_layer_2  = pcr.ifthenelse(self.confiningLayerThickness > 0.0, vertical_conductivity_layer_2, pcr.spatial(pcr.scalar(1e99)))
 
 
         # resistance value from the confining layer - unit: day, so this must be saved before lat/lon correction
