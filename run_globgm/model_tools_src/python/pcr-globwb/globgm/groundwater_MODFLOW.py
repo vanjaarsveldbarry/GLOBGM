@@ -968,7 +968,7 @@ class GroundwaterModflow(object):
                                                                       tmpDir = self.tmpDir, \
                                                                       )
                 boolean_map = pcr.cover(pcr.ifthen(pcr.scalar(boolean_in_scalar_map) > 0., pcr.boolean(1.0)), pcr.boolean(0.0))
-                linear_multiplier_map = pcr.ifthenelse(boolean.map, pcr.scalar(linear_multiplier), pcr.scalar(1.0))                                                      
+                linear_multiplier_map = pcr.ifthenelse(boolean_map, pcr.scalar(linear_multiplier), pcr.scalar(1.0))                                                      
                 adjust_factor_for_horizontal_conductivities = adjust_factor_for_horizontal_conductivities * linear_multiplier_map
                 msg = 'Additional adjustment factor for horizontal_conductivities for the class ' + litho_class + ": " + str(adjust_factor_for_horizontal_conductivities)  
                 if self.log_to_info: logger.info(msg)
