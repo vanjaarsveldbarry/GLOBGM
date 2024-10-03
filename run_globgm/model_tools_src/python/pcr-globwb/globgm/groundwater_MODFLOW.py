@@ -955,8 +955,26 @@ class GroundwaterModflow(object):
         msg = 'Adjustment factor: ' + str(adjust_factor_for_horizontal_conductivities)  
         if self.log_to_info: logger.info(msg)
         
-        # TODO: If required, introduce an option to adjust only the kD of lower layer. 
 
+        # additional adjustment factor for horizontal conductivities based on the following values/files defined in the "prefactorOptions"
+        # - this will add multiplication to adjust_factor_for_horizontal_conductivities
+        if "prefactorOptions" in self.iniItems.allSections:
+            litho_classes = ["unconsolidated", "consolidated", "carbone"]
+            for litho_class in litho_classes:
+                linear_multiplier               = float(self.iniItems.prefactorOptions['linear_multiplier_for_kh_' + litho_class])
+                boolean_in_scalar_map_file_name = self.iniItems.prefactorOptions['boolean_in_scalar_map_of_' + litho_class]
+                boolean_in_scalar_map           = vos.readPCRmapClone(v = boolean_map_file_name, \
+                                                                      cloneMapFileName = self.cloneMap, \
+                                                                      tmpDir = self.tmpDir, \
+                                                                      )
+                boolean_map = pcr.cover(pcr.ifthen(pcr.scalar(boolean_in_scalar_map) > 0., pcr.boolean(1.0)), pcr.boolean(0.0))
+                linear_multiplier_map = pcr.ifthenelse(boolean.map, pcr.scalar(linear_multiplier), pcr.scalar(1.0))                                                      
+                adjust_factor_for_horizontal_conductivities = adjust_factor_for_horizontal_conductivities * linear_multiplier_map
+                
+
+        # TODO: If required, introduce an option to adjust only the kD of lower layer. 
+        
+        
         # minimum and maximum values for transmissivity
         maxTransmissivity = adjust_factor_for_horizontal_conductivities * self.maximumTransmissivity
         minTransmissivity = self.minimumTransmissivity        # to keep it realistic, this one should not be multiplied
@@ -1081,9 +1099,20 @@ class GroundwaterModflow(object):
             # particularly in areas with confining layer
             vertical_conductivity_layer_2  = pcr.ifthenelse(self.confiningLayerThickness > 0.0, maximumConfiningLayerVerticalConductivity, vertical_conductivity_layer_2)
 
+        
         # adjusment according to "adjust_factor_for_resistance_values":
         vertical_conductivity_layer_2 = (1.0/adjust_factor_for_resistance_values) * vertical_conductivity_layer_2
         
+
+        # adjusment vertical_conductivity_layer_2 - according to "linear_multiplier_for_kv_confining_layer", defined in the prefactorOptions:
+        linear_multiplier_for_kv_confining_layer = pcr.scalar(1.0)
+        if "prefactorOptions" in self.iniItems.allSections and "linear_multiplier_for_kv_confining_layer" in self.iniItems.prefactorOptions.keys():
+            linear_multiplier_for_kv_confining_layer = pcr.scalar(float(self.iniItems.prefactorOptions['linear_multiplier_for_kv_confining_layer']))
+            # - apply this for areas with confining layer thickness only
+            linear_multiplier_for_kv_confining_layer = pcr.ifthenelse(self.confiningLayerThickness > 0.0, linear_multiplier_for_kv_confining_layer, pcr.scalar(1.0))    
+            vertical_conductivity_layer_2 = vertical_conductivity_layer_2 * linear_multiplier_for_kv_confining_layer
+
+
         # vertical conductivity values are limited by minimum and maximum resistance values
         msg = "Constrained by minimum and maximum resistance values."
         if self.log_to_info: logger.info(msg)
@@ -1092,15 +1121,23 @@ class GroundwaterModflow(object):
         vertical_conductivity_layer_2  = pcr.min(self.thickness_of_layer_2/minResistance,\
                                                      vertical_conductivity_layer_2)
 
+        # for areas outside confining layer, assume very high conductivity
+        vertical_conductivity_layer_2  = pcr.ifthenelse(self.confiningLayerThickness > 0.0, vertical_conductivity_layer_2, pcr.spatial(pcr.scalar(1e99)))
+
+
         # resistance value from the confining layer - unit: day, so this must be saved before lat/lon correction
         self.resistance_between_layers = 1.0 * ( self.thickness_of_layer_2 / vertical_conductivity_layer_2 )
 
+        
         # ignoring the vertical conductivity in the lower layer 
         # such that the values of resistance (1/vcont) depend only on vertical_conductivity_layer_2 
         vertical_conductivity_layer_2 *= 0.5
         vertical_conductivity_layer_1  = pcr.spatial(pcr.scalar(1e99))
         # see: http://inside.mines.edu/~epoeter/583/08/discussion/vcont/modflow_vcont.htm
 
+        
+        
+        
         #  considering aquitard resistance
         aquitardResistance = pcr.scalar(0.0)
         if "aquitardResistance" in list(self.iniItems.modflowParameterOptions.keys()):
@@ -2540,7 +2577,7 @@ class GroundwaterModflow(object):
             bed_conductance_used = pcr.min(maximum_bed_conductance, bed_conductance_used)
         
 
-        # adjust the conductance value based on a certain factor
+        # adjust the river bed conductance value based on a certain factor
         # - adjustment factor
         adjusting_factor = 1.0
         if 'log_10_multiplier_for_river_bed_conductance' in self.iniItems.modflowParameterOptions.keys() and self.iniItems.modflowParameterOptions['log_10_multiplier_for_river_bed_conductance'] != "None":
@@ -2548,7 +2585,14 @@ class GroundwaterModflow(object):
             adjusting_factor = 10.0**(log_10_multiplier_for_river_bed_conductance)
         msg = 'Adjustment factor: ' + str(adjusting_factor)  
         if self.log_to_info: logger.info(msg)
-        
+        #
+        # - additional adjustment for the conductance value based on the "linear_multiplier_for_river_bed_resistance" defined in the prefactorOptions
+        linear_multiplier_for_river_bed_resistance = pcr.scalar(1.0)
+        if "prefactorOptions" in self.iniItems.allSections and "linear_multiplier_for_river_bed_resistance" in self.iniItems.prefactorOptions.keys():
+            linear_multiplier_for_river_bed_resistance = pcr.scalar(float(self.iniItems.prefactorOptions['linear_multiplier_for_river_bed_resistance']))
+        adjusting_factor = pcr.scalar(adjusting_factor) * (1./linear_multiplier_for_river_bed_resistance)
+
+        # river bed conductance values - after the adjustment
         bed_conductance_used = adjusting_factor * bed_conductance_used
 
         
