@@ -2801,7 +2801,7 @@ class GroundwaterModflow(object):
             relZFileName = vos.getFullPath(self.iniItems.modflowParameterOptions['relativeElevationFilesForSatAreaFrac'], self.iniItems.globalOptions['inputDir'])
 		    
             # a dictionary contains areaFractions (dimensionless): fractions of flooded/innundated areas  
-            areaFractions = list(map(float, str(self.iniItems.modflowTransientInputOptions['relativeElevationLevelsForSatAreaFrac']).split(',')))
+            areaFractions = list(map(float, str(self.iniItems.modflowParameterOptions['relativeElevationLevelsForSatAreaFrac']).split(',')))
             print(areaFractions)
             # number of levels/intervals
             nrZLevels     = len(areaFractions)
