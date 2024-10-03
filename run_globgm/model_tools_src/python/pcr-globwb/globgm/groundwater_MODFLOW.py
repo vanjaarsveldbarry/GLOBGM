@@ -952,7 +952,7 @@ class GroundwaterModflow(object):
         if 'log_10_multiplier_for_transmissivities' in self.iniItems.modflowParameterOptions.keys() and self.iniItems.modflowParameterOptions['log_10_multiplier_for_transmissivities'] != "None":
             log_10_multiplier_for_transmissivities      = float(self.iniItems.modflowParameterOptions['log_10_multiplier_for_transmissivities'])
             adjust_factor_for_horizontal_conductivities = 10.0**(log_10_multiplier_for_transmissivities)
-        msg = 'Adjustment factor: ' + str(adjust_factor_for_horizontal_conductivities)  
+        msg = 'Adjustment factor for horizontal_conductivities: ' + str(adjust_factor_for_horizontal_conductivities)  
         if self.log_to_info: logger.info(msg)
         
 
@@ -963,13 +963,15 @@ class GroundwaterModflow(object):
             for litho_class in litho_classes:
                 linear_multiplier               = float(self.iniItems.prefactorOptions['linear_multiplier_for_kh_' + litho_class])
                 boolean_in_scalar_map_file_name = self.iniItems.prefactorOptions['boolean_in_scalar_map_of_' + litho_class]
-                boolean_in_scalar_map           = vos.readPCRmapClone(v = boolean_map_file_name, \
+                boolean_in_scalar_map           = vos.readPCRmapClone(v = boolean_in_scalar_map_file_name, \
                                                                       cloneMapFileName = self.cloneMap, \
                                                                       tmpDir = self.tmpDir, \
                                                                       )
                 boolean_map = pcr.cover(pcr.ifthen(pcr.scalar(boolean_in_scalar_map) > 0., pcr.boolean(1.0)), pcr.boolean(0.0))
                 linear_multiplier_map = pcr.ifthenelse(boolean.map, pcr.scalar(linear_multiplier), pcr.scalar(1.0))                                                      
                 adjust_factor_for_horizontal_conductivities = adjust_factor_for_horizontal_conductivities * linear_multiplier_map
+                msg = 'Additional adjustment factor for horizontal_conductivities for the class ' + litho_class + ": " + str(adjust_factor_for_horizontal_conductivities)  
+                if self.log_to_info: logger.info(msg)
                 
 
         # TODO: If required, introduce an option to adjust only the kD of lower layer. 
@@ -1107,11 +1109,12 @@ class GroundwaterModflow(object):
         # adjusment vertical_conductivity_layer_2 - according to "linear_multiplier_for_kv_confining_layer", defined in the prefactorOptions:
         linear_multiplier_for_kv_confining_layer = pcr.scalar(1.0)
         if "prefactorOptions" in self.iniItems.allSections and "linear_multiplier_for_kv_confining_layer" in self.iniItems.prefactorOptions.keys():
+            msg = 'Additional adjustment using linear_multiplier_for_kv_confining_layer: ' + str(self.iniItems.prefactorOptions['linear_multiplier_for_kv_confining_layer'])  
+            if self.log_to_info: logger.info(msg)
             linear_multiplier_for_kv_confining_layer = pcr.scalar(float(self.iniItems.prefactorOptions['linear_multiplier_for_kv_confining_layer']))
             # - apply this for areas with confining layer thickness only
             linear_multiplier_for_kv_confining_layer = pcr.ifthenelse(self.confiningLayerThickness > 0.0, linear_multiplier_for_kv_confining_layer, pcr.scalar(1.0))    
             vertical_conductivity_layer_2 = vertical_conductivity_layer_2 * linear_multiplier_for_kv_confining_layer
-
 
         # vertical conductivity values are limited by minimum and maximum resistance values
         msg = "Constrained by minimum and maximum resistance values."
