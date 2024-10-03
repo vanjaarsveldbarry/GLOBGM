@@ -1079,7 +1079,7 @@ class GroundwaterModflow(object):
 
         msg = "Assign vertical conductivities to determine VCONT values (1/resistance) between upper and lower layers (used for calculating VCONT for the BCF package)."
         if self.log_to_info: logger.info(msg)
-        # - default values
+        # - initial values
         vertical_conductivity_layer_2 = self.kSatAquifer
         # - if specifically defined in the configuration/ini file
         if "confiningLayerVerticalConductivity" in self.iniItems.modflowParameterOptions.keys() and\
@@ -1124,8 +1124,9 @@ class GroundwaterModflow(object):
         vertical_conductivity_layer_2  = pcr.min(self.thickness_of_layer_2/minResistance,\
                                                      vertical_conductivity_layer_2)
 
-        # for areas outside confining layer, assume high conductivity
-        vertical_conductivity_layer_2  = pcr.ifthenelse(self.confiningLayerThickness > 0.0, vertical_conductivity_layer_2, pcr.scalar(20.))
+
+        # ~ # for areas outside confining layer, assume high conductivity - NOT USE - sometimes it leads to difficulties in convergence
+        # ~ vertical_conductivity_layer_2  = pcr.ifthenelse(self.confiningLayerThickness > 0.0, vertical_conductivity_layer_2, pcr.scalar(20.))
 
 
         # resistance value from the confining layer - unit: day, so this must be saved before lat/lon correction
