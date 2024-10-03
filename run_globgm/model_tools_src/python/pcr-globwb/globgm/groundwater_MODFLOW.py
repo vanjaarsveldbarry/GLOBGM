@@ -2795,10 +2795,10 @@ class GroundwaterModflow(object):
                 satAreaFrac = vos.readPCRmapClone(vos.getFullPath(self.iniItems.modflowSteadyStateInputOptions['satAreaFracInputMap'], self.inputDir), self.cloneMap, self.tmpDir, self.inputDir)
             
             # - reading relative_elevation_above_dem_minimum
-            relZFileName = vos.getFullPath(self.iniItems.modflowTransientInputOptions['relativeElevationFiles'], self.iniItems.globalOptions['inputDir'])
+            relZFileName = vos.getFullPath(self.iniItems.modflowParameterOptions['relativeElevationFilesForSatAreaFrac'], self.iniItems.globalOptions['inputDir'])
 		    
             # a dictionary contains areaFractions (dimensionless): fractions of flooded/innundated areas  
-            areaFractions = list(map(float, str(self.iniItems.modflowTransientInputOptions['relativeElevationLevels']).split(',')))
+            areaFractions = list(map(float, str(self.iniItems.modflowTransientInputOptions['relativeElevationLevelsForSatAreaFrac']).split(',')))
             print(areaFractions)
             # number of levels/intervals
             nrZLevels     = len(areaFractions)
@@ -2825,9 +2825,6 @@ class GroundwaterModflow(object):
             
             relative_elevation_above_dem_minimum = relZ     
 		    
-            # - reading minimumDEM
-            minimumDEM = vos.readPCRmapClone(self.iniItems.modflowTransientInputOptions['minimumDEM'], self.cloneMap, self.tmpDir, self.inputDir)
-            
             # estimate relative_elevation_from_satAreaFrac (relative above minimum dem)
             percentileList = areaFractions
             for i_perc in range(0,len(percentileList)):
@@ -2865,6 +2862,10 @@ class GroundwaterModflow(object):
                 else:
                     relative_elevation_from_satAreaFrac = pcr.cover(relative_elevation_from_satAreaFrac, elevation) 
             
+            # - reading minimumDEM
+            minimumDEM = vos.readPCRmapClone(self.iniItems.modflowParameterOptions['minimumElevationForSatAreaFrac'], self.cloneMap, self.tmpDir, self.inputDir)
+
+            # absolute elevation
             elevation_from_satAreaFrac = minimumDEM + relative_elevation_from_satAreaFrac
 
             # set the minimum elevation to the floodplain elevation
