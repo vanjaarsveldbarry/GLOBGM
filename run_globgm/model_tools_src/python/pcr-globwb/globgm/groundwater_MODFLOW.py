@@ -1124,8 +1124,8 @@ class GroundwaterModflow(object):
         vertical_conductivity_layer_2  = pcr.min(self.thickness_of_layer_2/minResistance,\
                                                      vertical_conductivity_layer_2)
 
-        # for areas outside confining layer, assume very high conductivity
-        vertical_conductivity_layer_2  = pcr.ifthenelse(self.confiningLayerThickness > 0.0, vertical_conductivity_layer_2, pcr.spatial(pcr.scalar(1e20)))
+        # ~ # for areas outside confining layer, assume very high conductivity
+        # ~ vertical_conductivity_layer_2  = pcr.ifthenelse(self.confiningLayerThickness > 0.0, vertical_conductivity_layer_2, pcr.spatial(pcr.scalar(1e99)))
 
 
         # resistance value from the confining layer - unit: day, so this must be saved before lat/lon correction
@@ -1135,7 +1135,7 @@ class GroundwaterModflow(object):
         # ignoring the vertical conductivity in the lower layer 
         # such that the values of resistance (1/vcont) depend only on vertical_conductivity_layer_2 
         vertical_conductivity_layer_2 *= 0.5
-        vertical_conductivity_layer_1  = pcr.spatial(pcr.scalar(1e20))
+        vertical_conductivity_layer_1  = pcr.spatial(pcr.scalar(1e99))
         # see: http://inside.mines.edu/~epoeter/583/08/discussion/vcont/modflow_vcont.htm
 
         
