@@ -959,7 +959,7 @@ class GroundwaterModflow(object):
         # additional adjustment factor for horizontal conductivities based on the following values/files defined in the "prefactorOptions"
         # - this will add multiplication to adjust_factor_for_horizontal_conductivities
         if "prefactorOptions" in self.iniItems.allSections:
-            litho_classes = ["unconsolidated", "consolidated", "carbone"]
+            litho_classes = ["unconsolidated", "consolidated", "carbonate"]
             for litho_class in litho_classes:
                 linear_multiplier               = float(self.iniItems.prefactorOptions['linear_multiplier_for_kh_' + litho_class])
                 boolean_in_scalar_map_file_name = self.iniItems.prefactorOptions['boolean_in_scalar_map_of_' + litho_class]
