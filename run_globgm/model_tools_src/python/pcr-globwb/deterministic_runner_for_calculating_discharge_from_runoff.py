@@ -14,7 +14,6 @@ from pcraster.framework import DynamicFramework
 
 from globgm.currTimeStep import ModelTime 
 
-import globgm.ncConverter_for_discharge_30sec as netcdf_writer 
 import globgm.virtualOS as vos 
 from six.moves.configparser import RawConfigParser as ConfigParser
 import netCDF4
@@ -164,18 +163,6 @@ def main():
     model_setup["monthly_abstraction_file"] = sys.argv[8]
     model_setup["output_dir"] = f"{TEMPDIR}/{YEAR_START}_{YEAR_END}"
     
-    # if MONTH == "2":
-    #     model_setup["start_date"] = f"{YEAR}-{str(MONTH).zfill(2)}-28"
-    #     model_setup["end_date"] = f"{YEAR}-{str(MONTH).zfill(2)}-28"
-        
-    # else:
-    #     if MONTH in ["4", "6", "9", "11"]:
-    #         model_setup["start_date"] = f"{YEAR}-{str(MONTH).zfill(2)}-30"
-    #         model_setup["end_date"] = f"{YEAR}-{str(MONTH).zfill(2)}-30"  
-    
-    #     else:
-    #         model_setup["start_date"] = f"{YEAR}-{str(MONTH).zfill(2)}-31"
-    #         model_setup["end_date"] = f"{YEAR}-{str(MONTH).zfill(2)}-31"
     model_setup["start_date"] = f"{YEAR_START}-01-31"
     model_setup["end_date"] = f"{YEAR_END}-12-31"
     

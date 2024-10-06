@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --exclusive
 #SBATCH --nodes=1
+#SBATCH --exclusive
 #SBATCH --ntasks-per-node=32
 #SBATCH --time=00:30:00
 #SBATCH --cpus-per-task=1
@@ -16,8 +16,10 @@ modelRoot=$1
 model_job_scripts=$2
 slurmDir_ss=$3
 outFile=$4
+data_dir=$5
+
 dir=$modelRoot/mf6_mod/glob_ss/solutions/run_output/
-exe=$(realpath ../_bin/mf6_rel_openmpi-4.1.4-gcc-11.3.0)
+exe=$data_dir/_bin/mf6_rel_openmpi-4.1.4-gcc-11.3.0
 nam=s03.par.mfsim.ic_sh0.nam
 startDir=$(pwd)
 
@@ -25,7 +27,7 @@ cd ${dir}
 srun ${exe} -s ../run_input/${nam}
 wait 
 
-#Post process files
+# Post process files
 cd $startDir
 run_script_post_ss=$model_job_scripts/4_post-processing/steady-state/04_post_globgm_ss.slurm
-sbatch -o $slurmDir_ss/4_post-processing/4_post_globgm_3.out $run_script_post_ss $modelRoot 3 "${outFile}_3"
+sbatch -o $slurmDir_ss/4_post-processing/4_post_globgm_3.out $run_script_post_ss $modelRoot 3 "${outFile}_3" $data_dir

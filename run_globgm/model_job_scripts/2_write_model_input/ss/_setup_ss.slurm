@@ -13,7 +13,7 @@ run_globgm_dir=$3
 outFile=$4
 
 mkdir -p $modelRoot/model_input
-cp -r $run_globgm_dir/model_input/2_partition_and_write_model_input $modelRoot/model_input
+cp -r $run_globgm_dir/model_input $modelRoot
 
 inpdir=$modelRoot/model_input/2_partition_and_write_model_input/steady-state
 inpmod=mf6_mod_ss.inp

@@ -98,7 +98,11 @@ def readDownscaling_gwRecharge_modflow(gwRechargeFile, correctionFile, cloneMap)
         yIdxSta = int(np.where(abs(f['lat'][:] - (yULClone - 0.5*cellsizeInput)) == minY)[0])
 
         yIdxEnd = int(math.ceil(yIdxSta + rowsClone /(factor)))
-        correctionFactor = f['groundwater_recharge'].get_basic_selection((slice(yIdxSta,yIdxEnd), slice(xIdxSta,xIdxEnd)))[:]
+        correctionFactor = f['correction_factor'].get_basic_selection((slice(yIdxSta,yIdxEnd), slice(xIdxSta,xIdxEnd)))[:]
+        print(f['lat'][:])
+        print(yIdxSta,yIdxEnd)
+        print(correctionFactor.shape)
+
         return pcr.numpy2pcr(pcr.Scalar, correctionFactor, MV)
 
     def _read_gwRecharge(gwRechargeFile, cloneMap):
@@ -152,16 +156,13 @@ def readDownscaling_gwRecharge_modflow(gwRechargeFile, correctionFile, cloneMap)
         cropData = xr.DataArray(cropData, dims=['latitude', 'longitude'],
                                     coords=dict(latitude=f.variables['lat'][yIdxSta:yIdxEnd],
                                                  longitude=f.variables['lon'][xIdxSta:xIdxEnd])).sortby('latitude')
-
         lon = pcr.pcr2numpy(pcr.xcoordinate(pcr.boolean(pcr.cover(cloneMap, 1.0))), np.nan)[0, :]
         lat = np.sort(pcr.pcr2numpy(pcr.ycoordinate(pcr.boolean(pcr.cover(cloneMap, 1.0))), np.nan)[:, 0])
         cropData = pyinterp.backends.xarray.Grid2D(cropData, geodetic=False)
         mx, my = np.meshgrid(lon, lat, indexing="ij")
         cropData = cropData.bicubic(coords=dict(longitude=mx.ravel(), latitude=my.ravel()), num_threads=1)
         cropData = cropData.reshape(mx.shape).T
-       
         return pcr.numpy2pcr(pcr.Scalar, cropData, MV)
-
     correctionFactor = _read_correctionFactor(correctionFile, cloneMap)
     gwRecharge = _read_gwRecharge(gwRechargeFile, cloneMap)
 

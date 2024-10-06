@@ -32,7 +32,6 @@ moddir=$modelRoot/mf6_mod
 yodaInput=$data_dir/globgm_input
 inpdir=$(realpath $modelRoot/model_input/2_partition_and_write_model_input/steady-state)
 globgmDir=$TMPDIR
-# globgmDir=/scratch-shared/bvjaarsv/bvjaarsv.8088937
 
 # Step 1 preprocess the 5 arcmin netcdf data to 30 arcseconds
 process_gwRecharge() {
@@ -96,6 +95,8 @@ process_totalRunoff_to_Discharge() {
 process_gwRecharge & process_totalRunoff_to_Discharge
 satAreaFile=$(find "$cmip6InputFolder" -type f -name "*sat_area_fraction_average*")
 cp $satAreaFile $forcingDir
+correctionFile=$(find "$cmip6InputFolder" -type d -name "*gwRecharge_correction_factor.zarr*")
+cp -r $correctionFile $forcingDir
 wait
 
 # #Step 2 Write .map tiles
@@ -136,7 +137,6 @@ for ((i=1; i<=384; i+=12)); do
         ii=384
     fi
     ${exe} ${inpexe} $i $ii &
-    break
 done
 wait
 

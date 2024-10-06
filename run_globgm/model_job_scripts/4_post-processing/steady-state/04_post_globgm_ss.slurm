@@ -12,14 +12,15 @@ mamba activate globgm
 modelRoot=$1
 solution=$2
 outFile=$3
+data_dir=$4
 saveDir=$TMPDIR/mf6_post/temp_s0${solution}
 mkdir -p $saveDir $modelRoot/mf6_post
 
-inpdir=$modelRoot/model_input/5_post-processing/steady-state
+inpdir=$modelRoot/model_input/4_post-processing/steady-state
 zarrScripts=$(realpath ../model_tools_src/python/to_zarr)
 inp_ss=mf6ggm_post_ss.inp
-yodaInput=$(realpath ../_data/globgm_input)
-exe=$(realpath ../_bin/mf6ggmpost_260624)
+yodaInput=$data_dir/globgm_input
+exe=$data_dir/_bin/mf6ggmpost_260624
 
 cp ${inpdir}/${inp_ss} $saveDir/s0${solution}_${inp_ss}
 sed -i "s|{yoda_input}|${yodaInput}|g" $saveDir/s0${solution}_${inp_ss}
@@ -32,8 +33,3 @@ ${exe} "s0${solution}_${inp_ss}"
 wait 
 
 python -u $zarrScripts/createZarr_ss.py $saveDir s0$solution $modelRoot/mf6_post && touch $outFile
-
-if [ $? -ne 0 ]; then
-    outFile="${outFile%?}"
-    touch "${outFile}ERROR"
-fi

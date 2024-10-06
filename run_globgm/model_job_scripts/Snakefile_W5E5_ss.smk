@@ -100,7 +100,7 @@ rule run_models:
 
     shell:
         '''
-        bash {params.run_script} {MODELROOT_SS} {params.model_job_scripts} {params.slurm_log_file} {params.outFile}
+        bash {params.run_script} {MODELROOT_SS} {params.model_job_scripts} {params.slurm_log_file} {params.outFile} {DATA_DIR}
         while [ ! -e {output.outFile1} ] || [ ! -e {output.outFile2} ] || [ ! -e {output.outFile3} ] || [ ! -e {output.outFile4} ]; do
             if [ -e {params.errorFile} ]; then
                 exit 1
@@ -121,3 +121,6 @@ rule wrap_up:
         '''
         touch {output.outFile}
         '''
+
+
+# cp -r OUTPUT to final output with correct names as parent folders
