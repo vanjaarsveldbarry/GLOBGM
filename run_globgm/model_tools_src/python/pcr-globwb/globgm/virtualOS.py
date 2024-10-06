@@ -153,9 +153,8 @@ def readDownscaling_gwRecharge_modflow(gwRechargeFile, correctionFile, cloneMap)
                                     coords=dict(latitude=f.variables['lat'][yIdxSta:yIdxEnd],
                                                  longitude=f.variables['lon'][xIdxSta:xIdxEnd])).sortby('latitude')
 
-        lon = pcr.pcr2numpy(pcr.xcoordinate(pcr.defined(cloneMap)), np.nan)[0, :]
-        lat = np.sort(pcr.pcr2numpy(pcr.ycoordinate(pcr.defined(cloneMap)), np.nan)[:, 0])
-
+        lon = pcr.pcr2numpy(pcr.xcoordinate(pcr.boolean(pcr.cover(cloneMap, 1.0))), np.nan)[0, :]
+        lat = np.sort(pcr.pcr2numpy(pcr.ycoordinate(pcr.boolean(pcr.cover(cloneMap, 1.0))), np.nan)[:, 0])
         cropData = pyinterp.backends.xarray.Grid2D(cropData, geodetic=False)
         mx, my = np.meshgrid(lon, lat, indexing="ij")
         cropData = cropData.bicubic(coords=dict(longitude=mx.ravel(), latitude=my.ravel()), num_threads=1)
@@ -168,20 +167,6 @@ def readDownscaling_gwRecharge_modflow(gwRechargeFile, correctionFile, cloneMap)
 
     gwRecharge = gwRecharge * correctionFactor
     return gwRecharge
-
-    ####################
-
-    # print(np.max(lat), np.min(lat), np.min(lon), np.max(lon))
-    
-    # # gwRecharge = xr.open_dataset(gwRechargeFile).groundwater_recharge.sel(lon=slice(lon[0]-1, lon[-1]+1), lat=slice(lat[0]+1, lat[-1]-1))
-    # # print(gwRecharge)
-    # # gwRecharge = netcdf2PCRobjCloneWithoutTime(gwRechargeFile, "groundwater_recharge", cloneMap, True, None, None)
-    # sys.exit()
-    
-    # gwRecharge = gwRecharge.reindex(lat=lat, lon=lon, method='nearest')
-    # downScaleCF = xr.open_zarr(correctionFile).groundwater_recharge.sel(lon=slice(lon[0], lon[-1]), lat=slice(lat[0], lat[-1])).compute()
-    # gwRecharge = (gwRecharge * downScaleCF) * 100
-    # return pcr.numpy2pcr(pcr.Scalar, gwRecharge.values, MV)
 
         
 def read_zarr(file, varName, timeStamp, cloneMapFileName):    

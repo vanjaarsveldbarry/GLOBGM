@@ -2,6 +2,7 @@ import os
 SIMULATION = config["simulation"]
 OUTPUTDIRECTORY = config["outputDirectory"]
 RUN_GLOBGM_DIR = config["run_globgm_dir"]
+DATA_DIR = config["data_dir"]
 
 MODELROOT_SS=f"{OUTPUTDIRECTORY}/{SIMULATION}/ss"
 SLURMDIR_SS=f"{MODELROOT_SS}/slurm_logs"
@@ -25,7 +26,6 @@ rule setup_simulation:
     shell:
         '''
         mkdir -p {params.dir1} {params.dir2} {params.dir3} {params.dir4} {params.dir5}
-        cp -r {params.model_input_dir} {params.modelroot_ss}
         touch {output.outFile}
         '''
 
@@ -36,12 +36,12 @@ rule prepare_model_partitioning:
         outFile=f"{SLURMDIR_SS}/1_prepare_model_partitioning/prepare_model_partitioning_complete"
 
     params:
-        run_script=f"{RUN_GLOBGM_DIR}/model_job_scripts/1_prepare_model_partitioning/01_prep_model_part.slurm",
+        run_script=f"{RUN_GLOBGM_DIR}/model_job_scripts/1_prepare_model_partitioning/1_prep_model_part.slurm",
         slurm_log_file=f"{SLURMDIR_SS}/1_prepare_model_partitioning/1_prep_model_part.out"
 
     shell:
         '''
-        sbatch -o {params.slurm_log_file} {params.run_script} {MODELROOT_SS} {output.outFile}
+        sbatch -o {params.slurm_log_file} {params.run_script} {MODELROOT_SS} {DATA_DIR} {output.outFile}
         while [ ! -e {output.outFile} ]; do
              sleep 10
         done
@@ -58,7 +58,7 @@ rule write_model_input_setup:
         slurm_log_file=f"{SLURMDIR_SS}/2_write_model_input/_setup_ss.out"
     shell:
         '''
-        sbatch -o {params.slurm_log_file} {params.run_script} {MODELROOT_SS} {output.outFile}
+        sbatch -o {params.slurm_log_file} {params.run_script} {MODELROOT_SS} {DATA_DIR} {RUN_GLOBGM_DIR} {output.outFile}
         while [ ! -e {output.outFile} ]; do
             sleep 10
         done
@@ -76,7 +76,7 @@ rule write_model_input:
 
     shell:
         '''
-        sbatch -o {params.slurm_log_file} {params.run_script} {MODELROOT_SS} {output.outFile}
+        sbatch -o {params.slurm_log_file} {params.run_script} {MODELROOT_SS} {DATA_DIR} {output.outFile}
         while [ ! -e {output.outFile} ]; do
             sleep 10
         done

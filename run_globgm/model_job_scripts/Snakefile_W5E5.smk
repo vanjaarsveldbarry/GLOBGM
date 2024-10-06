@@ -583,7 +583,7 @@ use rule write_model_input_solution1 as write_model_input_solution1_run2 with:
 
     params:
         run_script=f"{RUN_GLOBGM_DIR}/model_job_scripts/2_write_model_input/tr/_writeModels_tr.slurm",
-        slurm_log_file=f"{SLURMDIR_TR}/2_write_model_input/_writeModels/1_wMod_1.out",
+        slurm_log_file=f"{SLURMDIR_TR}/2_write_model_input/_writeModels/1_wMod_2.out",
         label=rules.write_model_input_setup.params.label2,
         solution=1,
         runType="subRun"

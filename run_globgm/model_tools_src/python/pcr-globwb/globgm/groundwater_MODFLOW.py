@@ -215,7 +215,6 @@ class GroundwaterModflow(object):
 
             # a dictionary contains areaFractions (dimensionless): fractions of flooded/innundated areas  
             areaFractions = list(map(float, str(iniItems.modflowParameterOptions['relativeElevationLevels']).split(',')))
-            # ~ print(areaFractions)
             
             # number of levels/intervals
             nrZLevels     = len(areaFractions)
@@ -616,27 +615,12 @@ class GroundwaterModflow(object):
             chosen_column_index = int(len(np_ratio_vertical_to_horizontal[0,:]) / 2)
             assumedVerticalSize = cellSizeInArcMin *1852.0 * np_ratio_vertical_to_horizontal
             
-            print(assumedVerticalSize)
-            print(chosen_column_index)
-            
             self.listOfAssumedVerticalSize = assumedVerticalSize[:,chosen_column_index].tolist()
             #~ self.listOfAssumedVerticalSize = list(assumedVerticalSize[:,chosen_column_index])
             
             self.verticalSize   = ratio_vertical_to_horizontal * (cellSizeInArcMin*1852.)
             self.horizontalSize = 1.0 * (cellSizeInArcMin*1852.)
             
-            print(self.listOfAssumedHorizontalSize)
-            print(self.listOfAssumedVerticalSize)
-            
-            print(len(self.listOfAssumedHorizontalSize))
-            print(len(self.listOfAssumedVerticalSize))
-            
-            print(np.amax(self.listOfAssumedHorizontalSize))
-            print(np.amax(self.listOfAssumedVerticalSize))
-            
-            print(np.mean(self.listOfAssumedHorizontalSize))
-            print(np.mean(self.listOfAssumedVerticalSize))
-
 
         # an option to put modflow cell dimension in meter 
         if self.using_constant_equal_DELR_and_DELC_in_meter:
@@ -652,18 +636,6 @@ class GroundwaterModflow(object):
             self.listOfAssumedHorizontalSize = [cell_dimension_in_meter] * int(pcr.clone().nrCols())
             self.listOfAssumedVerticalSize   = [cell_dimension_in_meter] * int(pcr.clone().nrRows())
             
-            print(self.listOfAssumedHorizontalSize)
-            print(self.listOfAssumedVerticalSize)
-            
-            print(len(self.listOfAssumedHorizontalSize))
-            print(len(self.listOfAssumedVerticalSize))
-            
-            print(np.amax(self.listOfAssumedHorizontalSize))
-            print(np.amax(self.listOfAssumedVerticalSize))
-            
-            print(np.mean(self.listOfAssumedHorizontalSize))
-            print(np.mean(self.listOfAssumedVerticalSize))
-        
     def initiate_modflow(self):
 
         logger.info("Initializing pcraster modflow.")
@@ -1059,7 +1031,7 @@ class GroundwaterModflow(object):
 
         msg = "Assign vertical conductivities to determine VCONT values (1/resistance) between upper and lower layers (used for calculating VCONT for the BCF package)."
         if self.log_to_info: logger.info(msg)
-        # - default values
+        # - initial values
         vertical_conductivity_layer_2 = self.kSatAquifer
         # - if specifically defined in the configuration/ini file
         if "confiningLayerVerticalConductivity" in self.iniItems.modflowParameterOptions.keys() and\
@@ -1926,9 +1898,6 @@ class GroundwaterModflow(object):
             self.built_up_area_correction_for_recharge = pcr.min(1.0, self.built_up_area_correction_for_recharge)   
         
  
-
-        # ~ print("test_1")
-
         # set parameter values for the DIS package
         self.pcr_modflow.setDISParameter(ITMUNI, LENUNI, PERLEN, NSTP, TSMULT, SSTR)
         #
@@ -1940,8 +1909,6 @@ class GroundwaterModflow(object):
         # NSTP   = 1     # number of time steps in a stress period
         # TSMULT = 1.0   # multiplier for the length of the successive iterations
         # SSTR   = 1     # 0 - transient, 1 - steady state
-
-        # ~ print("test_2")
 
  
         if self.online_daily_coupling_between_pcrglobwb_and_modflow and simulation_type == "transient":
@@ -2008,11 +1975,7 @@ class GroundwaterModflow(object):
             
             # set PCG solver
             
-            print("test_before_pcg")
-            
             self.pcr_modflow.setPCG(MXITER, ITERI, NPCOND, HCLOSE, RCLOSE, RELAX, NBPOL, DAMP)
-
-            print("test_after_pcg")
 
             # some notes for PCG solver values  
             #
@@ -2043,8 +2006,6 @@ class GroundwaterModflow(object):
                     self.modflow_converged = False
 
             
-            print(self.modflow_converged)
-
             if self.modflow_converged == False:
             
                 logger.info('')
@@ -2752,11 +2713,10 @@ class GroundwaterModflow(object):
                 satAreaFrac = vos.readPCRmapClone(vos.getFullPath(self.iniItems.modflowSteadyStateInputOptions['satAreaFracInputMap'], self.inputDir), self.cloneMap, self.tmpDir, self.inputDir)
             
             # - reading relative_elevation_above_dem_minimum
-            relZFileName = vos.getFullPath(self.iniItems.modflowTransientInputOptions['relativeElevationFiles'], self.iniItems.globalOptions['inputDir'])
+            relZFileName = vos.getFullPath(self.iniItems.modflowParameterOptions['relativeElevationFilesForSatAreaFrac'], self.iniItems.globalOptions['inputDir'])
 		    
             # a dictionary contains areaFractions (dimensionless): fractions of flooded/innundated areas  
-            areaFractions = list(map(float, str(self.iniItems.modflowTransientInputOptions['relativeElevationLevels']).split(',')))
-            print(areaFractions)
+            areaFractions = list(map(float, str(self.iniItems.modflowParameterOptions['relativeElevationLevelsForSatAreaFrac']).split(',')))
             # number of levels/intervals
             nrZLevels     = len(areaFractions)
             # - TODO: Read areaFractions and nrZLevels automatically. 
@@ -2781,16 +2741,11 @@ class GroundwaterModflow(object):
                 if iCnt > 0: relZ[iCnt] = pcr.max(relZ[iCnt], relZ[iCnt-1])
             
             relative_elevation_above_dem_minimum = relZ     
-		    
-            # - reading minimumDEM
-            minimumDEM = vos.readPCRmapClone(self.iniItems.modflowTransientInputOptions['minimumDEM'], self.cloneMap, self.tmpDir, self.inputDir)
             
             # estimate relative_elevation_from_satAreaFrac (relative above minimum dem)
             percentileList = areaFractions
             for i_perc in range(0,len(percentileList)):
                 
-                print(percentileList[i_perc])
-		    
                 if i_perc < (len(percentileList)-1):
                     
                     lower_order = pcr.scalar(percentileList[i_perc])
@@ -2822,6 +2777,10 @@ class GroundwaterModflow(object):
                 else:
                     relative_elevation_from_satAreaFrac = pcr.cover(relative_elevation_from_satAreaFrac, elevation) 
             
+            # - reading minimumDEM
+            minimumDEM = vos.readPCRmapClone(self.iniItems.modflowParameterOptions['minimumElevationForSatAreaFrac'], self.cloneMap, self.tmpDir, self.inputDir)
+
+            # absolute elevation
             elevation_from_satAreaFrac = minimumDEM + relative_elevation_from_satAreaFrac
 
             # set the minimum elevation to the floodplain elevation
@@ -2892,7 +2851,6 @@ class GroundwaterModflow(object):
             if self.varying_drain_conductances:
                 for iCnt in range(0, self.nrZLevels):
                     
-                    print(iCnt)
                     if iCnt == 0:
                         # default drainage conductance values, assumed for the lowest drainage elevation
                         drain_mult_conductances[iCnt] = drain_conductance
@@ -2911,8 +2869,6 @@ class GroundwaterModflow(object):
                 using_modflow_6 = True
             
             for iCnt in range(0, self.nrZLevels):
-                
-                print(iCnt)
                 
                 # drain conductance - make sure that all values are covered (with zero)
                 # - reset
@@ -2961,7 +2917,6 @@ class GroundwaterModflow(object):
                 # merge all files pcrmf_drn.asc to a single file
                 # ~ input_files = glob.glob(self.tmp_modflow_dir + "/tmp_drain/*.asc")
                 input_files = glob.glob("tmp_drain/*.asc")
-                print(input_files)
                 output_file = 'pcrmf_drn.asc'
                 
                 with open(output_file, 'w') as output_file:  

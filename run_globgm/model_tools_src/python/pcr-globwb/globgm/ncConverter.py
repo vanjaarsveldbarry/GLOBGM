@@ -97,7 +97,6 @@ class PCR2netCDF():
             self.attributeDictionary['description'] = iniItems.globalOptions['description']
         else:
             for ncAttributeKey, ncAttribute in list(specificAttributeDictionary.items()):
-                print(ncAttributeKey, ncAttribute)
                 self.attributeDictionary[ncAttributeKey]= ncAttribute
 
     def createNetCDF(self, ncFileName, varName, varUnits, longName = None, standardName= None):
