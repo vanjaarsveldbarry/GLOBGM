@@ -134,3 +134,5 @@ output/
 .out
 
 .snakemake/
+
+run_globgm/model_job_scripts/_slurmOut/

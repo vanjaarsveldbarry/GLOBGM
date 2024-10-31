@@ -29,6 +29,7 @@ import calendar
 from dateutil.relativedelta import relativedelta
 import glob
 import shutil
+import re
 
 import pcraster as pcr
 from pcraster.framework import DynamicModel
@@ -109,6 +110,7 @@ def main():
             inDir = sys.argv[5]
             outDir = sys.argv[6]
             forcingDir = sys.argv[7]
+            calib_str = sys.argv[8]
             iniFileName_new = os.path.join(os.path.dirname(iniFileName),'%s.ini'%tile)
             f = open(iniFileName,'r'); s = f.read(); f.close()
             iniFileName = iniFileName_new
@@ -116,6 +118,24 @@ def main():
             s = s.replace('IN_DIR',inDir)
             s = s.replace('OUT_DIR',outDir)
             s = s.replace('FORCING_DIR',forcingDir)
+            
+            def parse_calib_str(calib_str):
+                params = {}
+                parts = calib_str.split('_')
+                print(parts)
+                for part in parts:
+                    match = re.search(r'(\d+\.\d+)', part)
+                    if match:
+                        key = part[:match.start()]
+                        value = str(match.group(1))
+                        params[key] = value
+                return params
+            params=parse_calib_str(calib_str)
+            s = s.replace('KH_UNCON_PF',params.get('khuncon'))
+            s = s.replace('KH_CON_PF',params.get('khcon'))
+            s = s.replace('KH_CAR_PF',params.get('khcar'))
+            s = s.replace('KV_CON_PF',params.get('kvconf'))
+            s = s.replace('RIV_RES_PF',params.get('riverres'))
             f = open(iniFileName,'w'); f.write(s); f.close()
         else:
             inDir = sys.argv[5]

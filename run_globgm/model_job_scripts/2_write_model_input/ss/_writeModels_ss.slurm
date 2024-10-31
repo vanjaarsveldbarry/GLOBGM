@@ -12,6 +12,7 @@ mamba activate globgm
 modelRoot=$1
 data_dir=$2
 outFile=$3
+calib_str=$4
 
 simulation=$(basename $(dirname $modelRoot))
 cmip6InputFolder=$data_dir/cmip6_input/$simulation/historical_natural
@@ -44,7 +45,7 @@ process_gwRecharge() {
     first_year=${years_array[0]}
     last_year=${years_array[-1]}
 
-    cdo -L -f nc4 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,$first_year/$last_year $inFile $outFile.temp.nc
+    cdo -L -f nc4 -setrtoc,-inf,0,0 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,$first_year/$last_year $inFile $outFile.temp.nc    
     gdal_translate -of GTiff $outFile.temp.nc $outFile.temp.tif
     gdal_translate -of PCRaster ${outFile}.temp.tif ${outFile}.temp.map
     gdal_translate -of NETCDF ${outFile}.temp.map $tempdir/average_gwRecharge_m_per_day.map.nc
@@ -104,7 +105,7 @@ cd $pcrlobwbDir
 counter=0
 for ((i=1; i<=163; i+=1)); do
     num=$(printf "%03d" $((10#$i)))
-    python deterministic_runner_for_monthly_offline_globgm.py $model_input/steady-state/steady-state_config.ini debug steady-state-only tile_${num}-163 $IN_DIR $OUT_DIR $forcingDir &
+    python deterministic_runner_for_monthly_offline_globgm.py $model_input/steady-state/steady-state_config.ini debug steady-state-only tile_${num}-163 $IN_DIR $OUT_DIR $forcingDir $calib_str &
     counter=$((counter+1))
     if [ $counter -eq 24 ]; then
         wait

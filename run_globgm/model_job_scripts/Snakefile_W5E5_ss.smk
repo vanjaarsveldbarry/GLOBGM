@@ -3,13 +3,15 @@ SIMULATION = config["simulation"]
 OUTPUTDIRECTORY = config["outputDirectory"]
 RUN_GLOBGM_DIR = config["run_globgm_dir"]
 DATA_DIR = config["data_dir"]
+CALIB_STR = config["calib_str"]
 
-MODELROOT_SS=f"{OUTPUTDIRECTORY}/{SIMULATION}/ss"
+MODELROOT_SS=f"{OUTPUTDIRECTORY}/{CALIB_STR}/{SIMULATION}/ss"
 SLURMDIR_SS=f"{MODELROOT_SS}/slurm_logs"
+SAVEDIR="/scratch-shared/bvjaarsv/calibrationOut"
 
 rule all:
     input:
-        f"{SLURMDIR_SS}/sim_done"
+        f"{OUTPUTDIRECTORY}/{CALIB_STR}_done"
 
 rule setup_simulation:
     output:
@@ -72,11 +74,12 @@ rule write_model_input:
 
     params:
         run_script=f"{RUN_GLOBGM_DIR}/model_job_scripts/2_write_model_input/ss/_writeModels_ss.slurm",
-        slurm_log_file=f"{SLURMDIR_SS}/2_write_model_input/_writeModels_ss.out"
+        slurm_log_file=f"{SLURMDIR_SS}/2_write_model_input/_writeModels_ss.out", 
+        calib_str=f"{CALIB_STR}"
 
     shell:
         '''
-        sbatch -o {params.slurm_log_file} {params.run_script} {MODELROOT_SS} {DATA_DIR} {output.outFile}
+        sbatch -o {params.slurm_log_file} {params.run_script} {MODELROOT_SS} {DATA_DIR} {output.outFile} {params.calib_str}
         while [ ! -e {output.outFile} ]; do
             sleep 10
         done
@@ -109,18 +112,35 @@ rule run_models:
         done
         '''
 
-rule wrap_up:
+rule move_data:
     input:
         rules.run_models.output.outFile1,
         rules.run_models.output.outFile2,
         rules.run_models.output.outFile3,
         rules.run_models.output.outFile4,
     output:
-        outFile=f"{SLURMDIR_SS}/sim_done"
+        outFile=f"{SLURMDIR_SS}/move_done"
+    params:
+        save_dir=f"{SAVEDIR}/{CALIB_STR}", 
+        input_dir=f"{MODELROOT_SS}/mf6_post/",
     shell:
         '''
+        mkdir -p {params.save_dir}
+        cp -r {params.input_dir} {params.save_dir}
+        wait 
         touch {output.outFile}
         '''
 
-
-# cp -r OUTPUT to final output with correct names as parent folders
+rule wrap_up:
+    input:
+        rules.move_data.output.outFile,
+    output:
+        outFile=f"{OUTPUTDIRECTORY}/{CALIB_STR}_done"
+    params:
+        rootFolder=f"{OUTPUTDIRECTORY}/{CALIB_STR}"
+    shell:
+        '''
+        rm -r {params.rootFolder}
+        wait
+        touch {output.outFile}
+        '''

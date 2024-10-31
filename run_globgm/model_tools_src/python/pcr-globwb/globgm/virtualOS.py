@@ -50,6 +50,7 @@ import zarr
 
 import pyinterp
 import pyinterp.backends.xarray
+import pyinterp.fill
 
 import logging
 
@@ -99,9 +100,6 @@ def readDownscaling_gwRecharge_modflow(gwRechargeFile, correctionFile, cloneMap)
 
         yIdxEnd = int(math.ceil(yIdxSta + rowsClone /(factor)))
         correctionFactor = f['correction_factor'].get_basic_selection((slice(yIdxSta,yIdxEnd), slice(xIdxSta,xIdxEnd)))[:]
-        print(f['lat'][:])
-        print(yIdxSta,yIdxEnd)
-        print(correctionFactor.shape)
 
         return pcr.numpy2pcr(pcr.Scalar, correctionFactor, MV)
 
@@ -156,20 +154,31 @@ def readDownscaling_gwRecharge_modflow(gwRechargeFile, correctionFile, cloneMap)
         cropData = xr.DataArray(cropData, dims=['latitude', 'longitude'],
                                     coords=dict(latitude=f.variables['lat'][yIdxSta:yIdxEnd],
                                                  longitude=f.variables['lon'][xIdxSta:xIdxEnd])).sortby('latitude')
+        res_ds=cropData.latitude.values[1] - cropData.latitude.values[0]
+        ds_lats = np.insert(cropData.latitude.values, 0, cropData.latitude.values[0] - res_ds)
+        ds_lats = np.append(ds_lats, cropData.latitude.values[-1] + res_ds)
+        ds_lons = np.insert(cropData.longitude.values, 0, cropData.longitude.values[0] - res_ds)
+        ds_lons = np.append(ds_lons, cropData.longitude.values[-1] + res_ds)
+        cropData = cropData.reindex(latitude=ds_lats, longitude=ds_lons, method='nearest')
+
         lon = pcr.pcr2numpy(pcr.xcoordinate(pcr.boolean(pcr.cover(cloneMap, 1.0))), np.nan)[0, :]
         lat = np.sort(pcr.pcr2numpy(pcr.ycoordinate(pcr.boolean(pcr.cover(cloneMap, 1.0))), np.nan)[:, 0])
+        
+        cropData_nan = pyinterp.backends.xarray.Grid2D(cropData, geodetic=False)
+        cropData_nan = pyinterp.fill.loess(cropData_nan, nx=3, ny=3)
+        cropData.values = cropData_nan
         cropData = pyinterp.backends.xarray.Grid2D(cropData, geodetic=False)
         mx, my = np.meshgrid(lon, lat, indexing="ij")
-        cropData = cropData.bicubic(coords=dict(longitude=mx.ravel(), latitude=my.ravel()), num_threads=1)
+        cropData = cropData.bivariate(coords=dict(longitude=mx.ravel(), latitude=my.ravel()), num_threads=1)
         cropData = cropData.reshape(mx.shape).T
+        cropData = xr.DataArray(cropData, dims=['lat', 'lon'], coords=dict(lat=lat, lon=lon)).sortby('lat', ascending=False)
+        cropData = np.clip(cropData.values, a_min=0, a_max=None)
         return pcr.numpy2pcr(pcr.Scalar, cropData, MV)
     correctionFactor = _read_correctionFactor(correctionFile, cloneMap)
     gwRecharge = _read_gwRecharge(gwRechargeFile, cloneMap)
-
     gwRecharge = gwRecharge * correctionFactor
     return gwRecharge
 
-        
 def read_zarr(file, varName, timeStamp, cloneMapFileName):    
     lat= pcr.pcr2numpy(pcr.ycoordinate(pcr.boolean(1)),MV)[:,0].ravel()
     lon= pcr.pcr2numpy(pcr.xcoordinate(pcr.boolean(1)),MV)[0,:].ravel()

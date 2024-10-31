@@ -4,6 +4,7 @@
 #SBATCH --partition=genoa
 #SBATCH --exclusive
 #SBATCH --constraint=scratch-node
+#SBATCH -o /projects/0/einf4705/workflow/GLOBGM/run_globgm/model_job_scripts/2_write_model_input/ss/_writeModels_ss_TEST.out
 
 source ${HOME}/.bashrc
 mamba activate globgm
@@ -12,16 +13,16 @@ mamba activate globgm
 # modelRoot=$1
 data_dir=/projects/0/einf4705/_data
 # outFile=$3
-_prefactors=("0.1" "0.1" "0.1" "0.1" "0.1" "0.1")
+calib_str="khuncon0.1_khcon0.1_khcar0.1_kvconf0.1_riverres0.1"
 
 # simulation=$(basename $(dirname $modelRoot))
 cmip6InputFolder=/projects/0/einf4705/_data/cmip6_input/gswp3-w5e5/historical_natural
-forcingDir=/scratch-shared/bvjaarsv/bvjaarsv.8088937/forcing_input
-# _pcr_calc_files=$data_dir/globgm_input/_pcrcalc_files
-# mkdir -p $forcingDir
+forcingDir=/scratch-shared/bvjaarsv/inputTest/forcing_input
+_pcr_calc_files=$data_dir/globgm_input/_pcrcalc_files
+mkdir -p $forcingDir
 
 # model_input=$(realpath $modelRoot/model_input/2_partition_and_write_model_input)
-OUT_DIR=/scratch-shared/bvjaarsv/bvjaarsv.8088937/input_map/steady-state
+OUT_DIR=/scratch-shared/bvjaarsv/inputTest/input_map/steady-state
 IN_DIR=$data_dir/globgm_input
 pcrlobwbDir=$(realpath ../model_tools_src/python/pcr-globwb)
 
@@ -45,7 +46,7 @@ process_gwRecharge() {
     first_year=${years_array[0]}
     last_year=${years_array[-1]}
 
-    cdo -L -f nc4 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,$first_year/$last_year $inFile $outFile.temp.nc
+    cdo -L -f nc4 -setrtoc,-inf,0,0 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,$first_year/$last_year $inFile $outFile.temp.nc    
     gdal_translate -of GTiff $outFile.temp.nc $outFile.temp.tif
     gdal_translate -of PCRaster ${outFile}.temp.tif ${outFile}.temp.map
     gdal_translate -of NETCDF ${outFile}.temp.map $tempdir/average_gwRecharge_m_per_day.map.nc
@@ -100,22 +101,34 @@ process_totalRunoff_to_Discharge() {
 # cp -r $correctionFile $forcingDir
 # wait
 
-# #Step 2 Write .map tiles
+
+#Step 2 Write .map tiles
 cd $pcrlobwbDir
 counter=0
 INI=/projects/0/einf4705/workflow/GLOBGM/run_globgm/model_input/2_partition_and_write_model_input/steady-state/steady-state_config.ini
-for ((i=1; i<=163; i+=1)); do
-    num=$(printf "%03d" $((10#$i)))
-    python deterministic_runner_for_monthly_offline_globgm.py $INI debug steady-state-only tile_${num}-163 $IN_DIR $OUT_DIR $forcingDir \
-                                                              ${_prefactors[0]} &
-    break
-    counter=$((counter+1))
-    if [ $counter -eq 24 ]; then
-        wait
-        counter=0
-    fi
-done
+OUT_DIR=/scratch-shared/bvjaarsv/settingsTest/yes_downscale
+num=156
+python deterministic_runner_for_monthly_offline_globgm.py $INI debug steady-state-only tile_${num}-163 $IN_DIR $OUT_DIR $forcingDir $calib_str
 wait
+# file=$OUT_DIR/tile_${num}-163/steady-state_only/maps/net_RCH
+# gdal_translate -of netCDF $file.map $file.nc
+# wait
+
+
+# file=$OUT_DIR/tile_${num}-163/steady-state_only/maps/net_RCH
+# gdal_translate -of netCDF $file.map $file.map_temp
+# cdo invertlat $file.map_temp $file.nc
+# rm $file.map_temp
+
+# file=/scratch-shared/bvjaarsv/bvjaarsv.8088937/input_map/gwRecharge
+# gdal_translate -of netCDF $file.map $file.map_temp
+# cdo invertlat $file.map_temp $file.nc
+# rm $file.map_temp
+
+# file=/scratch-shared/bvjaarsv/bvjaarsv.8088937/input_map/cf
+# gdal_translate -of netCDF $file.map $file.map_temp
+# cdo invertlat $file.map_temp $file.nc
+# rm $file.map_temp
 
 # # Copy for post-processing
 # for ((i=1; i<=163; i+=1));do

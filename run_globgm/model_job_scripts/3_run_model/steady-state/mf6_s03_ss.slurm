@@ -2,7 +2,7 @@
 #SBATCH --nodes=1
 #SBATCH --exclusive
 #SBATCH --ntasks-per-node=32
-#SBATCH --time=00:30:00
+#SBATCH --time=02:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH --gres=cpu:1
 #SBATCH --partition=genoa,rome
@@ -22,6 +22,8 @@ dir=$modelRoot/mf6_mod/glob_ss/solutions/run_output/
 exe=$data_dir/_bin/mf6_rel_openmpi-4.1.4-gcc-11.3.0
 nam=s03.par.mfsim.ic_sh0.nam
 startDir=$(pwd)
+
+
 
 cd ${dir}
 srun ${exe} -s ../run_input/${nam}
