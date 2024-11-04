@@ -14,6 +14,7 @@ data_dir=$2
 outFile=$3
 calib_str=$4
 
+
 simulation=$(basename $(dirname $modelRoot))
 cmip6InputFolder=$data_dir/cmip6_input/$simulation/historical_natural
 forcingDir=$TMPDIR/forcing_input
