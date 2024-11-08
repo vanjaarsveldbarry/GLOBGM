@@ -12,16 +12,17 @@ start_year=$2
 end_year=$3
 nSpin=$4
 outFile=$5
-label=$6
+dataDir=$6
+label=$7
 nMonths=$(((( $end_year - $start_year ) + 1) * 12))
 
-inpdir=$(realpath $modelRoot/model_input/3_partition_and_write_model_input/transient)
-exe=$(realpath ../_bin/mf6ggm_181121)
+inpdir=$modelRoot/model_input/2_partition_and_write_model_input/transient
+exe=$dataDir/_bin/mf6ggm_181121
 inpmod=mf6_mod_tr.inp
 inpexe=mf6ggm_tr.inp
 moddir=$modelRoot/mf6_mod/mf6_mod_${label}
-ssFolder=$(dirname $modelRoot)/ss/mf6_mod/glob_ss/models/run_output_bin/
-yodaInput=$(realpath ../_data/globgm_input)
+ssFolder=$dataDir/globgm_input/initial_states/
+yodaInput=$dataDir/globgm_input
 globgmDir=$modelRoot
 mkdir -p $moddir
 cp ${inpdir}/${inpmod} ${moddir}/${inpmod}

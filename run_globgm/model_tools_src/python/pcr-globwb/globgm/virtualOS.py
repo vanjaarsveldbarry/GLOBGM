@@ -74,7 +74,7 @@ netcdf_suffixes = ('.nc4','.nc')
 # maximum number of tries for reading files:
 max_num_of_tries = 5
 
-def readDownscaling_gwRecharge_modflow(gwRechargeFile, correctionFile, cloneMap): 
+def readDownscaling_gwRecharge_modflowNC(gwRechargeFile, correctionFile, cloneMap): 
 
     def _read_correctionFactor(correctionFile, cloneMap):
         f = zarr.convenience.open(correctionFile)
@@ -176,6 +176,80 @@ def readDownscaling_gwRecharge_modflow(gwRechargeFile, correctionFile, cloneMap)
         return pcr.numpy2pcr(pcr.Scalar, cropData, MV)
     correctionFactor = _read_correctionFactor(correctionFile, cloneMap)
     gwRecharge = _read_gwRecharge(gwRechargeFile, cloneMap)
+    gwRecharge = gwRecharge * correctionFactor
+    return gwRecharge
+
+def readDownscaling_gwRecharge_modflowZARR(gwRechargeFile, correctionFile, timeStamp, cloneMap): 
+
+    def _read_correctionFactor(correctionFile, cloneMap):
+        f = zarr.convenience.open(correctionFile)
+        attributeClone = getMapAttributesALL(cloneMap)
+        cellsizeClone = attributeClone['cellsize']
+        rowsClone = attributeClone['rows']
+        colsClone = attributeClone['cols']
+        xULClone = attributeClone['xUL']
+        yULClone = attributeClone['yUL']
+        #get the attributes of input (netCDF) 
+        cellsizeInput = f['lat'][0] - f['lat'][1] 
+        cellsizeInput = float(cellsizeInput)
+
+        factor = 1                                 # needed in regridData2FinerGrid
+        minX    = min(abs(f['lon'][:] - (xULClone + 0.5*cellsizeInput)))
+        xIdxSta = int(np.where(abs(f['lon'][:] - (xULClone + 0.5*cellsizeInput)) == minX)[0])
+
+        xIdxEnd = int(math.ceil(xIdxSta + colsClone /(factor)))
+
+        minY    = min(abs(f['lat'][:] - (yULClone - 0.5*cellsizeInput))) # ; print(minY)
+
+        yIdxSta = int(np.where(abs(f['lat'][:] - (yULClone - 0.5*cellsizeInput)) == minY)[0])
+
+        yIdxEnd = int(math.ceil(yIdxSta + rowsClone /(factor)))
+        correctionFactor = f['correction_factor'].get_basic_selection((slice(yIdxSta,yIdxEnd), slice(xIdxSta,xIdxEnd)))[:]
+
+        return pcr.numpy2pcr(pcr.Scalar, correctionFactor, MV)
+
+    def _read_gwRecharge_zarr(gwRechargeFile, varName, timeStamp, cloneMapFileName):    
+        lat= pcr.pcr2numpy(pcr.ycoordinate(pcr.boolean(1)),MV)[:,0].ravel()
+        lon= pcr.pcr2numpy(pcr.xcoordinate(pcr.boolean(1)),MV)[0,:].ravel()
+        
+        f = zarr.convenience.open(gwRechargeFile)
+        
+        attributeClone = getMapAttributesALL(cloneMapFileName)
+        cellsizeClone = attributeClone['cellsize']
+        rowsClone = attributeClone['rows']
+        colsClone = attributeClone['cols']
+        xULClone = attributeClone['xUL']
+        yULClone = attributeClone['yUL']
+        #get the attributes of input (netCDF) 
+        cellsizeInput = f['lat'][0] - f['lat'][1] 
+        cellsizeInput = float(cellsizeInput)
+
+        factor = 1                                 # needed in regridData2FinerGrid
+        minX    = min(abs(f['lon'][:] - (xULClone + 0.5*cellsizeInput)))
+        xIdxSta = int(np.where(abs(f['lon'][:] - (xULClone + 0.5*cellsizeInput)) == minX)[0])
+
+        #     #~ xIdxSta = int(np.where(np.abs(f.variables['lon'][:] - (xULClone - cellsizeInput/2)) == minX)[0][0])
+        #     #~ # see: https://github.com/UU-Hydro/PCR-GLOBWB_model/pull/13
+
+        #     #~ xIdxEnd = int(math.ceil(xIdxSta + colsClone /(cellsizeInput/cellsizeClone)))
+        xIdxEnd = int(math.ceil(xIdxSta + colsClone /(factor)))
+
+        minY    = min(abs(f['lat'][:] - (yULClone - 0.5*cellsizeInput))) # ; print(minY)
+
+        yIdxSta = int(np.where(abs(f['lat'][:] - (yULClone - 0.5*cellsizeInput)) == minY)[0])
+
+        #     #~ yIdxSta = int(np.where(np.abs(f.variables['lat'][:] - (yULClone - cellsizeInput/2)) == minY)[0][0])
+        #     #~ # see: https://github.com/UU-Hydro/PCR-GLOBWB_model/pull/13
+
+        #     #~ yIdxEnd = int(math.ceil(yIdxSta + rowsClone /(cellsizeInput/cellsizeClone)))
+        yIdxEnd = int(math.ceil(yIdxSta + rowsClone /(factor)))
+        timeStamp=timeStamp-1
+        
+        data = f[varName].get_basic_selection((timeStamp, slice(yIdxSta,yIdxEnd), slice(xIdxSta,xIdxEnd)))[:]
+        return pcr.numpy2pcr(pcr.Scalar, data, MV)
+
+    correctionFactor = _read_correctionFactor(correctionFile, cloneMap)
+    gwRecharge = _read_gwRecharge_zarr(gwRechargeFile, 'gwRecharge', timeStamp, cloneMap)
     gwRecharge = gwRecharge * correctionFactor
     return gwRecharge
 

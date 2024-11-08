@@ -4,11 +4,10 @@ import sys
 from numcodecs import Blosc
 import pandas as pd
 
-input_folder=Path(sys.argv[1])
+input_folder=Path(sys.argv[1]).parent
 saveFolder=Path(sys.argv[2])
 start_year=int(sys.argv[3])
 end_year=int(sys.argv[4])
-
 
 _compressor = Blosc(cname='zstd', clevel=5, shuffle=Blosc.BITSHUFFLE)
 _encoding_dict={'dtype': 'float32', '_FillValue': -9999, 'compressor': _compressor}

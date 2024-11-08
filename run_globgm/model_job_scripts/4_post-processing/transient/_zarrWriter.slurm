@@ -15,13 +15,14 @@ solution=$3
 startDate=$4
 endDate=$5
 modDir=$6
-outFile=$7
+dataDir=$7
+outFile=$8
 
 _merge_zarr=$(realpath ../model_tools_src/python/to_zarr/mergeZarr_tr.py)
-inpdir=$(realpath $modelRoot/model_input/5_post-processing/transient)
+inpdir=$modelRoot/model_input/4_post-processing/transient
 inp_tr=mf6ggm_post_tr_$var.inp
-exe=$(realpath ../_bin/mf6ggmpost_260624)
-yodaInput=$(realpath ../_data/globgm_input)
+exe=$dataDir/_bin/mf6ggmpost_260624
+yodaInput=$dataDir/globgm_input
 dir=$modelRoot/mf6_post
 input_file=s0${solution}_${inp_tr}
 
@@ -51,7 +52,6 @@ for ((year=$startDate; year<=$endDate; year++));do
     fi
 done
 wait
-cp $sub_input /scratch-shared/bvjaarsv/test
 
 counter=0
 for ((year=$startDate; year<=$endDate; year++));do

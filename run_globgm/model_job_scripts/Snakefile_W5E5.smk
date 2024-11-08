@@ -5,6 +5,7 @@ RUN_GLOBGM_DIR = config["run_globgm_dir"]
 
 MODELROOT_TR=f"{OUTPUTDIRECTORY}/{SIMULATION}/tr"
 SLURMDIR_TR=f"{MODELROOT_TR}/slurm_logs"
+DATA_DIR = config["data_dir"]
 
 STARTYEAR = 1960
 ENDYEAR = 1962
@@ -44,12 +45,12 @@ rule prepare_model_partitioning:
         outFile=f"{SLURMDIR_TR}/1_prepare_model_partitioning/prepare_model_partitioning_complete"
 
     params:
-        run_script=f"{RUN_GLOBGM_DIR}/model_job_scripts/1_prepare_model_partitioning/01_prep_model_part.slurm",
+        run_script=f"{RUN_GLOBGM_DIR}/model_job_scripts/1_prepare_model_partitioning/1_prep_model_part.slurm",
         slurm_log_file=f"{SLURMDIR_TR}/1_prepare_model_partitioning/1_prep_model_part.out"
 
     shell:
         '''
-        sbatch -o {params.slurm_log_file} {params.run_script} {MODELROOT_TR} {output.outFile}
+        sbatch -o {params.slurm_log_file} {params.run_script} {MODELROOT_TR} {DATA_DIR} {output.outFile}
         while [ ! -e {output.outFile} ]; do
              sleep 10
         done
@@ -62,11 +63,11 @@ rule write_model_forcing_setup:
         outFile=f"{SLURMDIR_TR}/2_write_model_input/write_model_input_setup_complete"
 
     params:
-        run_script=f"{RUN_GLOBGM_DIR}/model_job_scripts/2_write_model_input/tr/_writeInput_ini.slurm",
-        slurm_log_file=f"{SLURMDIR_TR}/2_write_model_input/_writeInput/writeInput_ini.out"
+        run_script=f"{RUN_GLOBGM_DIR}/model_job_scripts/2_write_model_input/tr/_writeInput_setup.slurm",
+        slurm_log_file=f"{SLURMDIR_TR}/2_write_model_input/_writeInput/writeInput_setup.out"
     shell:
         '''
-        sbatch -o {params.slurm_log_file} {params.run_script} {MODELROOT_TR} {STARTYEAR} {ENDYEAR} {output.outFile}
+        sbatch -o {params.slurm_log_file} {params.run_script} {MODELROOT_TR} {STARTYEAR} {ENDYEAR} {DATA_DIR} {output.outFile}
         while [ ! -e {output.outFile} ]; do
             sleep 10
         done
@@ -85,7 +86,7 @@ rule write_model_forcing:
 
     shell:
         '''
-        sbatch -o {params.slurm_log_file} --array=1-2 {params.run_script} {MODELROOT_TR} {STARTYEAR} {ENDYEAR} {output.outFile1}
+        sbatch -o {params.slurm_log_file} --array=1-2 {params.run_script} {MODELROOT_TR} {STARTYEAR} {ENDYEAR} {DATA_DIR} {output.outFile1}
         while [ ! -e {output.outFile1} ] || [ ! -e {output.outFile2} ]; do
             sleep 10
         done
@@ -111,9 +112,9 @@ rule write_model_input_setup:
 
     shell:
         '''
-        sbatch -o {params.slurm_log_file1} {params.run_script} {MODELROOT_TR} {params.startyear1} {params.endyear1} {params.nSpin} {output.outFile1} {params.label1}
-        sbatch -o {params.slurm_log_file2} {params.run_script} {MODELROOT_TR} {params.startyear2} {params.endyear2} {params.nSpin} {output.outFile2} {params.label2}
-        sbatch -o {params.slurm_log_file3} {params.run_script} {MODELROOT_TR} {params.startyear3} {params.endyear3} {params.nSpin} {output.outFile3} {params.label3}
+        sbatch -o {params.slurm_log_file1} {params.run_script} {MODELROOT_TR} {params.startyear1} {params.endyear1} {params.nSpin} {output.outFile1} {DATA_DIR} {params.label1}
+        sbatch -o {params.slurm_log_file2} {params.run_script} {MODELROOT_TR} {params.startyear2} {params.endyear2} {params.nSpin} {output.outFile2} {DATA_DIR} {params.label2}
+        sbatch -o {params.slurm_log_file3} {params.run_script} {MODELROOT_TR} {params.startyear3} {params.endyear3} {params.nSpin} {output.outFile3} {DATA_DIR} {params.label3}
         while [ ! -e {output.outFile1} ] || [ ! -e {output.outFile2} ] || [ ! -e {output.outFile3} ]; do
             sleep 10
         done
@@ -135,7 +136,7 @@ rule write_model_input_solution3:
 
     shell:
         '''
-        sbatch -o {params.slurm_log_file} {params.run_script} {MODELROOT_TR} {params.label} {params.solution} {params.runType} {output.outFile}
+        sbatch -o {params.slurm_log_file} {params.run_script} {MODELROOT_TR} {params.label} {params.solution} {params.runType} {DATA_DIR} {output.outFile}
         while [ ! -e {output.outFile} ]; do
             sleep 10
         done
@@ -155,11 +156,12 @@ rule run_model_solution3:
 
     shell:
         '''
-        sbatch -o {params.slurm_log_file} {params.run_script} {MODELROOT_TR} {params.runType} {params.solution} {STARTYEAR} {ENDYEAR} {params.label} {output.outFile}
+        sbatch -o {params.slurm_log_file} {params.run_script} {MODELROOT_TR} {params.runType} {params.solution} {STARTYEAR} {ENDYEAR} {params.label} {DATA_DIR} {output.outFile}
         while [ ! -e {output.outFile} ] ; do
             sleep 10
         done
         '''
+
 rule post_model_solution3:
     input:
         rules.run_model_solution3.output.outFile,
@@ -178,8 +180,8 @@ rule post_model_solution3:
 
     shell:
         '''
-        sbatch --partition=genoa -o {params.slurm_log_file1} {params.run_script} {MODELROOT_TR} wtd {params.solution} {params.startyear} {params.endyear} {params.modDir} {output.outFile1}
-        sbatch --partition=genoa -o {params.slurm_log_file2} {params.run_script} {MODELROOT_TR} hds {params.solution} {params.startyear} {params.endyear} {params.modDir} {output.outFile2}
+        sbatch --partition=genoa -o {params.slurm_log_file1} {params.run_script} {MODELROOT_TR} wtd {params.solution} {params.startyear} {params.endyear} {params.modDir} {DATA_DIR} {output.outFile1}
+        sbatch --partition=genoa -o {params.slurm_log_file2} {params.run_script} {MODELROOT_TR} hds {params.solution} {params.startyear} {params.endyear} {params.modDir} {DATA_DIR} {output.outFile2}
         while [ ! -e {output.outFile1} ] || [ ! -e {output.outFile2} ] ; do
             sleep 10
         done

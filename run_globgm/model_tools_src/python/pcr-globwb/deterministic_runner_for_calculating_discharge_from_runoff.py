@@ -144,23 +144,25 @@ class DeterministicRunner(DynamicModel):
 def main():
     
     TEMPDIR=sys.argv[1]
-    config_file = sys.argv[2]
-    YEAR_START = sys.argv[3]
-    YEAR_END = sys.argv[4]
-    SAVEFOLDER=sys.argv[5]
-
-    config = ConfigParser()
-    config.optionxform = str
-    config.read(config_file)
-
+    YEAR_START = sys.argv[2]
+    YEAR_END = sys.argv[3]
+    SAVEFOLDER=sys.argv[4]
+    monthly_runoff_file=sys.argv[5]
+    monthly_recharge_file=sys.argv[6]
+    monthly_abstraction_file=sys.argv[7]
+    CLONE_FILE=sys.argv[8]
+    LDD_FILE=sys.argv[9]
+    CELL_AREA_FILE=sys.argv[10]
+    lake_and_reservoir_file=sys.argv[11]
+    
     model_setup = {}
-    model_setup["clone_file"] = config.get("model_setup", "clone_file")
-    model_setup["ldd_file"] = config.get("model_setup", "ldd_file")
-    model_setup["cell_area_file"] = config.get("model_setup", "cell_area_file")
-    model_setup["lake_and_reservoir_file"] = config.get("model_setup", "lake_and_reservoir_file")
-    model_setup["monthly_runoff_file"] = sys.argv[6]
-    model_setup["monthly_recharge_file"] = sys.argv[7]
-    model_setup["monthly_abstraction_file"] = sys.argv[8]
+    model_setup["clone_file"] = CLONE_FILE
+    model_setup["ldd_file"] = LDD_FILE
+    model_setup["cell_area_file"] = CELL_AREA_FILE
+    model_setup["lake_and_reservoir_file"] = lake_and_reservoir_file
+    model_setup["monthly_runoff_file"] = monthly_runoff_file
+    model_setup["monthly_recharge_file"] = monthly_recharge_file
+    model_setup["monthly_abstraction_file"] = monthly_abstraction_file
     model_setup["output_dir"] = f"{TEMPDIR}/{YEAR_START}_{YEAR_END}"
     
     model_setup["start_date"] = f"{YEAR_START}-01-31"

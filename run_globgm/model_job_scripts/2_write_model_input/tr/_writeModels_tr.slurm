@@ -14,20 +14,19 @@ modelRoot=$1
 id=$2
 solution=$3
 runType=$4
-outFile=$5
+dataDir=$5
+outFile=$6
 
-exe=$(realpath ../_bin/mf6ggm_181121)
-model_input=$(realpath $modelRoot/model_input/1_write_tiled_parameter_data)
+exe=$dataDir/_bin/mf6ggm_181121
+model_input=$modelRoot/model_input/2_partition_and_write_model_input/transient
 moddir=$modelRoot/mf6_mod/mf6_mod_${id}
 inpmod=mf6_mod_tr.inp
 inpexe=mf6ggm_tr.inp
 
-IN_DIR=$(realpath ../_data/globgm_input)
-# globgmDir=$TMPDIR
-# OUT_DIR=$TMPDIR/input_map/transient
-globgmDir=/scratch-shared/bvjaarsv/_trTest
-OUT_DIR=/scratch-shared/bvjaarsv/_trTest/input_map/transient
-forcingDir=$(realpath $modelRoot/forcing_input)
+IN_DIR=$dataDir/globgm_input
+globgmDir=$TMPDIR
+OUT_DIR=$TMPDIR/input_map/transient
+forcingDir=$modelRoot/forcing_input
 START_DATE=$(grep 'STARTDATE' ${moddir}/${inpmod} | awk '{print $2}')
 nMonths=$(grep 'NPER' ${moddir}/${inpmod} | awk '{print $2}')
 PCR_GLOB_dir=$(realpath ../model_tools_src/python/pcr-globwb)
@@ -35,11 +34,11 @@ modifyPathScript=$(realpath ../model_tools_src/python/initial_states/initial_sta
 cd $PCR_GLOB_dir
 cp $model_input/transient_config.ini $TMPDIR/transient_config.ini
 wait 
-# for ((i=1; i<=163; i+=1)); do
-#     num=$(printf "%03d" $((10#$i)))
-#     python deterministic_runner_for_monthly_offline_globgm.py $TMPDIR/transient_config.ini debug transient tile_${num}-163 $IN_DIR $OUT_DIR $forcingDir $START_DATE $nMonths &
-# done
-# wait
+for ((i=1; i<=163; i+=1)); do
+    num=$(printf "%03d" $((10#$i)))
+    python deterministic_runner_for_monthly_offline_globgm.py $TMPDIR/transient_config.ini debug transient tile_${num}-163 $IN_DIR $OUT_DIR $forcingDir $START_DATE $nMonths &
+done
+wait
 cp ${moddir}/${inpmod} ${moddir}/${inpmod}_${solution}_${id}
 cp ${moddir}/${inpexe} ${moddir}/${inpexe}_${solution}_${id}
 

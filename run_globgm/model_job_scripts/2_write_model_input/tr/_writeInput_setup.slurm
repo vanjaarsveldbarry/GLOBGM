@@ -14,11 +14,12 @@ mamba activate globgm
 modelRoot=$1
 start_year=$2
 end_year=$3
-outFile=$4
+data_dir=$4
+outFile=$5
 simulation=$(basename $(dirname $modelRoot))
-cmip6InputFolder=/scratch-shared/bvjaarsv/cmip6_input/$simulation/historical
+cmip6InputFolder=$data_dir/cmip6_input/$simulation/historical
 saveFolder=$modelRoot/forcing_input
-pcrglobInputFolder=$(realpath ../_data/globgm_input)
+pcrglobInputFolder=$data_dir/globgm_input/_pcrcalc_files
 zarrScripts=$(realpath ../model_tools_src/python/preprocess_zarr)
 trPreprocessingIni=$modelRoot/model_input/1_write_tiled_parameter_data/transient_preprocessing.ini
 
@@ -32,7 +33,7 @@ process_gwRecharge() {
     cp $inFile $tempdir
     fileName=$(basename "$inFile")
     inFile=$tempdir/$fileName
-    cdo -L -f nc4 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,1960/2014 $inFile $outFile.temp.nc
+    cdo -L -f nc4 -setrtoc,-inf,0,0 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,1960/2014 $inFile $outFile.temp.nc
     gdal_translate -of GTiff $outFile.temp.nc $outFile.temp.tif
     gdal_translate -of PCRaster ${outFile}.temp.tif ${outFile}.temp.map
     gdal_translate -of NETCDF ${outFile}.temp.map $tempdir/average_gwRecharge_m_per_day.map.nc
@@ -87,6 +88,12 @@ process_totalRunoff_to_Discharge() {
 }
 
 process_gwRecharge & process_totalRunoff_to_Discharge
+satAreaFile=$(find "$cmip6InputFolder" -type f -name "*sat_area_fraction_average*")
+cp $satAreaFile $saveFolder
+satAreaFile_monthly=$(find "$cmip6InputFolder" -type f -name "*sat_area_fraction_monthly*")
+cp $satAreaFile_monthly $saveFolder
+correctionFile=$(find "$cmip6InputFolder" -type d -name "*gwRecharge_correction_factor.zarr*")
+cp -r $correctionFile $saveFolder
 wait
 
 python -u $zarrScripts/createZarr.py $pcrglobInputFolder $saveFolder $start_year $end_year
