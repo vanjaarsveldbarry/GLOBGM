@@ -127,6 +127,7 @@ rule move_data:
         '''
         mkdir -p {params.save_dir}
         cp -r {params.input_dir} {params.save_dir}
+        cp -r {SLURMDIR_SS} {params.save_dir}
         wait 
         touch {output.outFile}
         '''

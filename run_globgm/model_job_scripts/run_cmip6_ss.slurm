@@ -4,10 +4,7 @@
 #SBATCH -t 12:00:00
 #SBATCH --partition=genoa
 #SBATCH --output=/gpfs/work4/0/prjs1072/GLOBGM/run_globgm/model_job_scripts/_slurmOut/calib_%a.out
-#SBATCH --array=132-162
-
-#start at 132
-#Keep an eye on: (60 *probs done)
+#SBATCH --array=1-10
 
 source ${HOME}/.bashrc
 mamba activate globgm
@@ -34,7 +31,7 @@ for kh_un in "${kh_unconsolidated[@]}"; do
           count=$((count + 1))
           if [ $count -eq $SLURM_ARRAY_TASK_ID ]; then
             calib_str="khuncon${kh_un}_khcon${kh_con}_khcar${kh_car}_kvconf${kv_conf}_riverres${river_res}"
-            echo $calib_str $SLURM_ARRAY_TASK_ID
+            echo $calib_str 
             snakemake --rerun-incomplete --cores 16 \
             --snakefile Snakefile_W5E5_ss.smk \
             --config simulation=$simulation \

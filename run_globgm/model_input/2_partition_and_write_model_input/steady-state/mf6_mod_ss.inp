@@ -36,3 +36,5 @@ WEL_Q_L2_P1     abstraction_lowermost_layer.map DIST
 
 # solver settings
 OUTER_MAXIMUM 10000
+INNER_MAXIMUM 150
+
