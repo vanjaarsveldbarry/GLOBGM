@@ -176,7 +176,7 @@ def readDownscaling_gwRecharge_modflow(gwRechargeFile, correctionFile, cloneMap)
         return pcr.numpy2pcr(pcr.Scalar, cropData, MV)
     correctionFactor = _read_correctionFactor(correctionFile, cloneMap)
     gwRecharge = _read_gwRecharge(gwRechargeFile, cloneMap)
-    gwRecharge = gwRecharge * correctionFactor
+    gwRecharge = (correctionFactor * (gwRecharge + 1e-20)) - 1e-20
     return gwRecharge
 
 def read_zarr(file, varName, timeStamp, cloneMapFileName):    

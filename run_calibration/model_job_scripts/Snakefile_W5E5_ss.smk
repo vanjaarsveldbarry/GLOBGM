@@ -7,8 +7,7 @@ CALIB_STR = config["calib_str"]
 
 MODELROOT_SS=f"{OUTPUTDIRECTORY}/{CALIB_STR}/{SIMULATION}/ss"
 SLURMDIR_SS=f"{MODELROOT_SS}/slurm_logs"
-SAVEDIR="/scratch-shared/bvjaarsveld/calibrationOut"
-
+SAVEDIR="/scratch-shared/bvjaarsv/calibrationOut"
 rule all:
     input:
         f"{OUTPUTDIRECTORY}/{CALIB_STR}_done"

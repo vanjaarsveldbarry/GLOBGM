@@ -2,7 +2,7 @@
 #SBATCH -N 1
 #SBATCH -J _ssSetup
 #SBATCH -t 00:05:00
-#SBATCH --partition=genoa
+#SBATCH --partition=genoa,rome
 
 source ${HOME}/.bashrc
 mamba activate globgm

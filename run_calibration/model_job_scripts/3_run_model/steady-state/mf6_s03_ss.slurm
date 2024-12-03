@@ -24,7 +24,6 @@ nam=s03.par.mfsim.ic_sh0.nam
 startDir=$(pwd)
 
 
-
 cd ${dir}
 srun ${exe} -s ../run_input/${nam}
 wait 
