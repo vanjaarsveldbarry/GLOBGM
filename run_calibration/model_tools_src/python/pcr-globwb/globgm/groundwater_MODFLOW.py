@@ -1810,10 +1810,8 @@ class GroundwaterModflow(object):
                     
                     # TODO: Try to read from netcdf files, avoid reading from pcraster maps (avoid resampling using gdal) 
 
-            else:
-            
-                # for offline coupling, we will read files from netcdf files
-                
+            else:    
+                # for offline coupling, we will read files from netcdf files  
                 # - discharge (m3/s) from PCR-GLOBWB
                 if "estimateDischargeFromRunoff" in self.iniItems.modflowTransientInputOptions.keys() and\
                     self.iniItems.modflowTransientInputOptions['estimateDischargeFromRunoff'] == "True":
@@ -1826,36 +1824,27 @@ class GroundwaterModflow(object):
                     runoff = pcr.cover(runoff, 0.0)
                     discharge = pcr.catchmenttotal(self.cellAreaMap * runoff, self.lddMap) / vos.secondsPerDay()
                 else:
-                    # discharge_file_name = self.iniItems.modflowTransientInputOptions['dischargeInputNC'] %(int(currTimeStep.year))
-                    # discharge = vos.netcdf2PCRobjClone(discharge_file_name, "discharge", str(currTimeStep.fulldate), None, self.cloneMap)
-                    discharge = vos.read_zarr(self.iniItems.modflowTransientInputOptions['dischargeInputNC'], 'discharge', currTimeStep.monthIdx, self.cloneMap)
-                    # discharge = vos.netcdf2PCRobjClone(vos.getFullPath(self.iniItems.modflowTransientInputOptions['dischargeInputNC'], self.inputDir),
-                    #                                    "discharge", str(currTimeStep.fulldate), None, self.cloneMap)
+                    discharge = vos.read_zarr(self.iniItems.modflowTransientInputOptions['dischargeInputNC'], 'discharge', currTimeStep.fulldate, self.cloneMap)
                 discharge = pcr.cover(discharge, 0.0)
                 discharge = pcr.max(discharge, 0.0)
                 
                 # - recharge/capillary rise (unit: m/day) from PCR-GLOBWB
                 if "gwRechargeDownscale" in self.iniItems.modflowTransientInputOptions.keys() and self.iniItems.modflowTransientInputOptions['gwRechargeDownscale'] == "True":
-                    gwRecharge = vos.readDownscaling_gwRecharge_modflow(gwRechargeFile=self.iniItems.modflowTransientInputOptions['groundwaterRechargeInputNC'],
+                    gwRecharge = vos.readDownscaling_gwRecharge_modflowZARR(gwRechargeFile=self.iniItems.modflowTransientInputOptions['groundwaterRechargeInputNC'],
                                                                         correctionFile=self.iniItems.modflowTransientInputOptions['gwRechargeDownscaleFactor'], 
                                                                         cloneMap=self.cloneMap,
                                                                         timeStamp=str(currTimeStep.fulldate))
 
                 else:
-                    # gwRecharge = vos.netcdf2PCRobjClone(vos.getFullPath(self.iniItems.modflowTransientInputOptions['groundwaterRechargeInputNC'], self.inputDir),\
-                    #                                 "groundwater_recharge", str(currTimeStep.fulldate), None, self.cloneMap)
                     gwRecharge = vos.read_zarr(self.iniItems.modflowTransientInputOptions['groundwaterRechargeInputNC'], 'gwRecharge', currTimeStep.monthIdx, self.cloneMap)
                 gwRecharge = pcr.cover(gwRecharge, 0.0)
 
                 # - groundwater abstraction (unit: m/day) from PCR-GLOBWB
-                gwAbstraction = pcr.spatial(pcr.scalar(0.0))
                 if self.iniItems.modflowTransientInputOptions['groundwaterAbstractionInputNC'][-4:] != "None":
-                    # gwAbstraction = vos.netcdf2PCRobjClone(vos.getFullPath(self.iniItems.modflowTransientInputOptions['groundwaterAbstractionInputNC'], self.inputDir),\
-                                                        #    "total_groundwater_abstraction", str(currTimeStep.fulldate), None, self.cloneMap)
                     gwAbstraction = vos.read_zarr(self.iniItems.modflowTransientInputOptions['groundwaterAbstractionInputNC'], 'gwAbstraction', currTimeStep.monthIdx, self.cloneMap)
-                                                        
                     gwAbstraction = pcr.cover(gwAbstraction, 0.0)
-                    
+                else:
+                    gwAbstraction = pcr.spatial(pcr.scalar(0.0))
 
                 # - for offline coupling, the provision of channel storage (unit: m3) is only optional
                 channelStorage = None

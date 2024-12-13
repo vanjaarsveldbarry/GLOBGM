@@ -18,9 +18,9 @@ river_res=1.0
 
 calib_str="khuncon${kh_un}_khcon${kh_con}_khcar${kh_car}_kvconf${kv_conf}_riverres${kv_conf}"
 count=$((count + 1))
-snakemake --cores 16 \
-        --snakefile steady-state.smk \
-        --config simulation=$simulation \
+snakemake -n --cores 16 \
+          --snakefile steady-state.smk \
+          --config simulation=$simulation \
                     outputDirectory=$outputDirectory \
                     run_globgm_dir=$run_globgm_dir \
                     data_dir=$data_dir \

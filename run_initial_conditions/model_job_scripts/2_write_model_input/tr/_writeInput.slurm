@@ -19,7 +19,6 @@ cmip6InputFolder=$data_dir/cmip6_input/$simulation/historical
 saveFolder=$modelRoot/forcing_input
 PCR_GLOB_dir=$(realpath ../model_tools_src/python/pcr-globwb)
 
-
 diff=$(($end_year - $start_year))
 if [ $SLURM_ARRAY_TASK_ID -eq 1 ]; then
     start_year=$start_year

@@ -47,6 +47,7 @@ import pcraster as pcr
 
 import xarray as xr
 import zarr
+import pandas as pd
 
 import pyinterp
 import pyinterp.backends.xarray
@@ -74,7 +75,85 @@ netcdf_suffixes = ('.nc4','.nc')
 # maximum number of tries for reading files:
 max_num_of_tries = 5
 
-def readDownscaling_gwRecharge_modflowNC(gwRechargeFile, correctionFile, cloneMap): 
+def _readRecharge_ds(gwRechargeFile, varName, timeStamp, cloneMapFileName):
+    varName = 'groundwater_recharge'
+
+    if gwRechargeFile in list(filecache.keys()):
+        f = filecache[gwRechargeFile]
+    else:
+        f = nc.Dataset(gwRechargeFile)
+        filecache[gwRechargeFile] = f
+
+    # sameClone = False
+    attributeClone = getMapAttributesALL(cloneMapFileName)
+    cellsizeClone = attributeClone['cellsize']
+    rowsClone = attributeClone['rows']
+    colsClone = attributeClone['cols']
+    xULClone = attributeClone['xUL']
+    yULClone = attributeClone['yUL']
+    # get the attributes of input (netCDF) 
+    cellsizeInput = f.variables['lat'][0]- f.variables['lat'][1]
+    cellsizeInput = float(cellsizeInput)
+
+    factor = 1                                 # needed in regridData2FinerGrid
+    factor = int(round(float(cellsizeInput)/float(cellsizeClone)))
+    # crop to cloneMap:
+    minX    = min(abs(f.variables['lon'][:] - (xULClone + 0.5*cellsizeInput)))# ; print(minX)
+    xIdxSta = int(np.where(abs(f.variables['lon'][:] - (xULClone + 0.5*cellsizeInput)) == minX)[0]) -1
+    if xIdxSta == -1: xIdxSta = 0 
+
+    #~ xIdxSta = int(np.where(np.abs(f.variables['lon'][:] - (xULClone - cellsizeInput/2)) == minX)[0][0])
+    #~ # see: https://github.com/UU-Hydro/PCR-GLOBWB_model/pull/13
+
+    #~ xIdxEnd = int(math.ceil(xIdxSta + colsClone /(cellsizeInput/cellsizeClone)))
+    xIdxEnd = int(math.ceil((xIdxSta +1 ) + colsClone /(factor))) + 1 
+
+    minY    = min(abs(f.variables['lat'][:] - (yULClone - 0.5*cellsizeInput))) # ; print(minY)
+
+    yIdxSta = int(np.where(abs(f.variables['lat'][:] - (yULClone - 0.5*cellsizeInput)) == minY)[0])
+
+    #~ yIdxSta = int(np.where(np.abs(f.variables['lat'][:] - (yULClone - cellsizeInput/2)) == minY)[0][0])
+    #~ # see: https://github.com/UU-Hydro/PCR-GLOBWB_model/pull/13
+
+    # ~ yIdxEnd = int(math.ceil(yIdxSta + rowsClone /(cellsizeInput/cellsizeClone)))
+    yIdxEnd = int(math.ceil((yIdxSta +1) + rowsClone /(factor))) 
+    
+    yIdxEnd = min(len(f.variables['lat'][:]), yIdxEnd+1)
+    yIdxSta = max(0, yIdxSta-1) 
+    
+    time_values = f['time'][:]
+    calendar = f.variables['time'].calendar
+    units = f.variables['time'].units
+    decoded_time = pd.to_datetime(time_values, unit='D', origin=pd.Timestamp(units.split(' since ')[1]))
+    time_index = pd.Series(decoded_time).loc[lambda x: x == pd.Timestamp(timeStamp)].index[0]
+    # standard nc file
+    cropData = f.variables[varName][int(time_index), yIdxSta:yIdxEnd,xIdxSta:xIdxEnd] 
+    cropData = xr.DataArray(cropData, dims=['latitude', 'longitude'],
+                                coords=dict(latitude=f.variables['lat'][yIdxSta:yIdxEnd],
+                                                longitude=f.variables['lon'][xIdxSta:xIdxEnd])).sortby('latitude')
+    res_ds=cropData.latitude.values[1] - cropData.latitude.values[0]
+    ds_lats = np.insert(cropData.latitude.values, 0, cropData.latitude.values[0] - res_ds)
+    ds_lats = np.append(ds_lats, cropData.latitude.values[-1] + res_ds)
+    ds_lons = np.insert(cropData.longitude.values, 0, cropData.longitude.values[0] - res_ds)
+    ds_lons = np.append(ds_lons, cropData.longitude.values[-1] + res_ds)
+    cropData = cropData.reindex(latitude=ds_lats, longitude=ds_lons, method='nearest')
+
+    clone= pcr.scalar(pcr.readmap(cloneMapFileName))
+    lon = pcr.pcr2numpy(pcr.xcoordinate(pcr.boolean(pcr.cover(clone, 1.0))), np.nan)[0, :]
+    lat = np.sort(pcr.pcr2numpy(pcr.ycoordinate(pcr.boolean(pcr.cover(clone, 1.0))), np.nan)[:, 0])
+    
+    cropData_nan = pyinterp.backends.xarray.Grid2D(cropData, geodetic=False)
+    cropData_nan = pyinterp.fill.loess(cropData_nan, nx=3, ny=3)
+    cropData.values = cropData_nan
+    cropData = pyinterp.backends.xarray.Grid2D(cropData, geodetic=False)
+    mx, my = np.meshgrid(lon, lat, indexing="ij")
+    cropData = cropData.bivariate(coords=dict(longitude=mx.ravel(), latitude=my.ravel()), num_threads=5)
+    cropData = cropData.reshape(mx.shape).T
+    cropData = xr.DataArray(cropData, dims=['lat', 'lon'], coords=dict(lat=lat, lon=lon)).sortby('lat', ascending=False)
+    cropData = np.clip(cropData.values, a_min=0, a_max=None)
+    return pcr.numpy2pcr(pcr.Scalar, cropData, MV)
+
+def readDownscaling_gwRecharge_modflow(gwRechargeFile, correctionFile, cloneMap): 
 
     def _read_correctionFactor(correctionFile, cloneMap):
         f = zarr.convenience.open(correctionFile)
@@ -176,10 +255,10 @@ def readDownscaling_gwRecharge_modflowNC(gwRechargeFile, correctionFile, cloneMa
         return pcr.numpy2pcr(pcr.Scalar, cropData, MV)
     correctionFactor = _read_correctionFactor(correctionFile, cloneMap)
     gwRecharge = _read_gwRecharge(gwRechargeFile, cloneMap)
-    gwRecharge = gwRecharge * correctionFactor
+    gwRecharge = (correctionFactor * (gwRecharge + 1e-20)) - 1e-20
     return gwRecharge
 
-def readDownscaling_gwRecharge_modflowZARR(gwRechargeFile, correctionFile, timeStamp, cloneMap): 
+def readDownscaling_gwRecharge_modflowZARR(gwRechargeFile, correctionFile, precipFile, timeStamp, cloneMap): 
 
     def _read_correctionFactor(correctionFile, cloneMap):
         f = zarr.convenience.open(correctionFile)
@@ -243,14 +322,21 @@ def readDownscaling_gwRecharge_modflowZARR(gwRechargeFile, correctionFile, timeS
 
         #     #~ yIdxEnd = int(math.ceil(yIdxSta + rowsClone /(cellsizeInput/cellsizeClone)))
         yIdxEnd = int(math.ceil(yIdxSta + rowsClone /(factor)))
-        timeStamp=timeStamp-1
-        
-        data = f[varName].get_basic_selection((timeStamp, slice(yIdxSta,yIdxEnd), slice(xIdxSta,xIdxEnd)))[:]
+        time_values = f['time'][:]
+        attrs = f['time'].attrs
+        units = attrs['units']
+        calendar = attrs.get('calendar', 'standard')
+        decoded_time = pd.to_datetime(time_values, unit='D', origin=pd.Timestamp(units.split(' since ')[1]))
+        time_index = pd.Series(decoded_time).loc[lambda x: x == pd.Timestamp(timeStamp)].index[0]
+        data = f[varName].get_basic_selection((time_index, slice(yIdxSta,yIdxEnd), slice(xIdxSta,xIdxEnd)))[:]
         return pcr.numpy2pcr(pcr.Scalar, data, MV)
 
+
+    precip_ds = netcdf2PCRobjClone(precipFile,"precipitation", timeStamp, None, cloneMap)
     correctionFactor = _read_correctionFactor(correctionFile, cloneMap)
     gwRecharge = _read_gwRecharge_zarr(gwRechargeFile, 'gwRecharge', timeStamp, cloneMap)
-    gwRecharge = gwRecharge * correctionFactor
+    gwRecharge = (correctionFactor * (gwRecharge + 1e-20)) - 1e-20
+    gwRecharge = pcr.ifthenelse(gwRecharge > precip_ds, precip_ds, gwRecharge)
     return gwRecharge
 
 def read_zarr(file, varName, timeStamp, cloneMapFileName):    
@@ -273,24 +359,28 @@ def read_zarr(file, varName, timeStamp, cloneMapFileName):
     minX    = min(abs(f['lon'][:] - (xULClone + 0.5*cellsizeInput)))
     xIdxSta = int(np.where(abs(f['lon'][:] - (xULClone + 0.5*cellsizeInput)) == minX)[0])
 
-#     #~ xIdxSta = int(np.where(np.abs(f.variables['lon'][:] - (xULClone - cellsizeInput/2)) == minX)[0][0])
-#     #~ # see: https://github.com/UU-Hydro/PCR-GLOBWB_model/pull/13
+    #~ xIdxSta = int(np.where(np.abs(f.variables['lon'][:] - (xULClone - cellsizeInput/2)) == minX)[0][0])
+    #~ # see: https://github.com/UU-Hydro/PCR-GLOBWB_model/pull/13
 
-#     #~ xIdxEnd = int(math.ceil(xIdxSta + colsClone /(cellsizeInput/cellsizeClone)))
+    #~ xIdxEnd = int(math.ceil(xIdxSta + colsClone /(cellsizeInput/cellsizeClone)))
     xIdxEnd = int(math.ceil(xIdxSta + colsClone /(factor)))
 
     minY    = min(abs(f['lat'][:] - (yULClone - 0.5*cellsizeInput))) # ; print(minY)
 
     yIdxSta = int(np.where(abs(f['lat'][:] - (yULClone - 0.5*cellsizeInput)) == minY)[0])
 
-#     #~ yIdxSta = int(np.where(np.abs(f.variables['lat'][:] - (yULClone - cellsizeInput/2)) == minY)[0][0])
-#     #~ # see: https://github.com/UU-Hydro/PCR-GLOBWB_model/pull/13
+    #~ yIdxSta = int(np.where(np.abs(f.variables['lat'][:] - (yULClone - cellsizeInput/2)) == minY)[0][0])
+    #~ # see: https://github.com/UU-Hydro/PCR-GLOBWB_model/pull/13
 
-#     #~ yIdxEnd = int(math.ceil(yIdxSta + rowsClone /(cellsizeInput/cellsizeClone)))
+    #~ yIdxEnd = int(math.ceil(yIdxSta + rowsClone /(cellsizeInput/cellsizeClone)))
     yIdxEnd = int(math.ceil(yIdxSta + rowsClone /(factor)))
-    timeStamp=timeStamp-1
-    
-    data = f[varName].get_basic_selection((timeStamp, slice(yIdxSta,yIdxEnd), slice(xIdxSta,xIdxEnd)))[:]
+    time_values = f['time'][:]
+    attrs = f['time'].attrs
+    units = attrs['units']
+    calendar = attrs.get('calendar', 'standard')
+    decoded_time = pd.to_datetime(time_values, unit='D', origin=pd.Timestamp(units.split(' since ')[1]))
+    time_index = pd.Series(decoded_time).loc[lambda x: x == pd.Timestamp(timeStamp)].index[0]
+    data = f[varName].get_basic_selection((time_index, slice(yIdxSta,yIdxEnd), slice(xIdxSta,xIdxEnd)))[:]
     return pcr.numpy2pcr(pcr.Scalar, data, MV)
     
 def initialize_logging(log_file_location, log_file_front_name = "log", debug_mode = True):
@@ -530,7 +620,6 @@ def singleTryNetcdf2PCRobjCloneWithoutTime(ncFile, varName,\
     f = None ; cropData = None 
     # PCRaster object
     return (outPCR)
-
 
 def netcdf2PCRobjClone(ncFile,\
                        varName = "automatic" ,

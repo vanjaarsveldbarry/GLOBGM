@@ -3,7 +3,7 @@
 #SBATCH --time=12:00:00
 #SBATCH --partition=genoa
 #SBATCH --constraint=scratch-node
-#SBATCH --exclusive
+#SBATCH -n 64
 
 df -kh $TMPDIR
 source ${HOME}/.bashrc
@@ -19,6 +19,7 @@ dataDir=$7
 outFile=$8
 
 _merge_zarr=$(realpath ../model_tools_src/python/to_zarr/mergeZarr_tr.py)
+_plot_script=$(realpath ../model_tools_src/python/to_zarr/mean_plot.py)
 inpdir=$modelRoot/model_input/4_post-processing/transient
 inp_tr=mf6ggm_post_tr_$var.inp
 exe=$dataDir/_bin/mf6ggmpost_260624
@@ -56,17 +57,17 @@ wait
 counter=0
 for ((year=$startDate; year<=$endDate; year++));do
     counter=$((counter+1))
-    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 01 $var &
-    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 02 $var &
-    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 03 $var &
-    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 04 $var &
-    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 05 $var &
-    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 06 $var &
-    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 07 $var &
-    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 08 $var &
-    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 09 $var &
-    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 10 $var &
-    python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 11 $var &
+    # python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 01 $var &
+    # python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 02 $var &
+    # python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 03 $var &
+    # python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 04 $var &
+    # python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 05 $var &
+    # python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 06 $var &
+    # python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 07 $var &
+    # python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 08 $var &
+    # python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 09 $var &
+    # python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 10 $var &
+    # python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 11 $var &
     python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 12 $var
     if [ $counter -eq 3 ]; then
         wait
@@ -75,5 +76,7 @@ for ((year=$startDate; year<=$endDate; year++));do
 done
 wait
 df -kh $TMPDIR
+
+python -u $_plot_script $dir $solution $var
 
 touch ${outFile}

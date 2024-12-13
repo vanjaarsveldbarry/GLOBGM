@@ -4,4 +4,4 @@
 dummy.txt
 tiled {globgm_dir}/input_map/transient/tile_???-163/transient/maps/top_uppermost_layer.map
 1
-{mod_dir}/ s {solution} .tr.hds 1 1 2 {START_DATE}01 {END_DATE}12 flt ../out/ wtd.tr.
+{mod_dir}/ s {solution} .tr.hds 1 1 2 {START_DATE}01 {END_DATE}01 flt ../out/ wtd.tr.

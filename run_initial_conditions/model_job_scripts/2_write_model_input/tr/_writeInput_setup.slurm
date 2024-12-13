@@ -92,7 +92,10 @@ satAreaFile=$(find "$cmip6InputFolder" -type f -name "*sat_area_fraction_average
 cp $satAreaFile $saveFolder
 satAreaFile_monthly=$(find "$cmip6InputFolder" -type f -name "*sat_area_fraction_monthly*")
 cp $satAreaFile_monthly $saveFolder
-correctionFile=$(find "$cmip6InputFolder" -type d -name "*gwRecharge_correction_factor.zarr*")
+correctionFile=$(find "$data_dir/cmip6_input/$simulation/historical_natural" -type d -name "*gwRecharge_correction_factor.zarr*")
+cp -r $correctionFile $saveFolder
+wait
+
 cp -r $correctionFile $saveFolder
 wait
 

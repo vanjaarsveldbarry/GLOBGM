@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --exclusive
 #SBATCH --nodes=7
+#SBATCH --exclusive
 #SBATCH --ntasks-per-node=32
 #SBATCH --time=02:00:00
 #SBATCH --cpus-per-task=1
@@ -22,16 +22,15 @@ label=$6
 dataDir=$7
 outFile=$8
 
-if [ "$runType" = "start" ]; then
-    to_zarrFolder=$(realpath ../model_tools_src/python/to_zarr)
-    postDir=$modelRoot/mf6_post
-    mkdir -p $postDir
-    python -u $to_zarrFolder/createZarr_tr.py $dataDir $solution $postDir $simStart $simEnd wtd & 
-    python -u $to_zarrFolder/createZarr_tr.py $dataDir $solution $postDir $simStart $simEnd hds
-    wait
-fi
+to_zarrFolder=$(realpath ../model_tools_src/python/to_zarr)
+postDir=$modelRoot/mf6_post
+mkdir -p $postDir
+python -u $to_zarrFolder/createZarr_tr.py $dataDir $solution $postDir $simStart $simEnd wtd & 
+python -u $to_zarrFolder/createZarr_tr.py $dataDir $solution $postDir $simStart $simEnd hds
+wait
 
 iniConditionsScript=$(realpath ../model_tools_src/python/initial_states/initial_states.py)
+modifyPathScript=$(realpath ../model_tools_src/python/initial_states/initial_statesModifyPath.py)
 exe=$dataDir/_bin/mf6_rel_openmpi-4.1.4-gcc-11.3.0
 nam1=s01.par.mfsim.spu.nam
 nam2=s01.par.mfsim.ic_spu.nam
@@ -41,10 +40,17 @@ cd ${dir_run}
 
 if [ "$runType" = "start" ]; then
     srun ${exe} -s ../run_input/${nam1}
+    srun ${exe} -s ../run_input/${nam2}
+    python $modifyPathScript $modelRoot/mf6_mod/mf6_mod_${label}
+    python $iniConditionsScript $dir_run
 fi
-srun ${exe} -s ../run_input/${nam2}
 wait
 
-python $iniConditionsScript $dir_run
+if [ "$runType" = "subRun" ]; then
+    srun ${exe} -s ../run_input/${nam2}
+    python $iniConditionsScript $dir_run
+fi
+
+
 wait
 touch $outFile

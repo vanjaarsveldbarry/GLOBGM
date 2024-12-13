@@ -24,8 +24,8 @@ inpmod=mf6_mod_tr.inp
 inpexe=mf6ggm_tr.inp
 
 IN_DIR=$dataDir/globgm_input
-globgmDir=$TMPDIR
-OUT_DIR=$TMPDIR/input_map/transient
+globgmDir=$modelRoot
+OUT_DIR=$modelRoot/input_map/transient
 forcingDir=$modelRoot/forcing_input
 START_DATE=$(grep 'STARTDATE' ${moddir}/${inpmod} | awk '{print $2}')
 nMonths=$(grep 'NPER' ${moddir}/${inpmod} | awk '{print $2}')
@@ -34,11 +34,7 @@ modifyPathScript=$(realpath ../model_tools_src/python/initial_states/initial_sta
 cd $PCR_GLOB_dir
 cp $model_input/transient_config.ini $TMPDIR/transient_config.ini
 wait 
-for ((i=1; i<=163; i+=1)); do
-    num=$(printf "%03d" $((10#$i)))
-    python deterministic_runner_for_monthly_offline_globgm.py $TMPDIR/transient_config.ini debug transient tile_${num}-163 $IN_DIR $OUT_DIR $forcingDir $START_DATE $nMonths &
-done
-wait
+
 cp ${moddir}/${inpmod} ${moddir}/${inpmod}_${solution}_${id}
 cp ${moddir}/${inpexe} ${moddir}/${inpexe}_${solution}_${id}
 
@@ -77,14 +73,6 @@ for ((i=$startMod; i<=$endMod; i+=2)); do
 done
 wait
 
-if [ $solution -eq 3 ]; then
-    for ((i=1; i<=163; i+=1));do
-        tile=$(printf "%03d" $i)
-        mkdir -p $modelRoot/input_map/transient/tile_${tile}-163/transient/maps && cp "${OUT_DIR}/tile_${tile}-163/transient/maps/top_uppermost_layer.map" "$modelRoot/input_map/transient/tile_${tile}-163/transient/maps" &
-    done
-fi
-wait
-
 rm ${moddir}/${inpexe}_${solution}_${id}
 rm ${moddir}/${inpmod}_${solution}_${id}
 wait
@@ -92,6 +80,7 @@ wait
 if [ $runType == "subRun" ]; then
     python $modifyPathScript $moddir
 fi
+
 wait
 touch $outFile
 df -BG $TMPDIR

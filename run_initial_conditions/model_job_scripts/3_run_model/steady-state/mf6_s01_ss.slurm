@@ -2,7 +2,7 @@
 #SBATCH --nodes=7
 #SBATCH --exclusive
 #SBATCH --ntasks-per-node=32
-#SBATCH --time=12:00:00
+#SBATCH --time=06:00:00
 #SBATCH --cpus-per-task=1
 #SBATCH --gres=cpu:1
 #SBATCH --partition=genoa,rome

@@ -87,16 +87,17 @@ process_totalRunoff_to_Discharge() {
     rm -r $tempdir
 }
 
-process_gwRecharge & process_totalRunoff_to_Discharge
-satAreaFile=$(find "$cmip6InputFolder" -type f -name "*sat_area_fraction_average*")
-cp $satAreaFile $saveFolder
-satAreaFile_monthly=$(find "$cmip6InputFolder" -type f -name "*sat_area_fraction_monthly*")
-cp $satAreaFile_monthly $saveFolder
-correctionFile=$(find "$cmip6InputFolder" -type d -name "*gwRecharge_correction_factor.zarr*")
-cp -r $correctionFile $saveFolder
+# process_gwRecharge & process_totalRunoff_to_Discharge
+# satAreaFile=$(find "$cmip6InputFolder" -type f -name "*sat_area_fraction_average*")
+# cp $satAreaFile $saveFolder
+# satAreaFile_monthly=$(find "$cmip6InputFolder" -type f -name "*sat_area_fraction_monthly*")
+# cp $satAreaFile_monthly $saveFolder
+correctionFile=$(find "$data_dir/cmip6_input/$simulation/historical_natural" -type d -name "*gwRecharge_correction_factor.zarr*")
+echo $correctionFile
+# cp -r $correctionFile $saveFolder
 wait
 
-python -u $zarrScripts/createZarr.py $pcrglobInputFolder $saveFolder $start_year $end_year
-wait
+# python -u $zarrScripts/createZarr.py $pcrglobInputFolder $saveFolder $start_year $end_year
+# wait
 
-touch $outFile
+# touch $outFile

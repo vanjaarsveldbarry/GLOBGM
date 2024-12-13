@@ -15,7 +15,7 @@ data_dir=$4
 
 cd $run_globgm_dir/model_job_scripts
 
-snakemake --cores 16 --until prepare_model_partitioning \
+snakemake -n --cores 16 --until prepare_model_partitioning \
         --snakefile transient_no_pump_run.smk \
         --config simulation=$simulation \
                 outputDirectory=$outputDirectory \

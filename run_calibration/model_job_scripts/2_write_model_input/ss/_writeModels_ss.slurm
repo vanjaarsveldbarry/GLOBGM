@@ -45,6 +45,7 @@ process_gwRecharge() {
     years_array=($(cdo showyear $inFile))
     first_year=${years_array[0]}
     last_year=${years_array[-1]}
+    echo $first_year $last_year
 
     cdo -L -f nc4 -setrtoc,-inf,0,0 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,$first_year/$last_year $inFile $outFile.temp.nc    
     gdal_translate -of GTiff $outFile.temp.nc $outFile.temp.tif

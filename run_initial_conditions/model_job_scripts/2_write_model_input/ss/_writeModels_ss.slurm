@@ -1,7 +1,7 @@
 #!/bin/bash -l
 #SBATCH -N 1
 #SBATCH -t 02:00:00
-#SBATCH --partition=genoa
+#SBATCH --partition=fat_genoa
 #SBATCH --exclusive
 #SBATCH --constraint=scratch-node
 
@@ -14,14 +14,16 @@ data_dir=$2
 outFile=$3
 calib_str=$4
 
+# temp_dir=$TMPDIR
+temp_dir=$modelRoot
 simulation=$(basename $(dirname $modelRoot))
 cmip6InputFolder=$data_dir/cmip6_input/$simulation/historical_natural
-forcingDir=$TMPDIR/forcing_input
+forcingDir=$temp_dir/forcing_input
 _pcr_calc_files=$data_dir/globgm_input/_pcrcalc_files
 mkdir -p $forcingDir
 
 model_input=$(realpath $modelRoot/model_input/2_partition_and_write_model_input)
-OUT_DIR=$TMPDIR/input_map/steady-state
+OUT_DIR=$temp_dir/input_map/steady-state
 IN_DIR=$data_dir/globgm_input
 pcrlobwbDir=$(realpath ../model_tools_src/python/pcr-globwb)
 
@@ -32,16 +34,18 @@ inpexe=mf6ggm_ss.inp
 moddir=$modelRoot/mf6_mod
 yodaInput=$data_dir/globgm_input
 inpdir=$(realpath $modelRoot/model_input/2_partition_and_write_model_input/steady-state)
-globgmDir=$TMPDIR
+globgmDir=$temp_dir
 
 # Step 1 preprocess the 5 arcmin netcdf data to 30 arcseconds
 process_gwRecharge() {
-    local tempdir=${TMPDIR}/gwRecharge
+    local tempdir=${temp_dir}/gwRecharge
     local inFile=$(find "$cmip6InputFolder" -type f -name "*gwRecharge*")
     local outFile=$tempdir/average_gwRecharge_m_per_day
     mkdir -p $tempdir
 
-    years_array=($(cdo showyear $inFile))
+    # Capture the output of cdo showyear
+    cdo_output=$(cdo showyear $inFile)
+    years_array=($(echo "$cdo_output" | tr ' ' '\n' | grep -E '^[0-9]{4}$'))
     first_year=${years_array[0]}
     last_year=${years_array[-1]}
 
@@ -62,7 +66,8 @@ process_totalRunoff_to_Discharge() {
     local outFile=$tempdir/average_totalRunoff_m_per_day
     mkdir -p $tempdir
 
-    years_array=($(cdo showyear $inFile))
+    cdo_output=$(cdo showyear $inFile)
+    years_array=($(echo "$cdo_output" | tr ' ' '\n' | grep -E '^[0-9]{4}$'))
     first_year=${years_array[0]}
     last_year=${years_array[-1]}
 
@@ -111,13 +116,6 @@ for ((i=1; i<=163; i+=1)); do
         wait
         counter=0
     fi
-done
-wait
-
-# Copy for post-processing
-for ((i=1; i<=163; i+=1));do
-    tile=$(printf "%03d" $i)
-    mkdir -p $modelRoot/input_map/steady-state/tile_${tile}-163/steady-state_only/maps && cp "${OUT_DIR}/tile_${tile}-163/steady-state_only/maps/top_uppermost_layer.map" "$modelRoot/input_map/steady-state/tile_${tile}-163/steady-state_only/maps" &
 done
 wait
 
