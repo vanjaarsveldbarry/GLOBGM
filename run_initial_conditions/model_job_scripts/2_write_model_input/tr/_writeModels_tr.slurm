@@ -32,7 +32,6 @@ nMonths=$(grep 'NPER' ${moddir}/${inpmod} | awk '{print $2}')
 PCR_GLOB_dir=$(realpath ../model_tools_src/python/pcr-globwb)
 modifyPathScript=$(realpath ../model_tools_src/python/initial_states/initial_statesModifyPath.py)
 cd $PCR_GLOB_dir
-cp $model_input/transient_config.ini $TMPDIR/transient_config.ini
 wait 
 
 cp ${moddir}/${inpmod} ${moddir}/${inpmod}_${solution}_${id}

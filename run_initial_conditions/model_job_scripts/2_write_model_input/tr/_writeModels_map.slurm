@@ -16,6 +16,7 @@ solution=$3
 runType=$4
 dataDir=$5
 outFile=$6
+iniFileName=$7
 
 exe=$dataDir/_bin/mf6ggm_181121
 model_input=$modelRoot/model_input/2_partition_and_write_model_input/transient
@@ -44,12 +45,12 @@ mkdir -p $_tempDir
 # nMonths=$(grep 'NPER' ${moddir}/${inpmod} | awk '{print $2}')
 # PCR_GLOB_dir=$(realpath ../model_tools_src/python/pcr-globwb)
 # cd $PCR_GLOB_dir
-# cp $model_input/transient_config.ini $TMPDIR/transient_config.ini
+# cp $model_input/${iniFileName} $TMPDIR/${iniFileName}
 # wait 
 
 # for ((i=1; i<=163; i+=1)); do
 #     num=$(printf "%03d" $((10#$i)))
-#     python deterministic_runner_for_monthly_offline_globgm.py $TMPDIR/transient_config.ini debug transient tile_${num}-163 $IN_DIR $OUT_DIR $forcingDir $START_DATE $nMonths &
+#     python deterministic_runner_for_monthly_offline_globgm.py $TMPDIR/${iniFileName} debug transient tile_${num}-163 $IN_DIR $OUT_DIR $forcingDir $START_DATE $nMonths &
 # done
 
 wait

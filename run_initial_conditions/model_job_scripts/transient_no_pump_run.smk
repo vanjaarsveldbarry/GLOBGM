@@ -107,7 +107,7 @@ rule write_model_input_setup:
 
     shell:
         '''
-        sbatch -o {params.slurm_log_file1} {params.run_script} {MODELROOT_TR} {params.startyear1} {params.endyear1} {params.nSpin} {output.outFile1} {DATA_DIR} {params.label1}
+        sbatch -o {params.slurm_log_file1} {params.run_script} {MODELROOT_TR} {params.startyear1} {params.endyear1} {params.nSpin} {output.outFile1} {DATA_DIR} {params.label1} {params.iniStatesFolder}
         while [ ! -e {output.outFile1} ]; do
             sleep 10
         done

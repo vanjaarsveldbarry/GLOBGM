@@ -38,6 +38,7 @@ input_files = sorted(Path(directory).glob(f'*{solution}*{year}{month}*.flt'))
 with concurrent.futures.ProcessPoolExecutor(2) as executor:
     futures = {executor.submit(convert_file, file) for file in input_files}
     tempZarrPaths = [f.result() for f in concurrent.futures.as_completed(futures)]
+print(tempZarrPaths)
 for f in tempZarrPaths:
     timeStamp=Path(f).stem[-11:-3]
     date_object = datetime.strptime(timeStamp, '%Y%m%d')

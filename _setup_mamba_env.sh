@@ -10,7 +10,7 @@ create_environment() {
     fi
 
     # Create a new environment with the same name
-    yes | mamba create -c conda-forge -c bioconda -n "$ENV_NAME" python=3.10 pcraster=4.3.1 netcdf4 gdal cdo nco six xarray dask zarr bottleneck snakemake pyinterp flopy
+    yes | mamba create -c conda-forge -c bioconda -n "$ENV_NAME" python=3.10 pcraster=4.3.1 netcdf4 gdal cdo nco six xarray dask zarr bottleneck snakemake pyinterp flopy geopandas
 }
 create_environment
 wait

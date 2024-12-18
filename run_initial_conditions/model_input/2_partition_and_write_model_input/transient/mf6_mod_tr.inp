@@ -36,8 +36,4 @@ WEL_Q_L1_P1:696     abstraction_uppermost_layer_??????.map DIST
 WEL_Q_L2_P1:696     abstraction_lowermost_layer_??????.map DIST
 
 # solver settings
-OUTER_MAXIMUM 1000
-INNER_MAXIMUM 200
-COMPLEXITY MODERATE
-INNER_RCLOSE 0.001
-RELAXATION_FACTOR 0.99 
+COMPLEXITY SIMPLE
