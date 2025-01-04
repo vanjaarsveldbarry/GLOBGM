@@ -1,4 +1,4 @@
-localrules: setup_simulation,prepare_model_partitioning,write_model_input_setup,all
+localrules: setup_simulation,prepare_model_partitioning,write_model_input_setup,move_data,all
 import os
 SIMULATION = config["simulation"]
 OUTPUTDIRECTORY = config["outputDirectory"]
