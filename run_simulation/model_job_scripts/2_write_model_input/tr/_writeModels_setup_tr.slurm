@@ -14,6 +14,7 @@ nSpin=$4
 outFile=$5
 dataDir=$6
 label=$7
+iniStatesFolder=$8
 nMonths=$(((( $end_year - $start_year ) + 1) * 12))
 
 inpdir=$modelRoot/model_input/2_partition_and_write_model_input/transient
@@ -21,7 +22,9 @@ exe=$dataDir/_bin/mf6ggm_181121
 inpmod=mf6_mod_tr.inp
 inpexe=mf6ggm_tr.inp
 moddir=$modelRoot/mf6_mod/mf6_mod_${label}
-ssFolder=$dataDir/globgm_input/initial_states/
+parentDir=$(dirname $(realpath $modelRoot))
+ssFolder=${iniStatesFolder}
+echo $ssFolder
 yodaInput=$dataDir/globgm_input
 globgmDir=$modelRoot
 mkdir -p $moddir

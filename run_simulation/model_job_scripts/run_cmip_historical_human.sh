@@ -7,7 +7,41 @@
 
 source ${HOME}/.bashrc
 mamba activate globgm
+iRodsPassword='E-sEOmhJCh1kdgASIliTCGeItYbUu59l'
+run_globgm_dir=/home/bvjaarsveld1/projects/workflow/GLOBGM/run_simulation
+outputDirectory=/scratch-shared/_bvjaarsveld1/historical/historical_human
+data_dir=/scratch-shared/_bvjaarsveld1/historical/_data
 
+simulation=gswp3-w5e5
+cd $run_globgm_dir/model_job_scripts
+
+bash ./_fetch_data.sh $data_dir $iRodsPassword
+
+# snakemake --cores 16 \
+#           --until write_model_forcing_setup \
+#           --snakefile transient_historical_human.smk \
+#           --config simulation=$simulation \
+#                     outputDirectory=$outputDirectory \
+#                     run_globgm_dir=$run_globgm_dir \
+#                     data_dir=$data_dir
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#########################################################################################################################
 #STEP 1: Run the steady state 
 
 

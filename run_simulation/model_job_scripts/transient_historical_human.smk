@@ -8,39 +8,40 @@ SLURMDIR_TR=f"{MODELROOT_TR}/slurm_logs"
 DATA_DIR = config["data_dir"]
 
 STARTYEAR = 1960
-ENDYEAR = 1960
+ENDYEAR = 1963
 
 rule all:
     input:
         f"{SLURMDIR_TR}/sim_done"
 
-#TODO once a fuill run has been tested adda clean up part to the post processing script to get rid of
-#unecssary files
-#TODO make sure sta are fraction is on for transient
-#This won't run without the initial steady state folder being present but this will probably change is we use a singel initial condition
-#TODO change post processing to genoa fat node
-rule setup_simulation:
-    output:
-        outFile=f"{SLURMDIR_TR}/1_prepare_model_partitioning/setup_complete"
-    params:
-        dir1 = MODELROOT_TR,
-        dir2 = f"{SLURMDIR_TR}/1_prepare_model_partitioning",
-        dir3 = f"{SLURMDIR_TR}/2_write_model_input",
-        dir4 = f"{SLURMDIR_TR}/3_run_model",
-        dir5 = f"{SLURMDIR_TR}/4_post-processing",
+def setup_simulation():
+    import os
+    import shutil
 
-        model_input_dir = f"{RUN_GLOBGM_DIR}/model_input",
-        modelroot_tr = MODELROOT_TR,
-    shell:
-        '''
-        mkdir -p {params.dir1} {params.dir2} {params.dir3} {params.dir4} {params.dir5}
-        cp -r {params.model_input_dir} {params.modelroot_tr}
-        touch {output.outFile}
-        '''
+    dirs = [
+        MODELROOT_TR,
+        f"{SLURMDIR_TR}/1_prepare_model_partitioning",
+        f"{SLURMDIR_TR}/2_write_model_input",
+        f"{SLURMDIR_TR}/3_run_model",
+        f"{SLURMDIR_TR}/4_post-processing"
+    ]
+
+    for dir in dirs:
+        os.makedirs(dir, exist_ok=True)
+
+    model_input_dir = f"{RUN_GLOBGM_DIR}/model_input"
+    destination_dir = os.path.join(MODELROOT_TR, "model_input")
+
+    if os.path.exists(model_input_dir):
+        shutil.copytree(model_input_dir, destination_dir, dirs_exist_ok=True)
+
+    with open(f"{SLURMDIR_TR}/1_prepare_model_partitioning/setup_complete", 'w') as f:
+        f.write('')
+
+onstart:
+    setup_simulation()
 
 rule prepare_model_partitioning:
-    input:
-        rules.setup_simulation.output.outFile
     output:
         outFile=f"{SLURMDIR_TR}/1_prepare_model_partitioning/prepare_model_partitioning_complete"
 
@@ -66,11 +67,14 @@ rule write_model_forcing_setup:
         run_script=f"{RUN_GLOBGM_DIR}/model_job_scripts/2_write_model_input/tr/_writeInput_setup.slurm",
         slurm_log_file=f"{SLURMDIR_TR}/2_write_model_input/_writeInput/writeInput_setup.out"
     shell:
+        # '''
+        # sbatch -o {params.slurm_log_file} {params.run_script} {MODELROOT_TR} {STARTYEAR} {ENDYEAR} {DATA_DIR} {output.outFile}
+        # while [ ! -e {output.outFile} ]; do
+        #     sleep 10
+        # done
+        # '''
         '''
-        sbatch -o {params.slurm_log_file} {params.run_script} {MODELROOT_TR} {STARTYEAR} {ENDYEAR} {DATA_DIR} {output.outFile}
-        while [ ! -e {output.outFile} ]; do
-            sleep 10
-        done
+        bash {params.run_script} {MODELROOT_TR} {STARTYEAR} {ENDYEAR} {DATA_DIR} {output.outFile}
         '''
 
 rule write_model_forcing:

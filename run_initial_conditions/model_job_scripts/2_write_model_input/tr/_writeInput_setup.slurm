@@ -96,9 +96,6 @@ correctionFile=$(find "$data_dir/cmip6_input/$simulation/historical_natural" -ty
 cp -r $correctionFile $saveFolder
 wait
 
-cp -r $correctionFile $saveFolder
-wait
-
 python -u $zarrScripts/createZarr.py $pcrglobInputFolder $saveFolder $start_year $end_year
 wait
 

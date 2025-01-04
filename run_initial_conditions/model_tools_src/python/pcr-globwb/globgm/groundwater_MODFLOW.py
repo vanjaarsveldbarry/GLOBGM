@@ -110,7 +110,7 @@ class GroundwaterModflow(object):
             iniItems.modflowParameterOptions["using_constant_equal_DELR_and_DELC_in_meter"] == "True":
              self.using_constant_equal_DELR_and_DELC_in_meter = True
 
-        # # number of modflow layers:
+        # number of modflow layers:
         self.number_of_layers = int(iniItems.modflowParameterOptions['number_of_layers'])
 
         # making temporary directory for modflow calculation and make sure that the directory is empty
@@ -128,18 +128,18 @@ class GroundwaterModflow(object):
         os.chdir(self.tmp_modflow_dir)
         # In the future, this is not necessary anymore, given the new option provided by Oliver.  
 
-        # # option for the daily modflow (and daily coupling between pcrglobwb and modflow)
+        # option for the daily modflow (and daily coupling between pcrglobwb and modflow)
         if groundwater_pcrglobwb is None:
             self.online_daily_coupling_between_pcrglobwb_and_modflow = False
         else:
             self.online_daily_coupling_between_pcrglobwb_and_modflow = groundwater_pcrglobwb.coupleToDailyMODFLOW
-        # # - if True, the stress period of MODFLOW is daily.    
-        # # - if False, the (default) MODFLOW stress period is monthly. This setting is also used for an offline MODFLOW run. 
-        # #
-        # # TODO: We should introduce a possibility to run an offline daily stress period of MODFLOW.     
+        # - if True, the stress period of MODFLOW is daily.    
+        # - if False, the (default) MODFLOW stress period is monthly. This setting is also used for an offline MODFLOW run. 
+        #
+        # TODO: We should introduce a possibility to run an offline daily stress period of MODFLOW.     
 
 
-        # # option for the online coupling purpose
+        # option for the online coupling purpose
         self.online_coupling = False
         if self.online_daily_coupling_between_pcrglobwb_and_modflow:
             self.online_coupling = True
@@ -152,7 +152,7 @@ class GroundwaterModflow(object):
         # - for daily online coupling, we exclude river infiltration as it will be calculated within the routing module
         if self.online_daily_coupling_between_pcrglobwb_and_modflow: self.exclude_river_infiltration = True
 
-        # # topography properties: read several variables from a netcdf file
+        # topography properties: read several variables from a netcdf file
         if 'topographyNC' not in self.iniItems.modflowParameterOptions.keys() or\
             self.iniItems.modflowParameterOptions['topographyNC'] == "Default":
             msg = "Topography properties (e.g. DEM) are taken from the 'landSurfaceOptions' of the ini/configuration file."
@@ -282,18 +282,18 @@ class GroundwaterModflow(object):
         # define river bed elevation if not defined
         if self.dem_riverbed is None: self.dem_riverbed = self.dem_floodplain - self.bankfull_depth
 
-        # # cellAreaMap and lddMap
+        # cellAreaMap and lddMap
         if 'routingOptions' not in self.iniItems.allSections:
             self.iniItems.routingOptions = {}
             self.iniItems.routingOptions['lddMap'] = self.iniItems.modflowParameterOptions['lddMap']
             self.iniItems.routingOptions['cellAreaMap'] = self.iniItems.modflowParameterOptions['cellAreaMap']
 
-        # # cell area (unit: m2)
+        # cell area (unit: m2)
         self.cellAreaMap = vos.readPCRmapClone(self.iniItems.routingOptions['cellAreaMap'],
                                                self.cloneMap, self.tmpDir, self.inputDir)
         self.cellAreaMap = pcr.cover(self.cellAreaMap, 0.0)
 
-        # # ldd
+        # ldd
         self.lddMap = vos.readPCRmapClone(self.iniItems.routingOptions['lddMap'],
                                           self.cloneMap,self.tmpDir,self.inputDir,True)
 
@@ -451,7 +451,7 @@ class GroundwaterModflow(object):
             self.parameter_DAMP_steady_state_default = list(set(self.iniItems.modflowParameterOptions['DAMP_steady_state'].split(",")))
 
 
-        # # minimum and maximum transmissivity values (unit: m2/day)
+        # minimum and maximum transmissivity values (unit: m2/day)
         if 'minimumTransmissivity' in self.iniItems.modflowParameterOptions.keys() and\
            (self.iniItems.modflowParameterOptions['minimumTransmissivity'] not in ["None", "False", "Default"]):
             self.minimumTransmissivity = float(self.iniItems.modflowParameterOptions['minimumTransmissivity'])
@@ -491,7 +491,7 @@ class GroundwaterModflow(object):
         self.steady_state_only = False
         # TODO: FIX THIS, put this option in the ini/configuration file.
 
-        # # the following condition is needed if we have to convert the unit of recharge and abstraction (ONLY for a transient simulation) 
+        # the following condition is needed if we have to convert the unit of recharge and abstraction (ONLY for a transient simulation) 
         self.valuesRechargeAndAbstractionInMonthlyTotal = False
         if self.steady_state_only == False and\
            "modflowTransientInputOptions" in self.iniItems.allSections and\
@@ -502,7 +502,7 @@ class GroundwaterModflow(object):
                self.valuesRechargeAndAbstractionInMonthlyTotal = True
 
         
-        # # initiate old style reporting (this is usually used for debugging process)
+        # initiate old style reporting (this is usually used for debugging process)
         self.initiate_old_style_reporting(iniItems)
         
         # option to make backup of modflow files
@@ -510,10 +510,10 @@ class GroundwaterModflow(object):
         if "make_backup_of_modflow_files" in self.iniItems.reportingOptions.keys() and\
            self.iniItems.reportingOptions["make_backup_of_modflow_files"] == "True": self.make_backup_of_modflow_files = True
         
-        # # a boolean status to reduce log info file
+        # a boolean status to reduce log info file
         self.log_to_info = True   
 
-        # # option to activate water balance check
+        # option to activate water balance check
         self.debugWaterBalance = True
         
 

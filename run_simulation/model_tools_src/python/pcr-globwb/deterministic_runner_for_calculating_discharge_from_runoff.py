@@ -66,7 +66,6 @@ class DeterministicRunner(DynamicModel):
                                              isLddMap         = False, \
                                              cover            = None, \
                                              isNomMap         = False)
-
     def initial(self): 
         
         # read cell area (m2)
@@ -108,8 +107,8 @@ class DeterministicRunner(DynamicModel):
                 ds = ds.expand_dims({'time': [timeStampPandas]}).drop_vars(['lat', 'lon']).chunk(_chunks)
                 ds.to_zarr(file, region={"time": slice(index, index+1)}, consolidated=True)
             
-            toZarr(vos.netcdf2PCRobjClone(self.model_setup["monthly_recharge_file"], \
-                                            "groundwater_recharge", str(self.modelTime.fulldate), None, self.clone), 
+            toZarr(vos._readRecharge_ds(self.model_setup["monthly_recharge_file"], \
+                                            "groundwater_recharge", str(self.modelTime.fulldate), self.clone), 
                                             file=self.model_setup["recharge_output_file"], varName='gwRecharge')
             
             toZarr(vos.netcdf2PCRobjClone(self.model_setup["monthly_abstraction_file"], \
