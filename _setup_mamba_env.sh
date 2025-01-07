@@ -10,7 +10,7 @@ create_environment() {
     fi
 
     # Create a new environment with the same name
-    yes | mamba create -c conda-forge -c bioconda -n "$ENV_NAME" python pcraster netcdf4 gdal cdo nco six xarray dask zarr bottleneck snakemake=8.26.0 pyinterp flopy geopandas snakemake-executor-plugin-slurm
+    yes | mamba create -c conda-forge -c bioconda -n "$ENV_NAME" tqdm python pcraster netcdf4 gdal cdo nco six xarray dask zarr bottleneck snakemake=8.26.0 pyinterp flopy geopandas snakemake-executor-plugin-slurm
 }
 create_environment
 wait
@@ -26,7 +26,7 @@ create_environment() {
     fi
 
     # Create a new environment with the same name
-    yes | mamba create -c conda-forge -c bioconda -n "$ENV_NAME" python pcraster=4.3.3 netcdf4 gdal cdo nco six xarray dask zarr bottleneck pyinterp flopy geopandas
+    yes | mamba create -c conda-forge -c bioconda -n "$ENV_NAME" tqdm python pcraster=4.3.3 netcdf4 gdal cdo nco six xarray dask zarr bottleneck pyinterp flopy geopandas
 }
 create_environment
 wait

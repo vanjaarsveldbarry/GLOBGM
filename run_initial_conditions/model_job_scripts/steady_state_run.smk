@@ -1,4 +1,4 @@
-localrules: setup_simulation,prepare_model_partitioning,write_model_input_setup,move_data,all
+localrules: setup_simulation,prepare_model_partitioning,write_model_input_setup,all
 
 import os
 SIMULATION = config["simulation"]
@@ -6,14 +6,17 @@ OUTPUTDIRECTORY = config["outputDirectory"]
 RUN_GLOBGM_DIR = config["run_globgm_dir"]
 DATA_DIR = config["data_dir"]
 CALIB_STR = config["calib_str"]
-SAVEDIR = config["savedir"]
 
-MODELROOT_SS=f"{OUTPUTDIRECTORY}/{CALIB_STR}/{SIMULATION}/ss"
+MODELROOT_SS=f"{OUTPUTDIRECTORY}/{SIMULATION}/ss"
 SLURMDIR_SS=f"{MODELROOT_SS}/slurm_logs"
 
 rule all:
     input:
-        f"{SLURMDIR_SS}/move_done",
+        f"{SLURMDIR_SS}/4_post-processing/done_post_process_solution_1",
+        f"{SLURMDIR_SS}/4_post-processing/done_post_process_solution_2",
+        f"{SLURMDIR_SS}/4_post-processing/done_post_process_solution_3",
+        f"{SLURMDIR_SS}/4_post-processing/done_post_process_solution_4",
+
 
 rule setup_simulation:
     output:
@@ -64,31 +67,34 @@ rule write_model_input_setup:
         outFile=f"{SLURMDIR_SS}/2_write_model_input/done_write_model_input_setup"
     shell:
         '''
-        mkdir -p {MODELROOT_SS}/model_input
-        cp -r {RUN_GLOBGM_DIR}/model_input {MODELROOT_SS}
+        modelRoot={MODELROOT_SS}
+        data_dir={DATA_DIR}
+        run_globgm_dir={RUN_GLOBGM_DIR}
 
-        inpdir={MODELROOT_SS}/model_input/2_partition_and_write_model_input/steady-state
+        mkdir -p $modelRoot/model_input
+        cp -r $run_globgm_dir/model_input $modelRoot
+
+        inpdir=$modelRoot/model_input/2_partition_and_write_model_input/steady-state
         inpmod=mf6_mod_ss.inp
         inpexe=mf6ggm_ss.inp
 
-        moddir={MODELROOT_SS}/mf6_mod
+        moddir=$modelRoot/mf6_mod
         mkdir -p $moddir
-        
+
         cp ${{inpdir}}/${{inpmod}} ${{moddir}}/${{inpmod}}
         cp ${{inpdir}}/${{inpexe}} ${{moddir}}/${{inpexe}}
 
-        yodaInput={DATA_DIR}/globgm_input
-        globgm_dir={MODELROOT_SS}
-
+        yodaInput=$data_dir/globgm_input
+        globgm_dir=$modelRoot
         sed -i "s|{{yoda_input}}|${{yodaInput}}|g" ${{moddir}}/${{inpmod}}
         sed -i "s|{{globgm_dir}}|${{moddir}}|g" ${{moddir}}/${{inpmod}}
         wait
 
-        exe={DATA_DIR}/_bin/mf6ggm_181121
+        exe=$data_dir/_bin/mf6ggm_181121
         cd ${{moddir}}
         ${{exe}} ${{inpexe}} 0 
-
         wait 
+
         touch {output.outFile}
         '''
 
@@ -221,7 +227,7 @@ rule write_model_input:
             fi
         done
         wait
-
+        
         # Copy for post-processing
         for ((i=1; i<=163; i+=1));do
             tile=$(printf "%03d" $i)
@@ -252,11 +258,9 @@ rule write_model_input:
         cd $moddir/glob_ss/log
         num_files=$(ls | wc -l)
         [ $num_files -eq 384 ] || {{ echo "Some models are missing"; exit 1; }}
-
         wait 
         touch {output.outFile}
         '''
-
 rule run_solution_3:
     params:
         solution=3
@@ -433,36 +437,3 @@ use rule post_process_solution_3 as post_process_solution_1 with:
         slurm_extra=f"--output={SLURMDIR_SS}/4_post-processing/_post_process_solution_1.out",
 
 
-rule move_data:
-    input:
-        rules.post_process_solution_1.output.outFile,
-        rules.post_process_solution_2.output.outFile,
-        rules.post_process_solution_3.output.outFile,
-        rules.post_process_solution_4.output.outFile,
-    output:
-        outFile=f"{SLURMDIR_SS}/move_done"
-    params:
-        save_dir=f"{SAVEDIR}/{CALIB_STR}", 
-        input_dir=f"{MODELROOT_SS}/mf6_post/",
-    shell:
-        '''
-        mkdir -p {params.save_dir}
-        cp -r {params.input_dir} {params.save_dir}
-        cp -r {SLURMDIR_SS} {params.save_dir}
-        wait 
-        touch {output.outFile}
-        '''
-
-rule wrap_up:
-    input:
-        rules.move_data.output.outFile,
-    output:
-        outFile=f"{OUTPUTDIRECTORY}/{CALIB_STR}_done"
-    params:
-        rootFolder=f"{OUTPUTDIRECTORY}/{CALIB_STR}"
-    shell:
-        '''
-        wait
-        # rm -r {params.rootFolder}
-        touch {output.outFile}
-        '''

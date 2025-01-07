@@ -2,18 +2,11 @@ import sys
 from pathlib import Path
 import xarray as xr
 import pandas as pd
-import concurrent.futures
-import xarray as xr
 import warnings
 warnings.simplefilter("ignore") 
-import time
 import os
-import subprocess
-import shutil
-from datetime import datetime
-import seaborn as sns
-import matplotlib.pyplot as plt
 import numpy as np
+
 
 _chunks={'time': 1, 'latitude': 20000, 'longitude': 20000}
 

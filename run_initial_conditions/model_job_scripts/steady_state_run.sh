@@ -18,9 +18,9 @@ river_res=0.1
 
 calib_str="khuncon${kh_un}_khcon${kh_con}_khcar${kh_car}_kvconf${kv_conf}_riverres${kv_conf}"
 count=$((count + 1))
-# snakemake --unlock --cores 16 \
 snakemake --cores 16 \
-          --snakefile steady-state.smk --rerun-incomplete \
+          --executor slurm --jobs 20 --default-resources slurm_account=uusei11758 \
+          --snakefile steady_state_run.smk --rerun-incomplete \
           --config simulation=$simulation \
                    outputDirectory=$outputDirectory \
                    run_globgm_dir=$run_globgm_dir \

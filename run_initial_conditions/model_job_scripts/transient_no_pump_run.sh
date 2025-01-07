@@ -12,31 +12,31 @@ cd $run_globgm_dir/model_job_scripts
 
 for i in {1..20};do
 
-    snakemake --cores 16 --until wrap_up --rerun-incomplete \
-            --snakefile transient_no_pump_run.smk \
-            --config simulation=$simulation \
+    snakemake --cores 16 \
+              --executor slurm --jobs 20 --default-resources slurm_account=uusei11758 \
+              --snakefile transient_no_pump_run.smk \
+              --config simulation=$simulation \
                      outputDirectory=$outputDirectory \
                      run_globgm_dir=$run_globgm_dir \
                      data_dir=$data_dir
     wait
+    break
+    slurm_dir=$outputDirectory/$simulation/tr_no_pump/slurm_logs
+    # rm $slurm_dir/done_runModels_complete1_1_rep
+    # rm $slurm_dir/done_runModels_complete2_1_rep
+    # rm $slurm_dir/done_runModels_complete3_1_rep
+    # rm $slurm_dir/done_runModels_complete4_1_rep
+    
+    # rm $slurm_dir/done_post_1_1_hds_rep
+    # rm $slurm_dir/done_post_1_1_wtd_rep
+    # rm $slurm_dir/done_post_2_1_hds_rep
+    # rm $slurm_dir/done_post_2_1_wtd_rep
+    # rm $slurm_dir/done_post_3_1_hds_rep
+    # rm $slurm_dir/done_post_3_1_wtd_rep
+    # rm $slurm_dir/done_post_4_1_hds_rep
+    # rm $slurm_dir/done_post_4_1_wtd_rep
 
-    rm /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/3_run_model/_runModels_complete1_1_rep
-    rm /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/3_run_model/_runModels_complete2_1_rep
-    rm /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/3_run_model/_runModels_complete3_1_rep
-    rm /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/3_run_model/_runModels_complete4_1_rep
+    # rm $slurm_dir/done_validation_rep
 
-    rm /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/4_post-processing/_post_complete1_1_hds_rep
-    rm /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/4_post-processing/_post_complete1_1_wtd_rep
-
-    rm /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/4_post-processing/_post_complete2_1_hds_rep
-    rm /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/4_post-processing/_post_complete2_1_wtd_rep
-
-    rm /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/4_post-processing/_post_complete3_1_hds_rep
-    rm /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/4_post-processing/_post_complete3_1_wtd_rep
-
-    rm /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/4_post-processing/_post_complete4_1_hds_rep
-    rm /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/4_post-processing/_post_complete4_1_wtd_rep
-
-    rm /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/sim_done
-    wait
+    # wait
 done
