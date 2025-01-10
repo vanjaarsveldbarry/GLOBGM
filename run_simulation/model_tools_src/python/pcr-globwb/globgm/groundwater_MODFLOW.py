@@ -998,7 +998,7 @@ class GroundwaterModflow(object):
         if "prefactorOptions" in self.iniItems.allSections:
             adjust_factor_for_horizontal_conductivities = self.adjust_factor_for_horizontal_conductivities_litho
         
-        # TODO: If required, introduce an option to adjust only the kD of lower layer. 
+         # TODO: If required, introduce an option to adjust only the kD of lower layer. 
 
         # minimum and maximum values for transmissivity
         maxTransmissivity = adjust_factor_for_horizontal_conductivities * self.maximumTransmissivity
@@ -1008,7 +1008,7 @@ class GroundwaterModflow(object):
         msg = 'The maximum transmissivity value is limited to (m2/day) ' + str(maxTransmissivity)  
         if self.log_to_info: logger.info(msg)
 
-        
+
         
         msg = "Assign horizontal conductivities of the upper layer (used for calculating transmissivity (TRAN) for the BCF package)."
         if self.log_to_info: logger.info(msg)
@@ -1210,7 +1210,7 @@ class GroundwaterModflow(object):
                                              pcr.cover(vertical_conductivity_layer_2  , 10.0), 2)
         # TODO: Trace where the missing values do come from? They occur if landmask is activated.                                                    
         #~ self.pcr_modflow.setConductivity(2, horizontal_conductivity_layer_2, \
-                                             #~ vertical_conductivity_layer_2, 2)              
+                                             #~ vertical_conductivity_layer_2, 2)            
 
     def set_bcf_for_two_layer_model(self):
 
@@ -1223,7 +1223,7 @@ class GroundwaterModflow(object):
         # TODO: Please check whether the lat/lon correction is necessary for the MODFLOW6. 
 
     def get_initial_heads(self, initialHeadsFromSpinUp = None):
-
+		
         if initialHeadsFromSpinUp != None:
            
            msg = "Using initial groundwater head(s) resulted from the spin-up process."
@@ -1692,8 +1692,8 @@ class GroundwaterModflow(object):
                                                  NSTP)
             # old-style reporting (this is usually used for debugging process)                            
             # self.old_style_reporting(currTimeStep)
-            
 
+        
     def save_some_pcraster_static_maps(self):
 
         msg = "Saving some pcraster maps (MODFLOW parameters/input files) to the folder"
@@ -1844,7 +1844,7 @@ class GroundwaterModflow(object):
                     # TODO: Try to read from netcdf files, avoid reading from pcraster maps (avoid resampling using gdal) 
 
             else:
-            
+                
                 # for offline coupling, we will read files from netcdf files
                 # - discharge (m3/s) from PCR-GLOBWB
                 if "estimateDischargeFromRunoff" in self.iniItems.modflowTransientInputOptions.keys() and\
@@ -1880,7 +1880,7 @@ class GroundwaterModflow(object):
                     gwAbstraction = pcr.cover(gwAbstraction, 0.0)
                 else:
                     gwAbstraction = pcr.spatial(pcr.scalar(0.0))
-
+                
                 # - for offline coupling, the provision of channel storage (unit: m3) is only optional
                 channelStorage = None
                 if 'channelStorageInputNC' in self.iniItems.modflowTransientInputOptions.keys() and\
@@ -2748,7 +2748,7 @@ class GroundwaterModflow(object):
                 satAreaFrac = vos.readPCRmapClone(vos.getFullPath(self.iniItems.modflowSteadyStateInputOptions['satAreaFracInputMap'], self.inputDir), self.cloneMap, self.tmpDir, self.inputDir)
         #     # - reading relative_elevation_above_dem_minimum
         #     relZFileName = vos.getFullPath(self.iniItems.modflowParameterOptions['relativeElevationFilesForSatAreaFrac'], self.iniItems.globalOptions['inputDir'])
-            
+		    
         #     # a dictionary contains areaFractions (dimensionless): fractions of flooded/innundated areas  
             areaFractions = list(map(float, str(self.iniItems.modflowParameterOptions['relativeElevationLevelsForSatAreaFrac']).split(',')))
             # estimate relative_elevation_from_satAreaFrac (relative above minimum dem)
@@ -2947,7 +2947,7 @@ class GroundwaterModflow(object):
             self.drain_conductance = drain_conductance
             self.drain_elevation_lowermost_layer = drain_elevation_lowermost_layer
             self.drain_elevation_uppermost_layer = drain_elevation_uppermost_layer
-
+            
     # def dummy_drain_package(self,relative_water_height):
 
     #         # run a dummy modflow run

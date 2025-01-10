@@ -1,9 +1,9 @@
 #!/bin/bash -l
 #SBATCH -N 1
 #SBATCH -J ini_con
-#SBATCH -t 12:00:00
+#SBATCH -t 119:00:00
 #SBATCH --partition=genoa
-#SBATCH --output=/home/bvjaarsveld1/projects/workflow/GLOBGM/run_initial_conditions/model_job_scripts/slurmOut/_ini_conditions.out
+#SBATCH --output=/home/bvjaarsveld1/projects/workflow/GLOBGM/run_initial_conditions/model_job_scripts/slurmOut/_ini_conditions_with_pump.out
 
 source ${HOME}/.bashrc
 mamba activate globgm
@@ -18,7 +18,7 @@ data_dir=/scratch-shared/_bvjaarsveld1/_data
 # bash ./_fetch_data.sh $data_dir
 
 #STEP 1: Run the steady state 
-# bash  ./steady_state_run.sh/ $simulation $outputDirectory $run_globgm_dir $data_dir
+# bash  ./steady_state_run.sh $simulation $outputDirectory $run_globgm_dir $data_dir
 
 #STEP 2: Run the transient without spinup and WITHOUT pumping for the first year. 
 # bash  ./transient_no_pump_run.sh $simulation $outputDirectory $run_globgm_dir $data_dir

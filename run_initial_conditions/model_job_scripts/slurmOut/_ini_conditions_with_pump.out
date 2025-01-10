@@ -1,0 +1,3 @@
+host: tcn1175.local.snellius.surf.nl
+Building DAG of jobs...
+You are running snakemake in a SLURM job context. This is not recommended, as it may lead to unexpected behavior. Please run Snakemake directly on the login node.

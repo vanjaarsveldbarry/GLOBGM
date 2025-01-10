@@ -572,6 +572,10 @@ rule run_model_solution3:
             {resources.mpi} ${{exe}} -s ../run_input/${{nam2}}
         fi
 
+        if [ $solution -eq 1 ]; then
+            python $iniConditionsScript $dir_run
+        fi
+
         wait
         touch {output.outFile}
         '''

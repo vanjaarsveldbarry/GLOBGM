@@ -1,4 +1,4 @@
-localrules: setup_simulation,prepare_model_partitioning,write_model_input_setup,all
+localrules: setup_simulation,prepare_model_partitioning,write_model_input_setup,all, post_process_solution_3, post_process_solution_4, post_process_solution_2, post_process_solution_1, validation
 
 import os
 SIMULATION = config["simulation"]
@@ -12,6 +12,7 @@ SLURMDIR_SS=f"{MODELROOT_SS}/slurm_logs"
 
 rule all:
     input:
+        # f"{SLURMDIR_SS}/4_post-processing/done_validation",
         f"{SLURMDIR_SS}/4_post-processing/done_post_process_solution_1",
         f"{SLURMDIR_SS}/4_post-processing/done_post_process_solution_2",
         f"{SLURMDIR_SS}/4_post-processing/done_post_process_solution_3",
@@ -318,9 +319,11 @@ rule post_process_solution_3:
         data_dir={DATA_DIR}
         saveDir=$TMPDIR/mf6_post/temp_s0${{solution}}
         mkdir -p $saveDir $modelRoot/mf6_post
+        dir=$modelRoot/mf6_post
 
         inpdir=$modelRoot/model_input/4_post-processing/steady-state
         zarrScripts=$(realpath ../model_tools_src/python/to_zarr)
+        _plot_script=$(realpath ../model_tools_src/python/to_zarr/mean_plot_ss.py)
         inp_ss=mf6ggm_post_ss.inp
         yodaInput=$data_dir/globgm_input
         exe=$data_dir/_bin/mf6ggmpost_260624
@@ -332,10 +335,12 @@ rule post_process_solution_3:
         wait
 
         cd $saveDir
-        ${{exe}} "s0${{solution}}_${{inp_ss}}"
+        # ${{exe}} "s0${{solution}}_${{inp_ss}}"
         wait 
 
-        python -u $zarrScripts/createZarr_ss.py $saveDir s0$solution $modelRoot/mf6_post 
+        # python -u $zarrScripts/createZarr_ss.py $saveDir s0$solution $modelRoot/mf6_post 
+        python -u $_plot_script $dir $solution wtd
+        python -u $_plot_script $dir $solution hds
         wait
         touch {output.outFile}
         '''
@@ -436,4 +441,33 @@ use rule post_process_solution_3 as post_process_solution_1 with:
         tasks=16,
         slurm_extra=f"--output={SLURMDIR_SS}/4_post-processing/_post_process_solution_1.out",
 
+rule validation:
+    input:
+        rules.post_process_solution_1.output.outFile,
+        rules.post_process_solution_2.output.outFile,
+        rules.post_process_solution_3.output.outFile,
+        rules.post_process_solution_4.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_SS}/4_post-processing/done_validation"
+    resources:
+        slurm_partition='fat_genoa', 
+        nodes=1,
+        runtime=120,
+        mem_mb=112000,
+        tasks=32,
+        cpus_per_task=1,
+        slurm_extra=f"--output={SLURMDIR_SS}/4_post-processing/_validation.out",
+    params:
+        py_script=f"{RUN_GLOBGM_DIR}/model_tools_src/python/validation/scripts/validation_globgm.py",
+        obs_file=f"{RUN_GLOBGM_DIR}/model_tools_src/python/validation/data/observed_gwh_for_ss_val_1960.gpkg",
+    shell:
+        '''
+        sim_dir={MODELROOT_SS}
+        _python_script={params.py_script}
+        osbserved_shapefile={params.obs_file}
 
+        output_dir=$sim_dir/mf6_post/output_validation
+        python $_python_script $output_dir $sim_dir $osbserved_shapefile
+        wait
+        touch {output.outFile}
+        '''

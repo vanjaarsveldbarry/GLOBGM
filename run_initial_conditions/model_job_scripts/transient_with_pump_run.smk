@@ -3,6 +3,7 @@ import os
 SIMULATION = config["simulation"]
 OUTPUTDIRECTORY = config["outputDirectory"]
 RUN_GLOBGM_DIR = config["run_globgm_dir"]
+ITERATION = config["iteration"]
 
 MODELROOT_TR=f"{OUTPUTDIRECTORY}/{SIMULATION}/tr_with_pump"
 SLURMDIR_TR=f"{MODELROOT_TR}/slurm_logs"
@@ -520,10 +521,7 @@ rule modify_ini_conditions:
         '''
 rule run_model_solution3:
     input:
-        rules.write_model_input_solution1.output.outFile,
-        rules.write_model_input_solution2.output.outFile,
-        rules.write_model_input_solution3.output.outFile,
-        rules.write_model_input_solution4.output.outFile,
+        rules.modify_ini_conditions.output.outFile,
     output:
         outFile=f"{SLURMDIR_TR}/3_run_model/done_runModels_complete3_1",
     params:
@@ -588,10 +586,7 @@ rule run_model_solution3:
 
 use rule run_model_solution3 as run_model_solution4 with:
     input:
-        rules.write_model_input_solution1.output.outFile,
-        rules.write_model_input_solution2.output.outFile,
-        rules.write_model_input_solution3.output.outFile,
-        rules.write_model_input_solution4.output.outFile,
+        rules.modify_ini_conditions.output.outFile,
     output:
         outFile=f"{SLURMDIR_TR}/3_run_model/done_runModels_complete4_1",
     params:
@@ -609,10 +604,7 @@ use rule run_model_solution3 as run_model_solution4 with:
         slurm_extra=f"--exclusive --ntasks-per-node=32 --gres=cpu:1 --output={SLURMDIR_TR}/3_run_model/_run_solution_4.out",
 use rule run_model_solution3 as run_model_solution2 with:
     input:
-        rules.write_model_input_solution1.output.outFile,
-        rules.write_model_input_solution2.output.outFile,
-        rules.write_model_input_solution3.output.outFile,
-        rules.write_model_input_solution4.output.outFile,
+        rules.modify_ini_conditions.output.outFile,
     output:
         outFile=f"{SLURMDIR_TR}/3_run_model/done_runModels_complete2_1",
     params:
@@ -630,10 +622,7 @@ use rule run_model_solution3 as run_model_solution2 with:
         slurm_extra=f"--exclusive --ntasks-per-node=32 --gres=cpu:1 --output={SLURMDIR_TR}/3_run_model/_run_solution_2.out",
 use rule run_model_solution3 as run_model_solution1 with:
     input:
-        rules.write_model_input_solution1.output.outFile,
-        rules.write_model_input_solution2.output.outFile,
-        rules.write_model_input_solution3.output.outFile,
-        rules.write_model_input_solution4.output.outFile,
+        rules.modify_ini_conditions.output.outFile,
     output:
         outFile=f"{SLURMDIR_TR}/3_run_model/done_runModels_complete1_1",
     params:
@@ -902,5 +891,9 @@ rule validation:
         output_dir=$sim_dir/mf6_post/output_validation
         python $_python_script $output_dir $sim_dir $osbserved_shapefile
         wait
+
+        mkdir -p {OUTPUTDIRECTORY}/{SIMULATION}/tr_with_pump/mf6_mod/mf6_mod_1/glob_tr/models/run_output_bin/_ini_hds_iterations 
+        cp -r {OUTPUTDIRECTORY}/{SIMULATION}/tr_with_pump/mf6_mod/mf6_mod_1/glob_tr/models/run_output_bin/_ini_hds {OUTPUTDIRECTORY}/{SIMULATION}/tr_with_pump/mf6_mod/mf6_mod_1/glob_tr/models/run_output_bin/_ini_hds_iterations/_ini_hds_{ITERATION}
+
         touch {output.outFile}
         '''

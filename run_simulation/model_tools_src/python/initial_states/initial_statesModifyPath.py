@@ -3,7 +3,7 @@ from pathlib import Path
 import sys
 
 id_mod=sys.argv[1][-1]
-id_previous=int(id_mod)-1
+id_previous=int(id_mod)
 modDir = Path(sys.argv[1])
 previusModDir=Path(f"{sys.argv[1][:-1]}{id_previous}")
 
