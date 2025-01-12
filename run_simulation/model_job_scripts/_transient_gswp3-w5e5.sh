@@ -23,3 +23,11 @@ snakemake --cores 16 \
                     outputDirectory=$outputDirectory \
                     run_globgm_dir=$run_globgm_dir \
                     data_dir=$data_dir
+# snakemake --cores 16 \
+#             --snakefile transient_gswp3-w5e5.smk \
+#             --executor slurm --jobs 20 --default-resources slurm_account=uusei11758 \
+#             --config simulation=$simulation \
+#                     outputDirectory=$outputDirectory \
+#                     run_globgm_dir=$run_globgm_dir \
+#                     data_dir=$data_dir \
+#             --dag | dot -Tsvg > dag.svg

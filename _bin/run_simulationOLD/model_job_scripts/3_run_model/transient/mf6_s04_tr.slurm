@@ -23,14 +23,14 @@ label=$6
 dataDir=$7
 outFile=$8
 
-if [ "$runType" = "start" ]; then
-    to_zarrFolder=$(realpath ../model_tools_src/python/to_zarr)
-    postDir=$modelRoot/mf6_post
-    mkdir -p $postDir
-    python -u $to_zarrFolder/createZarr_tr.py $dataDir $solution $postDir $simStart $simEnd wtd & 
-    python -u $to_zarrFolder/createZarr_tr.py $dataDir $solution $postDir $simStart $simEnd hds
-    wait
-fi
+# if [ "$runType" = "start" ]; then
+#     to_zarrFolder=$(realpath ../model_tools_src/python/to_zarr)
+#     postDir=$modelRoot/mf6_post
+#     mkdir -p $postDir
+#     python -u $to_zarrFolder/createZarr_tr.py $dataDir $solution $postDir $simStart $simEnd wtd & 
+#     python -u $to_zarrFolder/createZarr_tr.py $dataDir $solution $postDir $simStart $simEnd hds
+#     wait
+# fi
 
 iniConditionsScript=$(realpath ../model_tools_src/python/initial_states/initial_states.py)
 exe=$dataDir/_bin/mf6_rel_openmpi-4.1.4-gcc-11.3.0

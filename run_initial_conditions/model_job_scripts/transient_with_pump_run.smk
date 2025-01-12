@@ -369,9 +369,9 @@ rule write_model_input_solution3:
         slurm_partition='fat_genoa', 
         runtime=720,
         mem_mb=108500,
-        cpus_per_task=2,
+        cpus_per_task=1,
         constraint='scratch-node',
-        tasks=96,
+        tasks=192,
         nodes=1,
         slurm_extra=f"--exclusive --output={SLURMDIR_TR}/2_write_model_input/_writeModels/3_wMod_1.out",
         mpi='mpirun'
@@ -578,6 +578,9 @@ rule run_model_solution3:
 
         if [ "$runType" = "subRun" ]; then
             {resources.mpi} ${{exe}} -s ../run_input/${{nam2}}
+            if [ $solution -eq 1 ]; then
+                python $iniConditionsScript $dir_run
+            fi
         fi
 
         wait

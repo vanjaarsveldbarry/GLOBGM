@@ -570,11 +570,11 @@ rule run_model_solution3:
 
         if [ "$runType" = "subRun" ]; then
             {resources.mpi} ${{exe}} -s ../run_input/${{nam2}}
+            if [ $solution -eq 1 ]; then
+                python $iniConditionsScript $dir_run
+            fi
         fi
 
-        if [ $solution -eq 1 ]; then
-            python $iniConditionsScript $dir_run
-        fi
 
         wait
         touch {output.outFile}

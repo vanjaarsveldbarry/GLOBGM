@@ -3,8 +3,9 @@ from pathlib import Path
 import sys
 
 ## Write the binary files
-inputFolder = Path(sys.argv[1]).parent.parent / 'models/run_output_bin'
-saveDir=inputFolder / '_ini_hds'
+inputFolder = Path(sys.argv[1])
+saveDir = Path(sys.argv[2])
+saveDir=saveDir / '_ini_hds'
 saveDir.mkdir(exist_ok=True)
 files= list(inputFolder.glob('*.tr.hds'))
 for file in files:

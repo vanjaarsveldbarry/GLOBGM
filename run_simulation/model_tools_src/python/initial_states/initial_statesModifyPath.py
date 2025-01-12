@@ -2,13 +2,13 @@ import flopy as fp
 from pathlib import Path
 import sys
 
-id_mod=sys.argv[1][-1]
-id_previous=int(id_mod)
+# id_mod=sys.argv[1][-1]
+# id_previous=int(id_mod)
 modDir = Path(sys.argv[1])
-previusModDir=Path(f"{sys.argv[1][:-1]}{id_previous}")
+# previusModDir=Path(f"{sys.argv[1][:-1]}{id_previous}")
 
 iniFilesDir=modDir / 'glob_tr/models/run_input'
-source_dir=previusModDir / 'glob_tr/models/run_output_bin/_ini_hds'
+source_dir=modDir / 'glob_tr/models/run_output_bin/_ini_hds'
 files = [path for path in Path(iniFilesDir).rglob("m*.spu.ic")]
 for file in files:
     model=file.name[:-7]
