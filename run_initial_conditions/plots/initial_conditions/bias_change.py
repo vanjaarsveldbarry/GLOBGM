@@ -128,7 +128,19 @@ for col_index, solution in enumerate(unique_solutions):
     data_sub = mean_bias_final_average[(mean_bias_final_average['Solution'] == solution)]
     sns.lineplot(ax=ax, data=data_sub, x='Iteration', y='Bias', color='black', marker='')
     sns.lineplot(ax=ax, data=data_sub, x='Iteration', y='Bias', hue='Label', marker='o')
-    ax.set_title(f'Solution {solution} - Average')
+    ax.set_ylabel(r'Absolute Bias ($obs-sim$)')
+    if col_index == 0:
+        title = f'Afro-Eurasia Average Bias'
+        ax.set_title(title)
+    elif col_index == 1:
+        title = f'Americas Average Bias'
+        ax.set_title(title)
+    elif col_index == 2:
+        title = f'Australia Average Bias'
+        ax.set_title(title)
+    elif col_index == 3:
+        title = f'Islands  Average Bias'
+        ax.set_title(title)
 
 for col_index, solution in enumerate(unique_solutions):
     for row_index, label in enumerate(unique_labels):
@@ -136,20 +148,16 @@ for col_index, solution in enumerate(unique_solutions):
         data_sub = mean_bias_final[(mean_bias_final['Solution'] == solution) & (mean_bias_final['depthCat'] == label)]
         sns.lineplot(ax=ax, data=data_sub, x='Iteration', y='Bias', color='black', marker='')
         sns.lineplot(ax=ax, data=data_sub, x='Iteration', y='Bias', hue='Label', marker='o')
-        ax.set_title(f'Depth {label}m')
         ax.set_xlabel('Iteration')
-    
-for col_index, solution in enumerate(unique_solutions):
-    for row_index, label in enumerate(unique_labels):
-        ax = axes[row_index, col_index]
+        ax.set_xlabel('')
+        ax.set_ylabel('')
         if col_index == 0:
-            ax.set_ylabel(r'Relative Bias ($obs-sim$)')
-        else:
-            ax.set_ylabel('')
-        if row_index == 5:
+            ax.set_ylabel(r'Absolute Bias ($obs-sim$)')
+        if (row_index+1) == 5:
             ax.set_xlabel('Iteration')
-        else:
-            ax.set_xlabel('')
+        title = f'Depth {label}m'
+        ax.set_title(title)
+            
 
 plt.tight_layout()
 plt.savefig('/home/bvjaarsveld1/projects/workflow/GLOBGM/run_initial_conditions/plots/initial_conditions/_plots/bias_change_absolute.png')
@@ -270,16 +278,25 @@ for solution in [1, 2, 3]:
     mean_bias_final = pd.concat([mean_bias_final, mean_bias])
     mean_bias_final['Iteration'] = pd.to_numeric(mean_bias_final['Iteration'], errors='coerce')
     
-print(mean_bias_final_average)
 num_cols, num_rows = 3, 6
 fig, axes = plt.subplots(num_rows, num_cols, figsize=(num_cols * 6 , num_rows * 6), sharex=True)
 for col_index, solution in enumerate(unique_solutions):
     ax = axes[0, col_index]
     data_sub = mean_bias_final_average[(mean_bias_final_average['Solution'] == solution)]
-    print(data_sub)
     sns.lineplot(ax=ax, data=data_sub, x='Iteration', y='Bias', color='black', marker='')
     sns.lineplot(ax=ax, data=data_sub, x='Iteration', y='Bias', hue='Label', marker='o')
-    ax.set_title(f'Solution {solution} - Average')
+    if col_index == 0:
+        title = f'Afro-Eurasia Average Bias'
+        ax.set_title(title)
+    elif col_index == 1:
+        title = f'Americas Average Bias'
+        ax.set_title(title)
+    elif col_index == 2:
+        title = f'Australia Average Bias'
+        ax.set_title(title)
+    elif col_index == 3:
+        title = f'Islands  Average Bias'
+        ax.set_title(title)
 
 for col_index, solution in enumerate(unique_solutions):
     for row_index, label in enumerate(unique_labels):
@@ -289,18 +306,12 @@ for col_index, solution in enumerate(unique_solutions):
         sns.lineplot(ax=ax, data=data_sub, x='Iteration', y='Bias', hue='Label', marker='o')
         ax.set_title(f'Depth {label}m')
         ax.set_xlabel('Iteration')
-    
-for col_index, solution in enumerate(unique_solutions):
-    for row_index, label in enumerate(unique_labels):
-        ax = axes[row_index, col_index]
+        ax.set_ylabel('')
+        ax.set_xlabel('')
         if col_index == 0:
             ax.set_ylabel(r'Relative Bias ($\frac{obs-sim}{obs})$')
-        else:
-            ax.set_ylabel('')
-        if row_index == 5:
+        if (row_index+1) == 5:
             ax.set_xlabel('Iteration')
-        else:
-            ax.set_xlabel('')
 
 plt.tight_layout()
 plt.savefig('/home/bvjaarsveld1/projects/workflow/GLOBGM/run_initial_conditions/plots/initial_conditions/_plots/bias_change_relative.png')

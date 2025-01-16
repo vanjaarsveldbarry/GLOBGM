@@ -35,7 +35,7 @@ for layer in [1, 2]:
         col_index = 0 if layer == 1 else 1
         row_index = idx
         sns.lineplot(data=melted_df, x='Index', y='Value', marker='o', hue='Label', ax=axes[row_index * 2 + col_index])
-        
+        axes[row_index * 2 + col_index].set_xlabel('Iteration')
         if solution == 1:
             title = f'Afro-Eurasia hds Layer {layer}'
         elif solution == 2:

@@ -3,31 +3,25 @@
 #SBATCH -J ini_con
 #SBATCH -t 119:00:00
 #SBATCH --partition=genoa
-#SBATCH --output=/home/bvjaarsveld1/projects/workflow/GLOBGM/run_simulation/model_job_scripts/slurnOut/_ini_conditions_test.out
+#SBATCH --output=/projects/prjs1222/GLOBGM/run_simulation/model_job_scripts/slurmOut/historical_with_pump.out
 
 source ${HOME}/.bashrc
 mamba activate globgm
 
 simulation=gswp3-w5e5
 
-outputDirectory=/scratch-shared/_bvjaarsveld1/output_gswp3-w5e5
-data_dir=/scratch-shared/_bvjaarsveld1/_data
-run_globgm_dir=/home/bvjaarsveld1/projects/workflow/GLOBGM/run_simulation
+outputDirectory=/projects/prjs1222/globgm_output/historical_with_pump
+data_dir=/projects/prjs1222/globgm_input/_data
+run_globgm_dir=/projects/prjs1222/GLOBGM/run_simulation
 
 cd $run_globgm_dir/model_job_scripts
 
-snakemake --cores 16 \
-            --snakefile transient_gswp3-w5e5.smk \
-            --executor slurm --jobs 20 --default-resources slurm_account=uusei11758 \
-            --config simulation=$simulation \
+# snakemake --unlock --cores 16 \
+snakemake -n --report transient_gswp3-w5e5_report.html --cores 16 \
+          --snakefile transient_gswp3-w5e5.smk \
+          --executor slurm --jobs 100 --default-resources slurm_account=uus2024031 \
+          --config simulation=$simulation \
                     outputDirectory=$outputDirectory \
                     run_globgm_dir=$run_globgm_dir \
                     data_dir=$data_dir
-# snakemake --cores 16 \
-#             --snakefile transient_gswp3-w5e5.smk \
-#             --executor slurm --jobs 20 --default-resources slurm_account=uusei11758 \
-#             --config simulation=$simulation \
-#                     outputDirectory=$outputDirectory \
-#                     run_globgm_dir=$run_globgm_dir \
-#                     data_dir=$data_dir \
-#             --dag | dot -Tsvg > dag.svg
+# /scratch-node/barrygwt.9390102

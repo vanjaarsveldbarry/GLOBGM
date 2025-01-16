@@ -1,0 +1,85 @@
+setup_simulation                 : 0.018976926803588867
+prepare_model_partitioning       : 107.43310332298279
+
+write_model_forcing_setup        : 622.8345463275909
+write_model_forcing_sub1         : 5412.307657241821
+write_model_forcing_sub2         : 5312.856984138489
+
+setup_output                     : 9.3988676071167
+
+_setup_subRun1                   : 124.51892161369324
+_setup_subRun2                   : 123.9799075126648
+_setup_subRun3                   : 124.836843252182
+_setup_subRun4                   : 124.31316256523132
+
+
+
+modify_ini_conditions_subRun1 : 90.2780020236969
+modify_ini_conditions_subRun2 : 223.25338006019592
+modify_ini_conditions_subRun3 : 207.85655903816223
+modify_ini_conditions_subRun4 : 217.69564986228943
+
+post_model_solution1_hds_subRun1 : 9187.344702005386
+post_model_solution1_hds_subRun2 : 9214.267421483994
+post_model_solution1_hds_subRun3 : 8891.33645105362
+post_model_solution1_hds_subRun4 : 6688.992535352707
+post_model_solution1_wtd_subRun1 : 9187.305881738663
+post_model_solution1_wtd_subRun2 : 9214.311220645905
+post_model_solution1_wtd_subRun3 : 8891.401543140411
+post_model_solution1_wtd_subRun4 : 6688.9986827373505
+post_model_solution2_hds_subRun1 : 5843.116565465927
+post_model_solution2_hds_subRun2 : 5643.543255567551
+post_model_solution2_hds_subRun3 : 5831.397979021072
+post_model_solution2_hds_subRun4 : 4287.234531164169
+post_model_solution2_wtd_subRun1 : 5552.590505361557
+post_model_solution2_wtd_subRun2 : 5853.835440397263
+post_model_solution2_wtd_subRun3 : 5861.462658166885
+post_model_solution2_wtd_subRun4 : 4286.7175307273865
+post_model_solution3_hds_subRun1 : 778.9441840648651
+post_model_solution3_hds_subRun2 : 745.36461186409
+post_model_solution3_hds_subRun3 : 741.8751482963562
+post_model_solution3_hds_subRun4 : 574.5725629329681
+post_model_solution3_wtd_subRun1 : 778.9624948501587
+post_model_solution3_wtd_subRun2 : 715.2896783351898
+post_model_solution3_wtd_subRun3 : 741.9320349693298
+post_model_solution3_wtd_subRun4 : 574.5613408088684
+post_model_solution4_hds_subRun1 : 38484.12159657478
+post_model_solution4_hds_subRun2 : 32925.57154202461
+post_model_solution4_hds_subRun3 : 32028.739068746567
+post_model_solution4_hds_subRun4 : 23924.085329294205
+post_model_solution4_wtd_subRun1 : 32268.372545957565
+post_model_solution4_wtd_subRun2 : 37699.45619535446
+post_model_solution4_wtd_subRun3 : 32028.80264186859
+post_model_solution4_wtd_subRun4 : 23924.113166570663
+run_model_solution1_subRun1      : 10866.666292190552
+run_model_solution1_subRun2      : 10477.04329919815
+run_model_solution1_subRun3      : 10966.381707668304
+run_model_solution1_subRun4      : 8017.129937887192
+run_model_solution2_subRun1      : 10209.125522375107
+run_model_solution2_subRun2      : 10537.467236280441
+run_model_solution2_subRun3      : 10306.189980745316
+run_model_solution2_subRun4      : 7987.7197823524475
+run_model_solution3_subRun1      : 5125.256849527359
+run_model_solution3_subRun2      : 6052.351358890533
+run_model_solution3_subRun3      : 6091.868340015411
+run_model_solution3_subRun4      : 4594.18625831604
+run_model_solution4_subRun1      : 6036.219694375992
+run_model_solution4_subRun2      : 6053.119650602341
+run_model_solution4_subRun3      : 6091.753499031067
+run_model_solution4_subRun4      : 4534.019095182419
+write_models_solution1_subRun1   : 7386.6774117946625
+write_models_solution1_subRun2   : 7328.125666856766
+write_models_solution1_subRun3   : 7297.325837135315
+write_models_solution1_subRun4   : 5744.67035651207
+write_models_solution2_subRun1   : 7196.533855676651
+write_models_solution2_subRun2   : 7097.883315563202
+write_models_solution2_subRun3   : 6996.473471164703
+write_models_solution2_subRun4   : 5704.618584394455
+write_models_solution3_subRun1   : 6785.734947919846
+write_models_solution3_subRun2   : 6946.134433507919
+write_models_solution3_subRun3   : 6445.760232925415
+write_models_solution3_subRun4   : 5554.354961395264
+write_models_solution4_subRun1   : 6846.019275903702
+write_models_solution4_subRun2   : 7296.637545347214
+write_models_solution4_subRun3   : 7297.445515394211
+write_models_solution4_subRun4   : 5714.662527084351

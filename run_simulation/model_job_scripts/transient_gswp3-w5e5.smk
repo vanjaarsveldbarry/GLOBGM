@@ -1,33 +1,62 @@
 localrules: setup_simulation,prepare_model_partitioning,write_model_forcing_setup,setup_output,
-            _setup_subRun1,modify_ini_conditions_subRun1,clean_up_subRun1,
-            _setup_subRun2,modify_ini_conditions_subRun2,clean_up_subRun2,
-            _setup_subRun3,modify_ini_conditions_subRun3,clean_up_subRun3,
-            _setup_subRun4,modify_ini_conditions_subRun4,clean_up_subRun4,
+            _setup_subRun1,modify_ini_conditions_subRun1,
+            _setup_subRun2,modify_ini_conditions_subRun2,
+            _setup_subRun3,modify_ini_conditions_subRun3,
+            _setup_subRun4,modify_ini_conditions_subRun4,
 import os
 SIMULATION = config["simulation"]
 OUTPUTDIRECTORY = config["outputDirectory"]
 RUN_GLOBGM_DIR = config["run_globgm_dir"]
 
-MODELROOT_TR=f"{OUTPUTDIRECTORY}/{SIMULATION}/tr_with_pump"
+MODELROOT_TR=f"{OUTPUTDIRECTORY}/{SIMULATION}"
 SLURMDIR_TR=f"{MODELROOT_TR}/slurm_logs"
 DATA_DIR = config["data_dir"]
 
 STARTYEAR = 1960
-ENDYEAR = 1963
+ENDYEAR = 2019
 
-subRun1_start,subRun1_end,subRun1_label = 1960,1960,1
-subRun2_start,subRun2_end,subRun2_label = 1961,1961,2
-subRun3_start,subRun3_end,subRun3_label = 1962,1962,3
-subRun4_start,subRun4_end,subRun4_label = 1963,1963,4
+subRun1_start,subRun1_end,subRun1_label = 1960,1975,1
+subRun2_start,subRun2_end,subRun2_label = 1976,1991,2
+subRun3_start,subRun3_end,subRun3_label = 1992,2007,3
+subRun4_start,subRun4_end,subRun4_label = 2008,2019,4
 nSpin = 1
+
+############## DROP POST ALL TO 16CORES
 
 rule all:
     input:
-        f"{SLURMDIR_TR}/4_post-processing/done_clean_up_subRun{subRun1_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_clean_up_subRun{subRun2_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_clean_up_subRun{subRun3_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_clean_up_subRun{subRun4_label}",
-
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun1_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun1_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun1_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun1_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun1_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun1_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun1_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun1_label}",
 
 rule setup_simulation:
     output:
@@ -81,7 +110,7 @@ rule write_model_forcing_setup:
         start_year={STARTYEAR}
         end_year={ENDYEAR}
         data_dir={DATA_DIR}
-        simulation=$(basename $(dirname $modelRoot))
+        simulation={SIMULATION}
         cmip6InputFolder=$data_dir/cmip6_input/$simulation/historical
         saveFolder=$modelRoot/forcing_input
         pcrglobInputFolder=$data_dir/globgm_input/_pcrcalc_files
@@ -173,9 +202,9 @@ rule write_model_forcing_sub1:
         subSet=1,
     resources:
         slurm_partition='fat_genoa', 
-        runtime=720,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=336000,
+        mem_mb=1440000,
         cpus_per_task=1,
         tasks=192,
         nodes=1,
@@ -242,10 +271,10 @@ use rule write_model_forcing_sub1 as write_model_forcing_sub2 with:
     params:
         subSet=2,
     resources:
-        slurm_partition='genoa', 
-        runtime=720,
+        slurm_partition='fat_genoa', 
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=336000,
+        mem_mb=1440000,
         cpus_per_task=1,
         tasks=192,
         nodes=1,
@@ -336,7 +365,26 @@ use rule _setup_subRun1 as _setup_subRun2 with:
         iniStatesFolder=f"{DATA_DIR}/initial_states/ss/"
     output:
         outFile=f"{SLURMDIR_TR}/2_write_model_input/done_setup_{subRun2_label}",
-
+use rule _setup_subRun1 as _setup_subRun3 with:
+    input:
+        rules.setup_output.output.outFile,
+    params:
+        start_year=subRun3_start,
+        end_year=subRun3_end,
+        label=subRun3_label,
+        iniStatesFolder=f"{DATA_DIR}/initial_states/ss/"
+    output:
+        outFile=f"{SLURMDIR_TR}/2_write_model_input/done_setup_{subRun3_label}",
+use rule _setup_subRun1 as _setup_subRun4 with:
+    input:
+        rules.setup_output.output.outFile,
+    params:
+        start_year=subRun4_start,
+        end_year=subRun4_end,
+        label=subRun4_label,
+        iniStatesFolder=f"{DATA_DIR}/initial_states/ss/"
+    output:
+        outFile=f"{SLURMDIR_TR}/2_write_model_input/done_setup_{subRun4_label}",
 
 ###############################
 #  Setup and Run SubRun 1     #
@@ -352,7 +400,7 @@ rule write_models_solution3_subRun1:
         label=subRun1_label,
     resources:
         slurm_partition='fat_genoa', 
-        runtime=720,
+        runtime=1200,
         mem_mb=1440000,
         cpus_per_task=1,
         constraint='scratch-node',
@@ -467,7 +515,7 @@ use rule write_models_solution3_subRun1 as write_models_solution4_subRun1 with:
         label=subRun1_label,
     resources:
         slurm_partition='fat_genoa', 
-        runtime=720,
+        runtime=1200,
         mem_mb=1440000,
         cpus_per_task=1,
         constraint='scratch-node',
@@ -486,7 +534,7 @@ use rule write_models_solution3_subRun1 as write_models_solution2_subRun1 with:
         label=subRun1_label,
     resources:
         slurm_partition='fat_genoa', 
-        runtime=720,
+        runtime=1200,
         mem_mb=1440000,
         cpus_per_task=1,
         constraint='scratch-node',
@@ -506,7 +554,7 @@ use rule write_models_solution3_subRun1 as write_models_solution1_subRun1 with:
         label=subRun1_label,
     resources:
         slurm_partition='fat_genoa', 
-        runtime=720,
+        runtime=1200,
         mem_mb=1440000,
         cpus_per_task=1,
         constraint='scratch-node',
@@ -552,7 +600,7 @@ rule run_model_solution3_subRun1:
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=300,
         mem_mb=336000,
         tasks=32,
         cpus_per_task=1,
@@ -590,7 +638,7 @@ use rule run_model_solution3_subRun1 as run_model_solution4_subRun1 with:
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=300,
         mem_mb=336000,
         tasks=32,
         cpus_per_task=1,
@@ -607,7 +655,7 @@ use rule run_model_solution3_subRun1 as run_model_solution2_subRun1 with:
     resources:
         slurm_partition='genoa', 
         nodes=3,
-        runtime=120,
+        runtime=300,
         mem_mb=336000,
         tasks=96,
         cpus_per_task=1,
@@ -624,7 +672,7 @@ use rule run_model_solution3_subRun1 as run_model_solution1_subRun1 with:
     resources:
         slurm_partition='genoa', 
         nodes=7,
-        runtime=120,
+        runtime=300,
         mem_mb=336000,
         tasks=224,
         cpus_per_task=1,
@@ -645,14 +693,15 @@ rule post_model_solution3_wtd_subRun1:
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution3_wtd_subRun{subRun1_label}.out",
     shell:
         '''
+        df -BG $TMPDIR
         modelRoot={MODELROOT_TR}
         var={params.var}
         solution={params.solution}
@@ -662,7 +711,6 @@ rule post_model_solution3_wtd_subRun1:
         dataDir={DATA_DIR}
 
         _merge_zarr=$(realpath ../model_tools_src/python/to_zarr/mergeZarr_tr.py)
-        _plot_script=$(realpath ../model_tools_src/python/to_zarr/mean_plot.py)
         inpdir=$modelRoot/model_input/4_post-processing/transient
         inp_tr=mf6ggm_post_tr_$var.inp
         exe=$dataDir/_bin/mf6ggmpost_260624
@@ -670,59 +718,26 @@ rule post_model_solution3_wtd_subRun1:
         dir=$modelRoot/mf6_post
         input_file=s0${{solution}}_${{inp_tr}}
 
-        counter=0
-        for ((year=$startDate; year<=$endDate; year++));do
-            counter=$((counter+1))
-            modFlowTemp=$TMPDIR/output
-            mkdir -p $modFlowTemp
-            cd $modFlowTemp
-            mkdir -p ./mod_files_s0${{solution}}_${{year}} ./out
-            cd ./mod_files_s0${{solution}}_${{year}}
-            # #Convert output to .flt
-            sub_input=${{input_file}}_${{year}}
-            cp ${{inpdir}}/${{inp_tr}} ./$sub_input
-            sed -i "s|{{yoda_input}}|${{yodaInput}}|g" $sub_input
-            sed -i "s|{{globgm_dir}}|${{modelRoot}}|g" $sub_input
-            sed -i "s|{{mod_dir}}|${{modDir}}|g" $sub_input
-            sed -i "s|{{solution}}|${{solution}}|g" $sub_input
-            sed -i "s|{{START_DATE}}|${{year}}|g" $sub_input
-            sed -i "s|{{END_DATE}}|${{year}}|g" $sub_input
-            sed -i "s|{{MOD_START_DATE}}|${{startDate}}|g" $sub_input
-            ${{exe}} $sub_input &
-            if [ $counter -eq 6 ]; then
-                wait
-                counter=0
-            fi
-        done
+        modFlowTemp=$TMPDIR/output
+        mkdir -p $modFlowTemp
+        cd $modFlowTemp
+        mkdir -p ./mod_files_s0${{solution}}_${{endDate}} ./out
+        cd ./mod_files_s0${{solution}}_${{endDate}}
+        # #Convert output to .flt
+        sub_input=${{input_file}}_${{endDate}}
+        cp ${{inpdir}}/${{inp_tr}} ./$sub_input
+        sed -i "s|{{yoda_input}}|${{yodaInput}}|g" $sub_input
+        sed -i "s|{{globgm_dir}}|${{modelRoot}}|g" $sub_input
+        sed -i "s|{{mod_dir}}|${{modDir}}|g" $sub_input
+        sed -i "s|{{solution}}|${{solution}}|g" $sub_input
+        sed -i "s|{{START_DATE}}|${{startDate}}|g" $sub_input
+        sed -i "s|{{END_DATE}}|${{endDate}}|g" $sub_input
+        sed -i "s|{{MOD_START_DATE}}|${{startDate}}|g" $sub_input
+        ${{exe}} $sub_input & python -u $_merge_zarr $dir $modFlowTemp/out $solution $startDate $endDate $var
         wait
-
-        counter=0
-        for ((year=$startDate; year<=$endDate; year++));do
-            counter=$((counter+1))
-            python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 01 $var &
-            python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 02 $var &
-            python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 03 $var &
-            python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 04 $var &
-            python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 05 $var &
-            python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 06 $var &
-            python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 07 $var &
-            python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 08 $var &
-            python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 09 $var &
-            python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 10 $var &
-            python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 11 $var &
-            python -u $_merge_zarr $dir $modFlowTemp/out $solution $year 12 $var
-            if [ $counter -eq 3 ]; then
-                wait
-                counter=0
-            fi
-        done
-        wait
-
-        python -u $_plot_script $dir $solution $var
-        wait
+        df -BG $TMPDIR
         touch {output.outFile}
         '''
-
 use rule post_model_solution3_wtd_subRun1 as post_model_solution3_hds_subRun1 with:
     input:
         rules.run_model_solution3_subRun1.output.outFile,
@@ -737,10 +752,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution3_hds_subRun1 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution3_hds_subRun{subRun1_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun1 with:
@@ -757,10 +772,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun1 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_wtd_subRun{subRun1_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun1 with:
@@ -777,10 +792,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun1 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_hds_subRun{subRun1_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun1 with:
@@ -797,10 +812,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun1 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution2_wtd_subRun{subRun1_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution2_hds_subRun1 with:
@@ -817,10 +832,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_hds_subRun1 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution2_hds_subRun{subRun1_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution1_wtd_subRun1 with:
@@ -837,10 +852,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_wtd_subRun1 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=56000,
+        tasks=32,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution1_wtd_subRun{subRun1_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution1_hds_subRun1 with:
@@ -857,10 +872,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_hds_subRun1 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=56000,
+        tasks=32,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution1_hds_subRun{subRun1_label}.out",
 
@@ -880,7 +895,7 @@ use rule write_models_solution3_subRun1 as write_models_solution3_subRun2 with:
         label=subRun2_label,
     resources:
         slurm_partition='fat_genoa', 
-        runtime=720,
+        runtime=1200,
         mem_mb=1440000,
         cpus_per_task=1,
         constraint='scratch-node',
@@ -900,7 +915,7 @@ use rule write_models_solution3_subRun1 as write_models_solution4_subRun2 with:
         label=subRun2_label,
     resources:
         slurm_partition='fat_genoa', 
-        runtime=720,
+        runtime=1200,
         mem_mb=1440000,
         cpus_per_task=1,
         constraint='scratch-node',
@@ -919,7 +934,7 @@ use rule write_models_solution3_subRun1 as write_models_solution2_subRun2 with:
         label=subRun2_label,
     resources:
         slurm_partition='fat_genoa', 
-        runtime=720,
+        runtime=1200,
         mem_mb=1440000,
         cpus_per_task=1,
         constraint='scratch-node',
@@ -938,7 +953,7 @@ use rule write_models_solution3_subRun1 as write_models_solution1_subRun2 with:
         label=subRun2_label,
     resources:
         slurm_partition='fat_genoa', 
-        runtime=720,
+        runtime=1200,
         mem_mb=1440000,
         cpus_per_task=1,
         constraint='scratch-node',
@@ -973,27 +988,6 @@ rule modify_ini_conditions_subRun2:
         wait
         touch {output.outFile}
         '''
-rule clean_up_subRun1:
-    input:
-        rules.modify_ini_conditions_subRun2.output.outFile,
-
-        rules.post_model_solution1_wtd_subRun1.output.outFile,
-        rules.post_model_solution1_hds_subRun1.output.outFile,
-        rules.post_model_solution2_wtd_subRun1.output.outFile,
-        rules.post_model_solution2_hds_subRun1.output.outFile,
-        rules.post_model_solution3_wtd_subRun1.output.outFile,
-        rules.post_model_solution3_hds_subRun1.output.outFile,
-        rules.post_model_solution4_wtd_subRun1.output.outFile,
-        rules.post_model_solution4_hds_subRun1.output.outFile,
-    output:
-        outFile=f"{SLURMDIR_TR}/4_post-processing/done_clean_up_subRun{subRun1_label}",
-    params:
-        label=subRun1_label,
-    shell: 
-        '''
-        # USE THE MPIFileUTILS to CLEAN UP THE PROJECT SPACE, WILL ONLY IMPLEMENT THIS in future runs
-        touch {output.outFile}
-        '''
 use rule run_model_solution3_subRun1 as run_model_solution3_subRun2 with:
     input:
         rules.modify_ini_conditions_subRun2.output.outFile,
@@ -1005,7 +999,7 @@ use rule run_model_solution3_subRun1 as run_model_solution3_subRun2 with:
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=300,
         mem_mb=336000,
         tasks=32,
         cpus_per_task=1,
@@ -1022,7 +1016,7 @@ use rule run_model_solution3_subRun1 as run_model_solution4_subRun2 with:
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=300,
         mem_mb=336000,
         tasks=32,
         cpus_per_task=1,
@@ -1039,7 +1033,7 @@ use rule run_model_solution3_subRun1 as run_model_solution2_subRun2 with:
     resources:
         slurm_partition='genoa', 
         nodes=3,
-        runtime=120,
+        runtime=300,
         mem_mb=336000,
         tasks=96,
         cpus_per_task=1,
@@ -1056,7 +1050,7 @@ use rule run_model_solution3_subRun1 as run_model_solution1_subRun2 with:
     resources:
         slurm_partition='genoa', 
         nodes=7,
-        runtime=120,
+        runtime=300,
         mem_mb=336000,
         tasks=224,
         cpus_per_task=1,
@@ -1077,10 +1071,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution3_wtd_subRun2 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution3_wtd_subRun{subRun2_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution3_hds_subRun2 with:
@@ -1097,10 +1091,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution3_hds_subRun2 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution3_hds_subRun{subRun2_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun2 with:
@@ -1117,10 +1111,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun2 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=56000,
+        tasks=32,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_wtd_subRun{subRun2_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun2 with:
@@ -1137,10 +1131,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun2 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=56000,
+        tasks=32,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_hds_subRun{subRun2_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun2 with:
@@ -1157,10 +1151,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun2 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution2_wtd_subRun{subRun2_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution2_hds_subRun2 with:
@@ -1177,10 +1171,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_hds_subRun2 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution2_hds_subRun{subRun2_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution1_wtd_subRun2 with:
@@ -1197,10 +1191,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_wtd_subRun2 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution1_wtd_subRun{subRun2_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution1_hds_subRun2 with:
@@ -1217,10 +1211,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_hds_subRun2 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution1_hds_subRun{subRun2_label}.out",
 
@@ -1228,16 +1222,6 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_hds_subRun2 wi
 ###############################
 #  Setup and Run SubRun 3     #
 ###############################
-use rule _setup_subRun1 as _setup_subRun3 with:
-    input:
-        rules.clean_up_subRun1.output.outFile,
-    params:
-        start_year=subRun3_start,
-        end_year=subRun3_end,
-        label=subRun3_label,
-        iniStatesFolder=f"{DATA_DIR}/initial_states/ss/"
-    output:
-        outFile=f"{SLURMDIR_TR}/2_write_model_input/done_setup_{subRun3_label}",
 use rule write_models_solution3_subRun1 as write_models_solution3_subRun3 with:
     input:
         rules._setup_subRun3.output.outFile,
@@ -1249,7 +1233,7 @@ use rule write_models_solution3_subRun1 as write_models_solution3_subRun3 with:
         label=subRun3_label,
     resources:
         slurm_partition='fat_genoa', 
-        runtime=720,
+        runtime=1200,
         mem_mb=1440000,
         cpus_per_task=1,
         constraint='scratch-node',
@@ -1268,7 +1252,7 @@ use rule write_models_solution3_subRun1 as write_models_solution4_subRun3 with:
         label=subRun3_label,
     resources:
         slurm_partition='fat_genoa', 
-        runtime=720,
+        runtime=1200,
         mem_mb=1440000,
         cpus_per_task=1,
         constraint='scratch-node',
@@ -1287,7 +1271,7 @@ use rule write_models_solution3_subRun1 as write_models_solution2_subRun3 with:
         label=subRun3_label,
     resources:
         slurm_partition='fat_genoa', 
-        runtime=720,
+        runtime=1200,
         mem_mb=1440000,
         cpus_per_task=1,
         constraint='scratch-node',
@@ -1306,7 +1290,7 @@ use rule write_models_solution3_subRun1 as write_models_solution1_subRun3 with:
         label=subRun3_label,
     resources:
         slurm_partition='fat_genoa', 
-        runtime=720,
+        runtime=1200,
         mem_mb=1440000,
         cpus_per_task=1,
         constraint='scratch-node',
@@ -1333,23 +1317,6 @@ use rule modify_ini_conditions_subRun2 as modify_ini_conditions_subRun3 with:
         modifyPathScript=f"{RUN_GLOBGM_DIR}/model_tools_src/python/initial_states/initial_statesModifyPath.py",
         previousRunModDir=f"{MODELROOT_TR}/mf6_mod/mf6_mod_{subRun2_label}/glob_tr/models/run_output_bin/",
         label=f"{subRun3_label}",
-use rule clean_up_subRun1 as clean_up_subRun2 with:
-    input:
-        rules.modify_ini_conditions_subRun3.output.outFile,
-
-        rules.post_model_solution1_wtd_subRun2.output.outFile,
-        rules.post_model_solution1_hds_subRun2.output.outFile,
-        rules.post_model_solution2_wtd_subRun2.output.outFile,
-        rules.post_model_solution2_hds_subRun2.output.outFile,
-        rules.post_model_solution3_wtd_subRun2.output.outFile,
-        rules.post_model_solution3_hds_subRun2.output.outFile,
-        rules.post_model_solution4_wtd_subRun2.output.outFile,
-        rules.post_model_solution4_hds_subRun2.output.outFile,
-
-    output:
-        outFile=f"{SLURMDIR_TR}/4_post-processing/done_clean_up_subRun{subRun2_label}",
-    params:
-        label=subRun2_label,
 use rule run_model_solution3_subRun1 as run_model_solution3_subRun3 with:
     input:
         rules.modify_ini_conditions_subRun3.output.outFile,
@@ -1361,7 +1328,7 @@ use rule run_model_solution3_subRun1 as run_model_solution3_subRun3 with:
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=300,
         mem_mb=336000,
         tasks=32,
         cpus_per_task=1,
@@ -1378,7 +1345,7 @@ use rule run_model_solution3_subRun1 as run_model_solution4_subRun3 with:
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=300,
         mem_mb=336000,
         tasks=32,
         cpus_per_task=1,
@@ -1395,7 +1362,7 @@ use rule run_model_solution3_subRun1 as run_model_solution2_subRun3 with:
     resources:
         slurm_partition='genoa', 
         nodes=3,
-        runtime=120,
+        runtime=300,
         mem_mb=336000,
         tasks=96,
         cpus_per_task=1,
@@ -1412,7 +1379,7 @@ use rule run_model_solution3_subRun1 as run_model_solution1_subRun3 with:
     resources:
         slurm_partition='genoa', 
         nodes=7,
-        runtime=120,
+        runtime=300,
         mem_mb=336000,
         tasks=224,
         cpus_per_task=1,
@@ -1432,10 +1399,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution3_wtd_subRun3 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution3_wtd_subRun{subRun3_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution3_hds_subRun3 with:
@@ -1452,10 +1419,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution3_hds_subRun3 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution3_hds_subRun{subRun3_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun3 with:
@@ -1472,10 +1439,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun3 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=56000,
+        tasks=32,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_wtd_subRun{subRun3_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun3 with:
@@ -1492,10 +1459,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun3 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=56000,
+        tasks=32,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_hds_subRun{subRun3_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun3 with:
@@ -1512,10 +1479,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun3 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution2_wtd_subRun{subRun3_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution2_hds_subRun3 with:
@@ -1532,10 +1499,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_hds_subRun3 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution2_hds_subRun{subRun3_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution1_wtd_subRun3 with:
@@ -1552,10 +1519,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_wtd_subRun3 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution1_wtd_subRun{subRun3_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution1_hds_subRun3 with:
@@ -1572,25 +1539,15 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_hds_subRun3 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution1_hds_subRun{subRun3_label}.out",
 ###############################
 #  Setup and Run SubRun 4     #
 ###############################
-use rule _setup_subRun1 as _setup_subRun4 with:
-    input:
-        rules.clean_up_subRun2.output.outFile,
-    params:
-        start_year=subRun4_start,
-        end_year=subRun4_end,
-        label=subRun4_label,
-        iniStatesFolder=f"{DATA_DIR}/initial_states/ss/"
-    output:
-        outFile=f"{SLURMDIR_TR}/2_write_model_input/done_setup_{subRun4_label}",
 use rule write_models_solution3_subRun1 as write_models_solution3_subRun4 with:
     input:
         rules._setup_subRun4.output.outFile,
@@ -1602,7 +1559,7 @@ use rule write_models_solution3_subRun1 as write_models_solution3_subRun4 with:
         label=subRun4_label,
     resources:
         slurm_partition='fat_genoa', 
-        runtime=720,
+        runtime=1200,
         mem_mb=1440000,
         cpus_per_task=1,
         constraint='scratch-node',
@@ -1621,7 +1578,7 @@ use rule write_models_solution3_subRun1 as write_models_solution4_subRun4 with:
         label=subRun4_label,
     resources:
         slurm_partition='fat_genoa', 
-        runtime=720,
+        runtime=1200,
         mem_mb=1440000,
         cpus_per_task=1,
         constraint='scratch-node',
@@ -1640,7 +1597,7 @@ use rule write_models_solution3_subRun1 as write_models_solution2_subRun4 with:
         label=subRun4_label,
     resources:
         slurm_partition='fat_genoa', 
-        runtime=720,
+        runtime=1200,
         mem_mb=1440000,
         cpus_per_task=1,
         constraint='scratch-node',
@@ -1659,7 +1616,7 @@ use rule write_models_solution3_subRun1 as write_models_solution1_subRun4 with:
         label=subRun4_label,
     resources:
         slurm_partition='fat_genoa', 
-        runtime=720,
+        runtime=1200,
         mem_mb=1440000,
         cpus_per_task=1,
         constraint='scratch-node',
@@ -1687,22 +1644,6 @@ use rule modify_ini_conditions_subRun2 as modify_ini_conditions_subRun4 with:
         modifyPathScript=f"{RUN_GLOBGM_DIR}/model_tools_src/python/initial_states/initial_statesModifyPath.py",
         previousRunModDir=f"{MODELROOT_TR}/mf6_mod/mf6_mod_{subRun3_label}/glob_tr/models/run_output_bin/",
         label=f"{subRun4_label}",
-use rule clean_up_subRun1 as clean_up_subRun3 with:
-    input:
-        rules.modify_ini_conditions_subRun4.output.outFile,
-
-        rules.post_model_solution1_wtd_subRun3.output.outFile,
-        rules.post_model_solution1_hds_subRun3.output.outFile,
-        rules.post_model_solution2_wtd_subRun3.output.outFile,
-        rules.post_model_solution2_hds_subRun3.output.outFile,
-        rules.post_model_solution3_wtd_subRun3.output.outFile,
-        rules.post_model_solution3_hds_subRun3.output.outFile,
-        rules.post_model_solution4_wtd_subRun3.output.outFile,
-        rules.post_model_solution4_hds_subRun3.output.outFile,
-    output:
-        outFile=f"{SLURMDIR_TR}/4_post-processing/done_clean_up_subRun{subRun3_label}",
-    params:
-        label=subRun3_label,
 use rule run_model_solution3_subRun1 as run_model_solution3_subRun4 with:
     input:
         rules.modify_ini_conditions_subRun4.output.outFile,
@@ -1714,7 +1655,7 @@ use rule run_model_solution3_subRun1 as run_model_solution3_subRun4 with:
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=300,
         mem_mb=336000,
         tasks=32,
         cpus_per_task=1,
@@ -1731,7 +1672,7 @@ use rule run_model_solution3_subRun1 as run_model_solution4_subRun4 with:
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=300,
         mem_mb=336000,
         tasks=32,
         cpus_per_task=1,
@@ -1748,7 +1689,7 @@ use rule run_model_solution3_subRun1 as run_model_solution2_subRun4 with:
     resources:
         slurm_partition='genoa', 
         nodes=3,
-        runtime=120,
+        runtime=300,
         mem_mb=336000,
         tasks=96,
         cpus_per_task=1,
@@ -1765,7 +1706,7 @@ use rule run_model_solution3_subRun1 as run_model_solution1_subRun4 with:
     resources:
         slurm_partition='genoa', 
         nodes=7,
-        runtime=120,
+        runtime=300,
         mem_mb=336000,
         tasks=224,
         cpus_per_task=1,
@@ -1785,10 +1726,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution3_wtd_subRun4 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution3_wtd_subRun{subRun4_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution3_hds_subRun4 with:
@@ -1805,10 +1746,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution3_hds_subRun4 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution3_hds_subRun{subRun4_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun4 with:
@@ -1825,10 +1766,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun4 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=56000,
+        tasks=32,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_wtd_subRun{subRun4_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun4 with:
@@ -1845,10 +1786,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun4 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=56000,
+        tasks=32,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_hds_subRun{subRun4_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun4 with:
@@ -1865,10 +1806,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun4 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=56000,
+        tasks=32,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution2_wtd_subRun{subRun4_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution2_hds_subRun4 with:
@@ -1885,10 +1826,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_hds_subRun4 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution2_hds_subRun{subRun4_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution1_wtd_subRun4 with:
@@ -1905,10 +1846,10 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_wtd_subRun4 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution1_wtd_subRun{subRun4_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution1_hds_subRun4 with:
@@ -1925,24 +1866,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_hds_subRun4 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=120,
+        runtime=7140,
         constraint='scratch-node',
-        mem_mb=112000,
-        tasks=64,
-        cpus_per_task=1,
+        mem_mb=28000,
+        tasks=16,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution1_hds_subRun{subRun4_label}.out",
-
-use rule clean_up_subRun1 as clean_up_subRun4 with:
-    input:
-        rules.post_model_solution1_wtd_subRun4.output.outFile,
-        rules.post_model_solution1_hds_subRun4.output.outFile,
-        rules.post_model_solution2_wtd_subRun4.output.outFile,
-        rules.post_model_solution2_hds_subRun4.output.outFile,
-        rules.post_model_solution3_wtd_subRun4.output.outFile,
-        rules.post_model_solution3_hds_subRun4.output.outFile,
-        rules.post_model_solution4_wtd_subRun4.output.outFile,
-        rules.post_model_solution4_hds_subRun4.output.outFile,
-    output:
-        outFile=f"{SLURMDIR_TR}/4_post-processing/done_clean_up_subRun{subRun4_label}",
-    params:
-        label=subRun4_label,
