@@ -1,0 +1,80 @@
+host: tcn1177.local.snellius.surf.nl
+Building DAG of jobs...
+You are running snakemake in a SLURM job context. This is not recommended, as it may lead to unexpected behavior. Please run Snakemake directly on the login node.
+SLURM run ID: e44b148d-8a3b-43ca-b867-c8ec5f07664a
+Using shell: /usr/bin/bash
+Provided remote nodes: 20
+Job stats:
+job                             count
+----------------------------  -------
+all                                 1
+post_model_solution1_hds            1
+post_model_solution1_hds_rep        1
+post_model_solution1_wtd            1
+post_model_solution1_wtd_rep        1
+post_model_solution2_hds            1
+post_model_solution2_hds_rep        1
+post_model_solution2_wtd            1
+post_model_solution2_wtd_rep        1
+post_model_solution3_hds            1
+post_model_solution3_hds_rep        1
+post_model_solution3_wtd            1
+post_model_solution3_wtd_rep        1
+post_model_solution4_hds            1
+post_model_solution4_hds_rep        1
+post_model_solution4_wtd            1
+post_model_solution4_wtd_rep        1
+run_model_solution1                 1
+run_model_solution1_rep             1
+run_model_solution2                 1
+run_model_solution2_rep             1
+run_model_solution3                 1
+run_model_solution3_rep             1
+run_model_solution4                 1
+run_model_solution4_rep             1
+validation                          1
+validation_rep                      1
+total                              27
+
+Select jobs to execute...
+Execute 4 jobs...
+
+[Fri Jan 17 19:53:56 2025]
+rule run_model_solution4:
+    input: /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/2_write_model_input/done_write_model_input_solution1, /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/2_write_model_input/done_write_model_input_solution2, /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/2_write_model_input/done_write_model_input_solution3, /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/2_write_model_input/done_write_model_input_solution4
+    output: /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/3_run_model/done_runModels_complete4_1
+    jobid: 26
+    reason: Missing output files: /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/3_run_model/done_runModels_complete4_1; Code has changed since last execution
+    resources: mem_mb=336000, mem_mib=320435, disk_mb=1000, disk_mib=954, tmpdir=<TBD>, slurm_account=uusei11758, slurm_partition=genoa, nodes=1, runtime=120, tasks=32, cpus_per_task=1, mpi=srun, slurm_extra=--exclusive --ntasks-per-node=32 --gres=cpu:1 --output=/scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/3_run_model/_run_solution_4.out
+
+Job 26 has been submitted with SLURM jobid 9481014 (log: /gpfs/home5/bvjaarsveld1/projects/workflow/GLOBGM/run_initial_conditions/model_job_scripts/.snakemake/slurm_logs/rule_run_model_solution4/9481014.log).
+
+[Fri Jan 17 19:53:56 2025]
+rule run_model_solution2:
+    input: /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/2_write_model_input/done_write_model_input_solution1, /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/2_write_model_input/done_write_model_input_solution2, /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/2_write_model_input/done_write_model_input_solution3, /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/2_write_model_input/done_write_model_input_solution4
+    output: /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/3_run_model/done_runModels_complete2_1
+    jobid: 20
+    reason: Missing output files: /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/3_run_model/done_runModels_complete2_1; Code has changed since last execution
+    resources: mem_mb=336000, mem_mib=320435, disk_mb=1000, disk_mib=954, tmpdir=<TBD>, slurm_account=uusei11758, slurm_partition=genoa, nodes=3, runtime=120, tasks=96, cpus_per_task=1, mpi=srun, slurm_extra=--exclusive --ntasks-per-node=32 --gres=cpu:1 --output=/scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/3_run_model/_run_solution_2.out
+
+Job 20 has been submitted with SLURM jobid 9481015 (log: /gpfs/home5/bvjaarsveld1/projects/workflow/GLOBGM/run_initial_conditions/model_job_scripts/.snakemake/slurm_logs/rule_run_model_solution2/9481015.log).
+
+[Fri Jan 17 19:53:57 2025]
+rule run_model_solution1:
+    input: /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/2_write_model_input/done_write_model_input_solution1, /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/2_write_model_input/done_write_model_input_solution2, /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/2_write_model_input/done_write_model_input_solution3, /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/2_write_model_input/done_write_model_input_solution4
+    output: /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/3_run_model/done_runModels_complete1_1
+    jobid: 6
+    reason: Missing output files: /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/3_run_model/done_runModels_complete1_1; Code has changed since last execution
+    resources: mem_mb=336000, mem_mib=320435, disk_mb=1000, disk_mib=954, tmpdir=<TBD>, slurm_account=uusei11758, slurm_partition=genoa, nodes=7, runtime=120, tasks=224, cpus_per_task=1, mpi=srun, slurm_extra=--exclusive --ntasks-per-node=32 --gres=cpu:1 --output=/scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/3_run_model/_run_solution_1.out
+
+Job 6 has been submitted with SLURM jobid 9481016 (log: /gpfs/home5/bvjaarsveld1/projects/workflow/GLOBGM/run_initial_conditions/model_job_scripts/.snakemake/slurm_logs/rule_run_model_solution1/9481016.log).
+
+[Fri Jan 17 19:53:57 2025]
+rule run_model_solution3:
+    input: /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/2_write_model_input/done_write_model_input_solution1, /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/2_write_model_input/done_write_model_input_solution2, /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/2_write_model_input/done_write_model_input_solution3, /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/2_write_model_input/done_write_model_input_solution4
+    output: /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/3_run_model/done_runModels_complete3_1
+    jobid: 23
+    reason: Missing output files: /scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/3_run_model/done_runModels_complete3_1
+    resources: mem_mb=336000, mem_mib=320435, disk_mb=1000, disk_mib=954, tmpdir=<TBD>, slurm_account=uusei11758, slurm_partition=genoa, nodes=1, runtime=120, tasks=32, cpus_per_task=1, mpi=srun, slurm_extra=--exclusive --ntasks-per-node=32 --gres=cpu:1 --output=/scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5/tr_no_pump/slurm_logs/3_run_model/_run_solution_3.out
+
+Job 23 has been submitted with SLURM jobid 9481017 (log: /gpfs/home5/bvjaarsveld1/projects/workflow/GLOBGM/run_initial_conditions/model_job_scripts/.snakemake/slurm_logs/rule_run_model_solution3/9481017.log).

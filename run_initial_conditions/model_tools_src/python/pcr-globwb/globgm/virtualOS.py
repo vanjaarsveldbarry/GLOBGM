@@ -335,7 +335,8 @@ def readDownscaling_gwRecharge_modflowZARR(gwRechargeFile, correctionFile, preci
     precip_ds = netcdf2PCRobjClone(precipFile,"precipitation", timeStamp, None, cloneMap)
     correctionFactor = _read_correctionFactor(correctionFile, cloneMap)
     gwRecharge = _read_gwRecharge_zarr(gwRechargeFile, 'gwRecharge', timeStamp, cloneMap)
-    gwRecharge = (correctionFactor * (gwRecharge + 1e-20)) - 1e-20
+    gwRecharge = correctionFactor * gwRecharge
+    gwRecharge = pcr.ifthenelse(gwRecharge > 0, (gwRecharge - 1e-20), 0)
     gwRecharge = pcr.ifthenelse(gwRecharge > precip_ds, precip_ds, gwRecharge)
     return gwRecharge
 

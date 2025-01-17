@@ -10,7 +10,7 @@ data_dir=$4
 
 cd $run_globgm_dir/model_job_scripts
 
-for i in {1..25};do
+for i in {1..75};do
 
     snakemake --cores 16 \
               --executor slurm --jobs 20 --default-resources slurm_account=uusei11758 \
