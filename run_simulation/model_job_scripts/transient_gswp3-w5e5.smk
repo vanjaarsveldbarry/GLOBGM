@@ -21,8 +21,6 @@ subRun3_start,subRun3_end,subRun3_label = 1992,2007,3
 subRun4_start,subRun4_end,subRun4_label = 2008,2019,4
 nSpin = 1
 
-############## DROP POST ALL TO 16CORES
-
 rule all:
     input:
         f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun4_label}",
@@ -854,8 +852,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_wtd_subRun1 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=56000,
-        tasks=32,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution1_wtd_subRun{subRun1_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution1_hds_subRun1 with:
@@ -874,8 +872,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_hds_subRun1 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=56000,
-        tasks=32,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution1_hds_subRun{subRun1_label}.out",
 
@@ -1113,8 +1111,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun2 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=56000,
-        tasks=32,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_wtd_subRun{subRun2_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun2 with:
@@ -1133,8 +1131,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun2 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=56000,
-        tasks=32,
+        mem_mb=28000,
+        tasks=28,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_hds_subRun{subRun2_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun2 with:
@@ -1441,8 +1439,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun3 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=56000,
-        tasks=32,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_wtd_subRun{subRun3_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun3 with:
@@ -1461,8 +1459,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun3 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=56000,
-        tasks=32,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_hds_subRun{subRun3_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun3 with:
@@ -1768,8 +1766,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun4 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=56000,
-        tasks=32,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_wtd_subRun{subRun4_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun4 with:
@@ -1788,8 +1786,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun4 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=56000,
-        tasks=32,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_hds_subRun{subRun4_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun4 with:
@@ -1808,8 +1806,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun4 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=56000,
-        tasks=32,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution2_wtd_subRun{subRun4_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution2_hds_subRun4 with:
