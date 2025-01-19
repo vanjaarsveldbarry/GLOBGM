@@ -1,0 +1,11 @@
+Name,<0,0-5,5-10,10-20,20-60,>60,overall_mean
+khuncon0.1_khcon0.1_khcar0.1_kvconf0.1_riverres0.1,37.3,9.6,12.0,15.6,27.2,93.3,32.5
+khuncon0.1_khcon0.1_khcar0.1_kvconf1.0_riverres0.1,37.7,9.7,11.9,15.4,27.0,93.1,32.5
+khuncon0.1_khcon1.0_khcar0.1_kvconf0.1_riverres0.1,37.6,9.8,12.3,15.9,27.2,92.7,32.6
+khuncon0.1_khcon0.1_khcar0.1_kvconf1.0_riverres1.0,37.8,9.8,12.0,15.6,27.1,93.1,32.6
+khuncon0.1_khcon1.0_khcar0.1_kvconf1.0_riverres0.1,38.0,9.9,12.1,15.7,26.9,92.5,32.5
+khuncon0.1_khcon0.1_khcar1.0_kvconf0.1_riverres0.1,37.6,9.9,12.4,16.1,27.2,91.8,32.5
+khuncon0.1_khcon0.1_khcar1.0_kvconf1.0_riverres0.1,38.0,10.0,12.3,16.0,26.8,91.5,32.5
+khuncon0.1_khcon0.1_khcar1.0_kvconf1.0_riverres1.0,38.1,10.1,12.5,16.2,27.0,91.5,32.6
+khuncon0.1_khcon1.0_khcar1.0_kvconf1.0_riverres0.1,38.4,10.1,12.7,16.4,26.8,91.0,32.6
+khuncon1.0_khcon0.1_khcar0.1_kvconf1.0_riverres0.1,39.0,11.0,13.4,16.7,26.5,88.9,32.6

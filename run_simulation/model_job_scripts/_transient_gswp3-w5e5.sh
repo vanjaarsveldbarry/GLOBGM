@@ -24,4 +24,3 @@ snakemake -n --report transient_gswp3-w5e5_report.html --cores 16 \
                     outputDirectory=$outputDirectory \
                     run_globgm_dir=$run_globgm_dir \
                     data_dir=$data_dir
-# /scratch-node/barrygwt.9390102
