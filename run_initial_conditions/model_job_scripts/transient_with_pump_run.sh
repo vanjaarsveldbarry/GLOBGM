@@ -10,8 +10,8 @@ data_dir=$4
 
 cd $run_globgm_dir/model_job_scripts
 
-for i in {1..49};do
-    snakemake --cores 16 \
+for i in {1..50};do
+    snakemake -n --cores 16 \
               --snakefile transient_with_pump_run.smk \
               --executor slurm --jobs 20 --default-resources slurm_account=uusei11758 \
               --config simulation=$simulation \
