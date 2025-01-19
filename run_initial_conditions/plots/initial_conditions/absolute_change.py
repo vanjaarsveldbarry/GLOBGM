@@ -24,7 +24,6 @@ for layer in [1, 2]:
         df_with_pump['Iteration'] = df_with_pump['Iteration'].str.extract(r'(\d+)').astype(int)
         df_with_pump = df_with_pump.rename(columns={'Value': 'with_pump'})
         df_with_pump['Label'] = 'with_pump'
-        print(df_with_pump)
         
         combined_df = pd.concat([df_ss, df_no_pump, df_with_pump])
         combined_df['Index'] = range(len(combined_df))

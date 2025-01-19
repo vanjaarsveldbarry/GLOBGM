@@ -23,7 +23,7 @@ for solution in [1, 2, 3]:
     value_vars = [col for col in df_ss.columns if 'bias' in col]
     df_ss = pd.melt(df_ss, id_vars=id_vars, value_vars=value_vars, var_name='Iteration', value_name='Bias')
     df_ss['Label'] = 'ss'
-    df_ss['Iteration'] = df_ss['Iteration'].str.extract('(\d+)').astype(int)
+    df_ss['Iteration'] = df_ss['Iteration'].str.extract(r'(\d+)').astype(int)
     
     df_layer2 = pd.read_csv(dataPath / f'tr_no_pump/mf6_post/output_validation/tr_no_pump_s0{solution}_layer2_bias.csv')
     df_layer1 = pd.read_csv(dataPath / f'tr_no_pump/mf6_post/output_validation/tr_no_pump_s0{solution}_layer1_bias.csv')
@@ -32,7 +32,7 @@ for solution in [1, 2, 3]:
     value_vars = [col for col in df_no_pump.columns if 'bias' in col]
     df_no_pump = pd.melt(df_no_pump, id_vars=id_vars, value_vars=value_vars, var_name='Iteration', value_name='Bias')
     df_no_pump['Label'] = 'no_pump'
-    df_no_pump['Iteration'] = df_no_pump['Iteration'].str.extract('(\d+)').astype(int)
+    df_no_pump['Iteration'] = df_no_pump['Iteration'].str.extract(r'(\d+)').astype(int)
     df_no_pump['Iteration']  = df_no_pump['Iteration'] + df_ss['Iteration'].max()
     
     df_layer2 = pd.read_csv(dataPath / f'tr_with_pump/mf6_post/output_validation/tr_with_pump_s0{solution}_layer2_bias.csv')
@@ -42,7 +42,7 @@ for solution in [1, 2, 3]:
     value_vars = [col for col in df_with_pump.columns if 'bias' in col]
     df_with_pump = pd.melt(df_with_pump, id_vars=id_vars, value_vars=value_vars, var_name='Iteration', value_name='Bias')
     df_with_pump['Label'] = 'with_pump'
-    df_with_pump['Iteration'] = df_with_pump['Iteration'].str.extract('(\d+)').astype(int)
+    df_with_pump['Iteration'] = df_with_pump['Iteration'].str.extract(r'(\d+)').astype(int)
     df_with_pump['Iteration']  = df_with_pump['Iteration'] + df_no_pump['Iteration'].max()
     
     df_combined = pd.concat([df_ss, df_no_pump, df_with_pump])
@@ -74,7 +74,7 @@ for solution in [1, 2, 3]:
     value_vars = [col for col in df_ss.columns if 'bias' in col]
     df_ss = pd.melt(df_ss, id_vars=id_vars, value_vars=value_vars, var_name='Iteration', value_name='Bias')
     df_ss['Label'] = 'ss'
-    df_ss['Iteration'] = df_ss['Iteration'].str.extract('(\d+)').astype(int)
+    df_ss['Iteration'] = df_ss['Iteration'].str.extract(r'(\d+)').astype(int)
     
     df_layer2 = pd.read_csv(dataPath / f'tr_no_pump/mf6_post/output_validation/tr_no_pump_s0{solution}_layer2_bias.csv')
     df_layer1 = pd.read_csv(dataPath / f'tr_no_pump/mf6_post/output_validation/tr_no_pump_s0{solution}_layer1_bias.csv')
@@ -83,7 +83,7 @@ for solution in [1, 2, 3]:
     value_vars = [col for col in df_no_pump.columns if 'bias' in col]
     df_no_pump = pd.melt(df_no_pump, id_vars=id_vars, value_vars=value_vars, var_name='Iteration', value_name='Bias')
     df_no_pump['Label'] = 'no_pump'
-    df_no_pump['Iteration'] = df_no_pump['Iteration'].str.extract('(\d+)').astype(int)
+    df_no_pump['Iteration'] = df_no_pump['Iteration'].str.extract(r'(\d+)').astype(int)
     df_no_pump['Iteration']  = df_no_pump['Iteration'] + df_ss['Iteration'].max()
     
     df_layer2 = pd.read_csv(dataPath / f'tr_with_pump/mf6_post/output_validation/tr_with_pump_s0{solution}_layer2_bias.csv')
@@ -93,7 +93,7 @@ for solution in [1, 2, 3]:
     value_vars = [col for col in df_with_pump.columns if 'bias' in col]
     df_with_pump = pd.melt(df_with_pump, id_vars=id_vars, value_vars=value_vars, var_name='Iteration', value_name='Bias')
     df_with_pump['Label'] = 'with_pump'
-    df_with_pump['Iteration'] = df_with_pump['Iteration'].str.extract('(\d+)').astype(int)
+    df_with_pump['Iteration'] = df_with_pump['Iteration'].str.extract(r'(\d+)').astype(int)
     df_with_pump['Iteration']  = df_with_pump['Iteration'] + df_no_pump['Iteration'].max()
     
     df_combined = pd.concat([df_ss, df_no_pump, df_with_pump])
@@ -179,7 +179,7 @@ for solution in [1, 2, 3]:
     value_vars = [col for col in df_ss.columns if 'bias' in col]
     df_ss = pd.melt(df_ss, id_vars=id_vars, value_vars=value_vars, var_name='Iteration', value_name='Bias')
     df_ss['Label'] = 'ss'
-    df_ss['Iteration'] = df_ss['Iteration'].str.extract('(\d+)').astype(int)
+    df_ss['Iteration'] = df_ss['Iteration'].str.extract(r'(\d+)').astype(int)
     
     df_layer2 = pd.read_csv(dataPath / f'tr_no_pump/mf6_post/output_validation/tr_no_pump_s0{solution}_layer2_bias.csv')
     df_layer1 = pd.read_csv(dataPath / f'tr_no_pump/mf6_post/output_validation/tr_no_pump_s0{solution}_layer1_bias.csv')
@@ -188,7 +188,7 @@ for solution in [1, 2, 3]:
     value_vars = [col for col in df_no_pump.columns if 'bias' in col]
     df_no_pump = pd.melt(df_no_pump, id_vars=id_vars, value_vars=value_vars, var_name='Iteration', value_name='Bias')
     df_no_pump['Label'] = 'no_pump'
-    df_no_pump['Iteration'] = df_no_pump['Iteration'].str.extract('(\d+)').astype(int)
+    df_no_pump['Iteration'] = df_no_pump['Iteration'].str.extract(r'(\d+)').astype(int)
     df_no_pump['Iteration']  = df_no_pump['Iteration'] + df_ss['Iteration'].max()
     
     df_layer2 = pd.read_csv(dataPath / f'tr_with_pump/mf6_post/output_validation/tr_with_pump_s0{solution}_layer2_bias.csv')
@@ -198,7 +198,7 @@ for solution in [1, 2, 3]:
     value_vars = [col for col in df_with_pump.columns if 'bias' in col]
     df_with_pump = pd.melt(df_with_pump, id_vars=id_vars, value_vars=value_vars, var_name='Iteration', value_name='Bias')
     df_with_pump['Label'] = 'with_pump'
-    df_with_pump['Iteration'] = df_with_pump['Iteration'].str.extract('(\d+)').astype(int)
+    df_with_pump['Iteration'] = df_with_pump['Iteration'].str.extract(r'(\d+)').astype(int)
     df_with_pump['Iteration']  = df_with_pump['Iteration'] + df_no_pump['Iteration'].max()
     
     df_combined = pd.concat([df_ss, df_no_pump, df_with_pump])
@@ -230,7 +230,7 @@ for solution in [1, 2, 3]:
     value_vars = [col for col in df_ss.columns if 'bias' in col]
     df_ss = pd.melt(df_ss, id_vars=id_vars, value_vars=value_vars, var_name='Iteration', value_name='Bias')
     df_ss['Label'] = 'ss'
-    df_ss['Iteration'] = df_ss['Iteration'].str.extract('(\d+)').astype(int)
+    df_ss['Iteration'] = df_ss['Iteration'].str.extract(r'(\d+)').astype(int)
     
     df_layer2 = pd.read_csv(dataPath / f'tr_no_pump/mf6_post/output_validation/tr_no_pump_s0{solution}_layer2_bias.csv')
     df_layer1 = pd.read_csv(dataPath / f'tr_no_pump/mf6_post/output_validation/tr_no_pump_s0{solution}_layer1_bias.csv')
@@ -239,7 +239,7 @@ for solution in [1, 2, 3]:
     value_vars = [col for col in df_no_pump.columns if 'bias' in col]
     df_no_pump = pd.melt(df_no_pump, id_vars=id_vars, value_vars=value_vars, var_name='Iteration', value_name='Bias')
     df_no_pump['Label'] = 'no_pump'
-    df_no_pump['Iteration'] = df_no_pump['Iteration'].str.extract('(\d+)').astype(int)
+    df_no_pump['Iteration'] = df_no_pump['Iteration'].str.extract(r'(\d+)').astype(int)
     df_no_pump['Iteration']  = df_no_pump['Iteration'] + df_ss['Iteration'].max()
     
     df_layer2 = pd.read_csv(dataPath / f'tr_with_pump/mf6_post/output_validation/tr_with_pump_s0{solution}_layer2_bias.csv')
@@ -249,7 +249,7 @@ for solution in [1, 2, 3]:
     value_vars = [col for col in df_with_pump.columns if 'bias' in col]
     df_with_pump = pd.melt(df_with_pump, id_vars=id_vars, value_vars=value_vars, var_name='Iteration', value_name='Bias')
     df_with_pump['Label'] = 'with_pump'
-    df_with_pump['Iteration'] = df_with_pump['Iteration'].str.extract('(\d+)').astype(int)
+    df_with_pump['Iteration'] = df_with_pump['Iteration'].str.extract(r'(\d+)').astype(int)
     df_with_pump['Iteration']  = df_with_pump['Iteration'] + df_no_pump['Iteration'].max()
     
     df_combined = pd.concat([df_ss, df_no_pump, df_with_pump])
