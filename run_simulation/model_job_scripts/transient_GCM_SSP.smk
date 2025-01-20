@@ -7,54 +7,65 @@ import os
 SIMULATION = config["simulation"]
 OUTPUTDIRECTORY = config["outputDirectory"]
 RUN_GLOBGM_DIR = config["run_globgm_dir"]
-
-MODELROOT_TR=f"{OUTPUTDIRECTORY}/{SIMULATION}"
+PERIOD = config["period"]
+MODELROOT_TR=f"{OUTPUTDIRECTORY}/{PERIOD}"
 SLURMDIR_TR=f"{MODELROOT_TR}/slurm_logs"
 DATA_DIR = config["data_dir"]
 
-STARTYEAR = 1960
-ENDYEAR = 2019
+# STARTYEAR = 1960
+# ENDYEAR = 2019
 
-subRun1_start,subRun1_end,subRun1_label = 1960,1975,1
-subRun2_start,subRun2_end,subRun2_label = 1976,1991,2
-subRun3_start,subRun3_end,subRun3_label = 1992,2007,3
-subRun4_start,subRun4_end,subRun4_label = 2008,2019,4
+# subRun1_start,subRun1_end,subRun1_label = 1960,1975,1
+# subRun2_start,subRun2_end,subRun2_label = 1976,1991,2
+# subRun3_start,subRun3_end,subRun3_label = 1992,2007,3
+# subRun4_start,subRun4_end,subRun4_label = 2008,2014,4
+# nSpin = 1
+
+STARTYEAR = 2015
+ENDYEAR = 2020
+subRun1_start,subRun1_end,subRun1_label = 2015,2015,1
+subRun2_start,subRun2_end,subRun2_label = 2016,2016,2
+subRun3_start,subRun3_end,subRun3_label = 2017,2017,3
+subRun4_start,subRun4_end,subRun4_label = 2018,2018,4
+subRun5_start,subRun5_end,subRun5_label = 2019,2019,5
+subRun6_start,subRun6_end,subRun6_label = 2020,2020,6
 nSpin = 1
 
 rule all:
     input:
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun4_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun4_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun4_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun4_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun4_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun4_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun4_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun4_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun3_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun3_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun3_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun3_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun3_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun3_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun3_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun3_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun2_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun2_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun2_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun2_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun2_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun2_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun2_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun2_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun1_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun1_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun1_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun1_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun1_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun1_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun1_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun1_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun4_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun4_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun4_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun4_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun4_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun4_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun4_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun4_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun3_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun3_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun3_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun3_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun3_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun3_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun3_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun3_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun2_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun2_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun2_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun2_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun2_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun2_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun2_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun2_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun1_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun1_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun1_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun1_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun1_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun1_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun1_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun1_label}",
+        f"{SLURMDIR_TR}/3_run_model/done_run_model_solution3_subRun{subRun1_label}"
 
 rule setup_simulation:
     output:
@@ -109,7 +120,7 @@ rule write_model_forcing_setup:
         end_year={ENDYEAR}
         data_dir={DATA_DIR}
         simulation={SIMULATION}
-        cmip6InputFolder=$data_dir/cmip6_input/$simulation/historical_natural
+        cmip6InputFolder=$data_dir/cmip6_input/$simulation/{PERIOD}
         saveFolder=$modelRoot/forcing_input
         pcrglobInputFolder=$data_dir/globgm_input/_pcrcalc_files
         zarrScripts=$(realpath ../model_tools_src/python/preprocess_zarr)
@@ -124,7 +135,7 @@ rule write_model_forcing_setup:
             cp $inFile $tempdir
             fileName=$(basename "$inFile")
             inFile=$tempdir/$fileName
-            cdo -L -f nc4 -setrtoc,-inf,0,0 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,1960/2014 $inFile $outFile.temp.nc
+            cdo -L -f nc4 -setrtoc,-inf,0,0 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,{STARTYEAR}/{ENDYEAR} $inFile $outFile.temp.nc
             gdal_translate -of GTiff $outFile.temp.nc $outFile.temp.tif
             gdal_translate -of PCRaster ${{outFile}}.temp.tif ${{outFile}}.temp.map
             gdal_translate -of NETCDF ${{outFile}}.temp.map $tempdir/average_gwRecharge_m_per_day.map.nc
@@ -147,7 +158,7 @@ rule write_model_forcing_setup:
             fileName=$(basename "$inFile")
             inFile=$tempdir/$fileName
 
-            cdo -L -f nc4 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,1960/2014 $inFile $outFile.temp.nc
+            cdo -L -f nc4 -setunit,m.day-1 -divc,365.25 -timmean -yearsum -selyear,{STARTYEAR}/{ENDYEAR} $inFile $outFile.temp.nc
             local info=$(gdalinfo $gridFile)
             local xres=$(echo "$info" | grep "Pixel Size" | awk -F'=' '{{print $2}}' | awk -F',' '{{print $1}}' | tr -d '()')
             local yres=$(echo "$info" | grep "Pixel Size" | awk -F'=' '{{print $2}}' | awk -F',' '{{print $2}}' | tr -d '()')
@@ -181,8 +192,8 @@ rule write_model_forcing_setup:
         wait
         satAreaFile=$(find "$cmip6InputFolder" -type f -name "*sat_area_fraction_average*")
         satAreaFile_monthly=$(find "$cmip6InputFolder" -type f -name "*sat_area_fraction_monthly*")
-        correctionFile=$(find "$data_dir/cmip6_input/$simulation/historical_natural" -type d -name "*gwRecharge_correction_factor.zarr*")
-        precipFile=$(find "$data_dir/cmip6_input/$simulation/historical_natural" -type f -name "*precipitation*")
+        correctionFile=$(find "$data_dir/cmip6_input/$simulation/{PERIOD}" -type d -name "*gwRecharge_correction_factor.zarr*")
+        precipFile=$(find "$data_dir/cmip6_input/$simulation/{PERIOD}" -type f -name "*precipitation*")
         cp -v $satAreaFile $saveFolder & \
         cp -v $satAreaFile_monthly $saveFolder & \
         cp -r $correctionFile $saveFolder & \
@@ -218,7 +229,7 @@ rule write_model_forcing_sub1:
         data_dir={DATA_DIR}
         simulation={SIMULATION}
         PCR_GLOB_dir=$(realpath ../model_tools_src/python/pcr-globwb)
-        cmip6InputFolder=$data_dir/cmip6_input/$simulation/historical_natural
+        cmip6InputFolder=$data_dir/cmip6_input/$simulation/{PERIOD}
         saveFolder=$modelRoot/forcing_input
 
         diff=$(($end_year - $start_year))
@@ -383,7 +394,26 @@ use rule _setup_subRun1 as _setup_subRun4 with:
         iniStatesFolder=f"{DATA_DIR}/initial_states/ss/"
     output:
         outFile=f"{SLURMDIR_TR}/2_write_model_input/done_setup_{subRun4_label}",
-
+use rule _setup_subRun1 as _setup_subRun5 with:
+    input:
+        rules.setup_output.output.outFile,
+    params:
+        start_year=subRun5_start,
+        end_year=subRun5_end,
+        label=subRun5_label,
+        iniStatesFolder=f"{DATA_DIR}/initial_states/ss/"
+    output:
+        outFile=f"{SLURMDIR_TR}/2_write_model_input/done_setup_{subRun5_label}",
+use rule _setup_subRun1 as _setup_subRun6 with:
+    input:
+        rules.setup_output.output.outFile,
+    params:
+        start_year=subRun6_start,
+        end_year=subRun6_end,
+        label=subRun6_label,
+        iniStatesFolder=f"{DATA_DIR}/initial_states/ss/"
+    output:
+        outFile=f"{SLURMDIR_TR}/2_write_model_input/done_setup_{subRun6_label}",
 ###############################
 #  Setup and Run SubRun 1     #
 ###############################
@@ -582,10 +612,6 @@ rule modify_ini_conditions_subRun1:
         python {params.run_script} {MODELROOT_TR}/mf6_mod/mf6_mod_{params.label} && \
         touch {output.outFile}
         '''
-
-
-
-
 
 rule run_model_solution3_subRun1:
     input:
@@ -1869,3 +1895,654 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_hds_subRun4 wi
         mem_mb=28000,
         tasks=16,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution1_hds_subRun{subRun4_label}.out",
+###############################
+#  Setup and Run SubRun 5     #
+###############################
+use rule write_models_solution3_subRun1 as write_models_solution3_subRun5 with:
+    input:
+        rules._setup_subRun5.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/2_write_model_input/done_write_models_solution3_subRun{subRun5_label}",
+    params:
+        iniFileName="transient_config_with_pump.ini",
+        solution=3,
+        label=subRun5_label,
+    resources:
+        slurm_partition='fat_genoa', 
+        runtime=1200,
+        mem_mb=1440000,
+        cpus_per_task=1,
+        constraint='scratch-node',
+        tasks=192,
+        nodes=1,
+        slurm_extra=f"--exclusive --output={SLURMDIR_TR}/2_write_model_input/_writeModels/_write_models_solution3_subRun{subRun5_label}.out",
+        mpi='mpirun'
+use rule write_models_solution3_subRun1 as write_models_solution4_subRun5 with:
+    input:
+        rules._setup_subRun5.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/2_write_model_input/done_write_models_solution4_subRun{subRun5_label}",
+    params:
+        iniFileName="transient_config_with_pump.ini",
+        solution=4,
+        label=subRun5_label,
+    resources:
+        slurm_partition='fat_genoa', 
+        runtime=1200,
+        mem_mb=1440000,
+        cpus_per_task=1,
+        constraint='scratch-node',
+        tasks=192,
+        nodes=1,
+        slurm_extra=f"--exclusive --output={SLURMDIR_TR}/2_write_model_input/_writeModels/_write_models_solution4_subRun{subRun5_label}.out",
+        mpi='mpirun'
+use rule write_models_solution3_subRun1 as write_models_solution2_subRun5 with:
+    input:
+        rules._setup_subRun5.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/2_write_model_input/done_write_models_solution2_subRun{subRun5_label}",
+    params:
+        iniFileName="transient_config_with_pump.ini",
+        solution=2,
+        label=subRun5_label,
+    resources:
+        slurm_partition='fat_genoa', 
+        runtime=1200,
+        mem_mb=1440000,
+        cpus_per_task=1,
+        constraint='scratch-node',
+        tasks=192,
+        nodes=1,
+        slurm_extra=f"--exclusive --output={SLURMDIR_TR}/2_write_model_input/_writeModels/_write_models_solution2_subRun{subRun5_label}.out",
+        mpi='mpirun'
+use rule write_models_solution3_subRun1 as write_models_solution1_subRun5 with:
+    input:
+        rules._setup_subRun5.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/2_write_model_input/done_write_models_solution1_subRun{subRun5_label}",
+    params:
+        iniFileName="transient_config_with_pump.ini",
+        solution=1,
+        label=subRun5_label,
+    resources:
+        slurm_partition='fat_genoa', 
+        runtime=1200,
+        mem_mb=1440000,
+        cpus_per_task=1,
+        constraint='scratch-node',
+        tasks=192,
+        nodes=1,
+        slurm_extra=f"--exclusive --output={SLURMDIR_TR}/2_write_model_input/_writeModels/_write_models_solution1_subRun{subRun5_label}.out",
+        mpi='mpirun'
+use rule modify_ini_conditions_subRun2 as modify_ini_conditions_subRun5 with:
+    input:
+        rules.write_models_solution1_subRun5.output.outFile,
+        rules.write_models_solution2_subRun5.output.outFile,
+        rules.write_models_solution3_subRun5.output.outFile,
+        rules.write_models_solution4_subRun5.output.outFile,
+        
+        rules.run_model_solution1_subRun4.output.outFile,
+        rules.run_model_solution2_subRun4.output.outFile,
+        rules.run_model_solution3_subRun4.output.outFile,
+        rules.run_model_solution4_subRun4.output.outFile,
+
+    output:
+        outFile=f"{SLURMDIR_TR}/2_write_model_input/done_modify_ini_conditions_subRun{subRun5_label}",
+    params:
+        createIniConditionsScript=f"{RUN_GLOBGM_DIR}/model_tools_src/python/initial_states/initial_states.py",
+        modifyPathScript=f"{RUN_GLOBGM_DIR}/model_tools_src/python/initial_states/initial_statesModifyPath.py",
+        previousRunModDir=f"{MODELROOT_TR}/mf6_mod/mf6_mod_{subRun4_label}/glob_tr/models/run_output_bin/",
+        label=f"{subRun5_label}",
+use rule run_model_solution3_subRun1 as run_model_solution3_subRun5 with:
+    input:
+        rules.modify_ini_conditions_subRun5.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/3_run_model/done_run_model_solution3_subRun{subRun5_label}",
+    params:
+        label=subRun5_label,
+        solution=3,  
+    resources:
+        slurm_partition='genoa', 
+        nodes=1,
+        runtime=300,
+        mem_mb=336000,
+        tasks=32,
+        cpus_per_task=1,
+        mpi='srun',
+        slurm_extra=f"--exclusive --ntasks-per-node=32 --gres=cpu:1 --output={SLURMDIR_TR}/3_run_model/_run_model_solution3_subRun{subRun5_label}.out",
+use rule run_model_solution3_subRun1 as run_model_solution4_subRun5 with:
+    input:
+        rules.modify_ini_conditions_subRun5.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/3_run_model/done_run_model_solution4_subRun{subRun5_label}",
+    params:
+        label=subRun5_label,
+        solution=4,  
+    resources:
+        slurm_partition='genoa', 
+        nodes=1,
+        runtime=300,
+        mem_mb=336000,
+        tasks=32,
+        cpus_per_task=1,
+        mpi='srun',
+        slurm_extra=f"--exclusive --ntasks-per-node=32 --gres=cpu:1 --output={SLURMDIR_TR}/3_run_model/_run_model_solution4_subRun{subRun5_label}.out",
+use rule run_model_solution3_subRun1 as run_model_solution2_subRun5 with:
+    input:
+        rules.modify_ini_conditions_subRun5.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/3_run_model/done_run_model_solution2_subRun{subRun5_label}",
+    params:
+        label=subRun5_label,
+        solution=2,  
+    resources:
+        slurm_partition='genoa', 
+        nodes=3,
+        runtime=300,
+        mem_mb=336000,
+        tasks=96,
+        cpus_per_task=1,
+        mpi='srun',
+        slurm_extra=f"--exclusive --ntasks-per-node=32 --gres=cpu:1 --output={SLURMDIR_TR}/3_run_model/_run_model_solution2_subRun{subRun5_label}.out",
+use rule run_model_solution3_subRun1 as run_model_solution1_subRun5 with:
+    input:
+        rules.modify_ini_conditions_subRun5.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/3_run_model/done_run_model_solution1_subRun{subRun5_label}",
+    params:
+        label=subRun5_label,
+        solution=1,  
+    resources:
+        slurm_partition='genoa', 
+        nodes=7,
+        runtime=300,
+        mem_mb=336000,
+        tasks=224,
+        cpus_per_task=1,
+        mpi='srun',
+        slurm_extra=f"--exclusive --ntasks-per-node=32 --gres=cpu:1 --output={SLURMDIR_TR}/3_run_model/_run_model_solution1_subRun{subRun5_label}.out",
+use rule post_model_solution3_wtd_subRun1 as post_model_solution3_wtd_subRun5 with:
+    input:
+        rules.run_model_solution3_subRun5.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun5_label}",
+    params:
+        solution=3,
+        modDir=f"{MODELROOT_TR}/mf6_mod/mf6_mod_{subRun5_label}/glob_tr",
+        var="wtd",
+        startYear=subRun5_start,
+        endYear=subRun5_end,
+    resources:
+        slurm_partition='genoa', 
+        nodes=1,
+        runtime=7140,
+        constraint='scratch-node',
+        mem_mb=28000,
+        tasks=16,
+        cpus_per_task=1,
+        slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution3_wtd_subRun{subRun5_label}.out",
+use rule post_model_solution3_wtd_subRun1 as post_model_solution3_hds_subRun5 with:
+    input:
+        rules.run_model_solution3_subRun5.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun5_label}",
+    params:
+        solution=3,
+        modDir=f"{MODELROOT_TR}/mf6_mod/mf6_mod_{subRun5_label}/glob_tr",
+        var="hds",
+        startYear=subRun5_start,
+        endYear=subRun5_end,
+    resources:
+        slurm_partition='genoa', 
+        nodes=1,
+        runtime=7140,
+        constraint='scratch-node',
+        mem_mb=28000,
+        tasks=16,
+        cpus_per_task=1,
+        slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution3_hds_subRun{subRun5_label}.out",
+use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun5 with:
+    input:
+        rules.run_model_solution4_subRun5.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun5_label}",
+    params:
+        solution=4,
+        modDir=f"{MODELROOT_TR}/mf6_mod/mf6_mod_{subRun5_label}/glob_tr",
+        var="wtd",
+        startYear=subRun5_start,
+        endYear=subRun5_end,
+    resources:
+        slurm_partition='genoa', 
+        nodes=1,
+        runtime=7140,
+        constraint='scratch-node',
+        mem_mb=56000,
+        tasks=32,
+        cpus_per_task=1,
+        slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_wtd_subRun{subRun5_label}.out",
+use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun5 with:
+    input:
+        rules.run_model_solution4_subRun5.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun5_label}",
+    params:
+        solution=4,
+        modDir=f"{MODELROOT_TR}/mf6_mod/mf6_mod_{subRun5_label}/glob_tr",
+        var="hds",
+        startYear=subRun5_start,
+        endYear=subRun5_end,
+    resources:
+        slurm_partition='genoa', 
+        nodes=1,
+        runtime=7140,
+        constraint='scratch-node',
+        mem_mb=56000,
+        tasks=32,
+        cpus_per_task=1,
+        slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_hds_subRun{subRun5_label}.out",
+use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun5 with:
+    input:
+        rules.run_model_solution2_subRun5.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun5_label}",
+    params:
+        solution=2,
+        modDir=f"{MODELROOT_TR}/mf6_mod/mf6_mod_{subRun5_label}/glob_tr",
+        var="wtd",
+        startYear=subRun5_start,
+        endYear=subRun5_end,
+    resources:
+        slurm_partition='genoa', 
+        nodes=1,
+        runtime=7140,
+        constraint='scratch-node',
+        mem_mb=28000,
+        tasks=16,
+        cpus_per_task=1,
+        slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution2_wtd_subRun{subRun5_label}.out",
+use rule post_model_solution3_wtd_subRun1 as post_model_solution2_hds_subRun5 with:
+    input:
+        rules.run_model_solution2_subRun5.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun5_label}",
+    params:
+        solution=2,
+        modDir=f"{MODELROOT_TR}/mf6_mod/mf6_mod_{subRun5_label}/glob_tr",
+        var="hds",
+        startYear=subRun5_start,
+        endYear=subRun5_end,
+    resources:
+        slurm_partition='genoa', 
+        nodes=1,
+        runtime=7140,
+        constraint='scratch-node',
+        mem_mb=28000,
+        tasks=16,
+        cpus_per_task=1,
+        slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution2_hds_subRun{subRun5_label}.out",
+use rule post_model_solution3_wtd_subRun1 as post_model_solution1_wtd_subRun5 with:
+    input:
+        rules.run_model_solution1_subRun5.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun5_label}",
+    params:
+        solution=1,
+        modDir=f"{MODELROOT_TR}/mf6_mod/mf6_mod_{subRun5_label}/glob_tr",
+        var="wtd",
+        startYear=subRun5_start,
+        endYear=subRun5_end,
+    resources:
+        slurm_partition='genoa', 
+        nodes=1,
+        runtime=7140,
+        constraint='scratch-node',
+        mem_mb=28000,
+        tasks=16,
+        cpus_per_task=1,
+        slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution1_wtd_subRun{subRun5_label}.out",
+use rule post_model_solution3_wtd_subRun1 as post_model_solution1_hds_subRun5 with:
+    input:
+        rules.run_model_solution1_subRun5.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun5_label}",
+    params:
+        solution=1,
+        modDir=f"{MODELROOT_TR}/mf6_mod/mf6_mod_{subRun5_label}/glob_tr",
+        var="hds",
+        startYear=subRun5_start,
+        endYear=subRun5_end,
+    resources:
+        slurm_partition='genoa', 
+        nodes=1,
+        runtime=7140,
+        constraint='scratch-node',
+        mem_mb=28000,
+        tasks=16,
+        slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution1_hds_subRun{subRun5_label}.out",
+
+###############################
+#  Setup and Run SubRun 6     #
+###############################
+use rule write_models_solution3_subRun1 as write_models_solution3_subRun6 with:
+    input:
+        rules._setup_subRun6.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/2_write_model_input/done_write_models_solution3_subRun{subRun6_label}",
+    params:
+        iniFileName="transient_config_with_pump.ini",
+        solution=3,
+        label=subRun6_label,
+    resources:
+        slurm_partition='fat_genoa', 
+        runtime=1200,
+        mem_mb=1440000,
+        cpus_per_task=1,
+        constraint='scratch-node',
+        tasks=192,
+        nodes=1,
+        slurm_extra=f"--exclusive --output={SLURMDIR_TR}/2_write_model_input/_writeModels/_write_models_solution3_subRun{subRun6_label}.out",
+        mpi='mpirun'
+use rule write_models_solution3_subRun1 as write_models_solution4_subRun6 with:
+    input:
+        rules._setup_subRun6.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/2_write_model_input/done_write_models_solution4_subRun{subRun6_label}",
+    params:
+        iniFileName="transient_config_with_pump.ini",
+        solution=4,
+        label=subRun6_label,
+    resources:
+        slurm_partition='fat_genoa', 
+        runtime=1200,
+        mem_mb=1440000,
+        cpus_per_task=1,
+        constraint='scratch-node',
+        tasks=192,
+        nodes=1,
+        slurm_extra=f"--exclusive --output={SLURMDIR_TR}/2_write_model_input/_writeModels/_write_models_solution4_subRun{subRun6_label}.out",
+        mpi='mpirun'
+use rule write_models_solution3_subRun1 as write_models_solution2_subRun6 with:
+    input:
+        rules._setup_subRun6.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/2_write_model_input/done_write_models_solution2_subRun{subRun6_label}",
+    params:
+        iniFileName="transient_config_with_pump.ini",
+        solution=2,
+        label=subRun6_label,
+    resources:
+        slurm_partition='fat_genoa', 
+        runtime=1200,
+        mem_mb=1440000,
+        cpus_per_task=1,
+        constraint='scratch-node',
+        tasks=192,
+        nodes=1,
+        slurm_extra=f"--exclusive --output={SLURMDIR_TR}/2_write_model_input/_writeModels/_write_models_solution2_subRun{subRun6_label}.out",
+        mpi='mpirun'
+use rule write_models_solution3_subRun1 as write_models_solution1_subRun6 with:
+    input:
+        rules._setup_subRun6.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/2_write_model_input/done_write_models_solution1_subRun{subRun6_label}",
+    params:
+        iniFileName="transient_config_with_pump.ini",
+        solution=1,
+        label=subRun6_label,
+    resources:
+        slurm_partition='fat_genoa', 
+        runtime=1200,
+        mem_mb=1440000,
+        cpus_per_task=1,
+        constraint='scratch-node',
+        tasks=192,
+        nodes=1,
+        slurm_extra=f"--exclusive --output={SLURMDIR_TR}/2_write_model_input/_writeModels/_write_models_solution1_subRun{subRun6_label}.out",
+        mpi='mpirun'
+use rule modify_ini_conditions_subRun2 as modify_ini_conditions_subRun6 with:
+    input:
+        rules.write_models_solution1_subRun6.output.outFile,
+        rules.write_models_solution2_subRun6.output.outFile,
+        rules.write_models_solution3_subRun6.output.outFile,
+        rules.write_models_solution4_subRun6.output.outFile,
+        
+        rules.run_model_solution1_subRun5.output.outFile,
+        rules.run_model_solution2_subRun5.output.outFile,
+        rules.run_model_solution3_subRun5.output.outFile,
+        rules.run_model_solution4_subRun5.output.outFile,
+
+    output:
+        outFile=f"{SLURMDIR_TR}/2_write_model_input/done_modify_ini_conditions_subRun{subRun6_label}",
+    params:
+        createIniConditionsScript=f"{RUN_GLOBGM_DIR}/model_tools_src/python/initial_states/initial_states.py",
+        modifyPathScript=f"{RUN_GLOBGM_DIR}/model_tools_src/python/initial_states/initial_statesModifyPath.py",
+        previousRunModDir=f"{MODELROOT_TR}/mf6_mod/mf6_mod_{subRun5_label}/glob_tr/models/run_output_bin/",
+        label=f"{subRun6_label}",
+use rule run_model_solution3_subRun1 as run_model_solution3_subRun6 with:
+    input:
+        rules.modify_ini_conditions_subRun6.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/3_run_model/done_run_model_solution3_subRun{subRun6_label}",
+    params:
+        label=subRun6_label,
+        solution=3,  
+    resources:
+        slurm_partition='genoa', 
+        nodes=1,
+        runtime=300,
+        mem_mb=336000,
+        tasks=32,
+        cpus_per_task=1,
+        mpi='srun',
+        slurm_extra=f"--exclusive --ntasks-per-node=32 --gres=cpu:1 --output={SLURMDIR_TR}/3_run_model/_run_model_solution3_subRun{subRun6_label}.out",
+use rule run_model_solution3_subRun1 as run_model_solution4_subRun6 with:
+    input:
+        rules.modify_ini_conditions_subRun6.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/3_run_model/done_run_model_solution4_subRun{subRun6_label}",
+    params:
+        label=subRun6_label,
+        solution=4,  
+    resources:
+        slurm_partition='genoa', 
+        nodes=1,
+        runtime=300,
+        mem_mb=336000,
+        tasks=32,
+        cpus_per_task=1,
+        mpi='srun',
+        slurm_extra=f"--exclusive --ntasks-per-node=32 --gres=cpu:1 --output={SLURMDIR_TR}/3_run_model/_run_model_solution4_subRun{subRun6_label}.out",
+use rule run_model_solution3_subRun1 as run_model_solution2_subRun6 with:
+    input:
+        rules.modify_ini_conditions_subRun6.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/3_run_model/done_run_model_solution2_subRun{subRun6_label}",
+    params:
+        label=subRun6_label,
+        solution=2,  
+    resources:
+        slurm_partition='genoa', 
+        nodes=3,
+        runtime=300,
+        mem_mb=336000,
+        tasks=96,
+        cpus_per_task=1,
+        mpi='srun',
+        slurm_extra=f"--exclusive --ntasks-per-node=32 --gres=cpu:1 --output={SLURMDIR_TR}/3_run_model/_run_model_solution2_subRun{subRun6_label}.out",
+use rule run_model_solution3_subRun1 as run_model_solution1_subRun6 with:    
+    input:
+        rules.modify_ini_conditions_subRun6.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/3_run_model/done_run_model_solution1_subRun{subRun6_label}",
+    params:
+        label=subRun6_label,
+        solution=1,  
+    resources:
+        slurm_partition='genoa', 
+        nodes=7,
+        runtime=300,
+        mem_mb=336000,
+        tasks=224,
+        cpus_per_task=1,
+        mpi='srun',
+        slurm_extra=f"--exclusive --ntasks-per-node=32 --gres=cpu:1 --output={SLURMDIR_TR}/3_run_model/_run_model_solution1_subRun{subRun6_label}.out",
+use rule post_model_solution3_wtd_subRun1 as post_model_solution3_wtd_subRun6 with:
+    input:
+        rules.run_model_solution3_subRun6.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun6_label}",
+    params:
+        solution=3,
+        modDir=f"{MODELROOT_TR}/mf6_mod/mf6_mod_{subRun6_label}/glob_tr",
+        var="wtd",
+        startYear=subRun6_start,
+        endYear=subRun6_end,
+    resources:
+        slurm_partition='genoa', 
+        nodes=1,
+        runtime=7140,
+        constraint='scratch-node',
+        mem_mb=28000,
+        tasks=16,
+        cpus_per_task=1,
+        slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution3_wtd_subRun{subRun6_label}.out",
+use rule post_model_solution3_wtd_subRun1 as post_model_solution3_hds_subRun6 with:
+    input:
+        rules.run_model_solution3_subRun6.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun6_label}",
+    params:
+        solution=3,
+        modDir=f"{MODELROOT_TR}/mf6_mod/mf6_mod_{subRun6_label}/glob_tr",
+        var="hds",
+        startYear=subRun6_start,
+        endYear=subRun6_end,
+    resources:
+        slurm_partition='genoa', 
+        nodes=1,
+        runtime=7140,
+        constraint='scratch-node',
+        mem_mb=28000,
+        tasks=16,
+        cpus_per_task=1,
+        slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution3_hds_subRun{subRun6_label}.out",
+use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun6 with:
+    input:
+        rules.run_model_solution4_subRun6.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun6_label}",
+    params:
+        solution=4,
+        modDir=f"{MODELROOT_TR}/mf6_mod/mf6_mod_{subRun6_label}/glob_tr",
+        var="wtd",
+        startYear=subRun6_start,
+        endYear=subRun6_end,
+    resources:
+        slurm_partition='genoa', 
+        nodes=1,
+        runtime=7140,
+        constraint='scratch-node',
+        mem_mb=56000,
+        tasks=32,
+        cpus_per_task=1,
+        slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_wtd_subRun{subRun6_label}.out",
+use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun6 with:
+    input:
+        rules.run_model_solution4_subRun6.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun6_label}",
+    params:
+        solution=4,
+        modDir=f"{MODELROOT_TR}/mf6_mod/mf6_mod_{subRun6_label}/glob_tr",
+        var="hds",
+        startYear=subRun6_start,
+        endYear=subRun6_end,
+    resources:
+        slurm_partition='genoa', 
+        nodes=1,
+        runtime=7140,
+        constraint='scratch-node',
+        mem_mb=56000,
+        tasks=32,
+        cpus_per_task=1,
+        slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_hds_subRun{subRun6_label}.out",
+use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun6 with:
+    input:
+        rules.run_model_solution2_subRun6.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun6_label}",
+    params:
+        solution=2,
+        modDir=f"{MODELROOT_TR}/mf6_mod/mf6_mod_{subRun6_label}/glob_tr",
+        var="wtd",
+        startYear=subRun6_start,
+        endYear=subRun6_end,
+    resources:
+        slurm_partition='genoa', 
+        nodes=1,
+        runtime=7140,
+        constraint='scratch-node',
+        mem_mb=28000,
+        tasks=16,
+        cpus_per_task=1,
+        slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution2_wtd_subRun{subRun6_label}.out",
+use rule post_model_solution3_wtd_subRun1 as post_model_solution2_hds_subRun6 with:
+    input:
+        rules.run_model_solution2_subRun6.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun6_label}",
+    params:
+        solution=2,
+        modDir=f"{MODELROOT_TR}/mf6_mod/mf6_mod_{subRun6_label}/glob_tr",
+        var="hds",
+        startYear=subRun6_start,
+        endYear=subRun6_end,
+    resources:
+        slurm_partition='genoa', 
+        nodes=1,
+        runtime=7140,
+        constraint='scratch-node',
+        mem_mb=28000,
+        tasks=16,
+        cpus_per_task=1,
+        slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution2_hds_subRun{subRun6_label}.out",
+use rule post_model_solution3_wtd_subRun1 as post_model_solution1_wtd_subRun6 with:
+    input:
+        rules.run_model_solution1_subRun6.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun6_label}",
+    params:
+        solution=1,
+        modDir=f"{MODELROOT_TR}/mf6_mod/mf6_mod_{subRun6_label}/glob_tr",
+        var="wtd",
+        startYear=subRun6_start,
+        endYear=subRun6_end,
+    resources:
+        slurm_partition='genoa', 
+        nodes=1,
+        runtime=7140,
+        constraint='scratch-node',
+        mem_mb=28000,
+        tasks=16,
+        cpus_per_task=1,
+        slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution1_wtd_subRun{subRun6_label}.out",
+use rule post_model_solution3_wtd_subRun1 as post_model_solution1_hds_subRun6 with:
+    input:
+        rules.run_model_solution1_subRun6.output.outFile,
+    output:
+        outFile=f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun6_label}",
+    params:
+        solution=1,
+        modDir=f"{MODELROOT_TR}/mf6_mod/mf6_mod_{subRun6_label}/glob_tr",
+        var="hds",
+        startYear=subRun6_start,
+        endYear=subRun6_end,
+    resources:
+        slurm_partition='genoa', 
+        nodes=1,
+        runtime=7140,
+        constraint='scratch-node',
+        mem_mb=28000,
+        tasks=16,
+        slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution1_hds_subRun{subRun6_label}.out",

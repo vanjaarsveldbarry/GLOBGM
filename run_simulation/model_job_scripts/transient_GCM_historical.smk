@@ -8,17 +8,26 @@ SIMULATION = config["simulation"]
 OUTPUTDIRECTORY = config["outputDirectory"]
 RUN_GLOBGM_DIR = config["run_globgm_dir"]
 
-MODELROOT_TR=f"{OUTPUTDIRECTORY}/{SIMULATION}"
+PERIOD = config["period"]
+MODELROOT_TR=f"{OUTPUTDIRECTORY}/{PERIOD}"
 SLURMDIR_TR=f"{MODELROOT_TR}/slurm_logs"
 DATA_DIR = config["data_dir"]
 
-STARTYEAR = 1960
-ENDYEAR = 2019
+# STARTYEAR = 1960
+# ENDYEAR = 2014
 
-subRun1_start,subRun1_end,subRun1_label = 1960,1975,1
-subRun2_start,subRun2_end,subRun2_label = 1976,1991,2
-subRun3_start,subRun3_end,subRun3_label = 1992,2007,3
-subRun4_start,subRun4_end,subRun4_label = 2008,2019,4
+# subRun1_start,subRun1_end,subRun1_label = 1960,1975,1
+# subRun2_start,subRun2_end,subRun2_label = 1976,1991,2
+# subRun3_start,subRun3_end,subRun3_label = 1992,2007,3
+# subRun4_start,subRun4_end,subRun4_label = 2008,2014,4
+# nSpin = 1
+
+STARTYEAR = 2011
+ENDYEAR = 2014
+subRun1_start,subRun1_end,subRun1_label = 2011,2011,1
+subRun2_start,subRun2_end,subRun2_label = 2012,2012,2
+subRun3_start,subRun3_end,subRun3_label = 2013,2013,3
+subRun4_start,subRun4_end,subRun4_label = 2014,2014,4
 nSpin = 1
 
 rule all:
@@ -109,7 +118,7 @@ rule write_model_forcing_setup:
         end_year={ENDYEAR}
         data_dir={DATA_DIR}
         simulation={SIMULATION}
-        cmip6InputFolder=$data_dir/cmip6_input/$simulation/historical_natural
+        cmip6InputFolder=$data_dir/cmip6_input/$simulation/{PERIOD}
         saveFolder=$modelRoot/forcing_input
         pcrglobInputFolder=$data_dir/globgm_input/_pcrcalc_files
         zarrScripts=$(realpath ../model_tools_src/python/preprocess_zarr)
@@ -181,8 +190,8 @@ rule write_model_forcing_setup:
         wait
         satAreaFile=$(find "$cmip6InputFolder" -type f -name "*sat_area_fraction_average*")
         satAreaFile_monthly=$(find "$cmip6InputFolder" -type f -name "*sat_area_fraction_monthly*")
-        correctionFile=$(find "$data_dir/cmip6_input/$simulation/historical_natural" -type d -name "*gwRecharge_correction_factor.zarr*")
-        precipFile=$(find "$data_dir/cmip6_input/$simulation/historical_natural" -type f -name "*precipitation*")
+        correctionFile=$(find "$data_dir/cmip6_input/$simulation/" -type d -name "*gwRecharge_correction_factor.zarr*")
+        precipFile=$(find "$data_dir/cmip6_input/$simulation/{PERIOD}" -type f -name "*precipitation*")
         cp -v $satAreaFile $saveFolder & \
         cp -v $satAreaFile_monthly $saveFolder & \
         cp -r $correctionFile $saveFolder & \
@@ -218,7 +227,7 @@ rule write_model_forcing_sub1:
         data_dir={DATA_DIR}
         simulation={SIMULATION}
         PCR_GLOB_dir=$(realpath ../model_tools_src/python/pcr-globwb)
-        cmip6InputFolder=$data_dir/cmip6_input/$simulation/historical_natural
+        cmip6InputFolder=$data_dir/cmip6_input/$simulation/{PERIOD}
         saveFolder=$modelRoot/forcing_input
 
         diff=$(($end_year - $start_year))
@@ -583,10 +592,6 @@ rule modify_ini_conditions_subRun1:
         touch {output.outFile}
         '''
 
-
-
-
-
 rule run_model_solution3_subRun1:
     input:
         rules.modify_ini_conditions_subRun1.output.outFile,
@@ -772,8 +777,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun1 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=56000,
-        tasks=32,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_wtd_subRun{subRun1_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun1 with:
@@ -792,8 +797,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun1 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=56000,
-        tasks=32,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_hds_subRun{subRun1_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun1 with:
@@ -1111,8 +1116,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun2 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=56000,
-        tasks=32,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_wtd_subRun{subRun2_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun2 with:
@@ -1131,8 +1136,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun2 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=56000,
-        tasks=32,
+        mem_mb=28000,
+        tasks=28,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_hds_subRun{subRun2_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun2 with:
@@ -1439,8 +1444,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun3 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=56000,
-        tasks=32,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_wtd_subRun{subRun3_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun3 with:
@@ -1459,8 +1464,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun3 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=56000,
-        tasks=32,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_hds_subRun{subRun3_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun3 with:
@@ -1766,8 +1771,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun4 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=56000,
-        tasks=32,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_wtd_subRun{subRun4_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun4 with:
@@ -1786,8 +1791,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun4 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=56000,
-        tasks=32,
+        mem_mb=28000,
+        tasks=16,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_hds_subRun{subRun4_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun4 with:
