@@ -583,10 +583,6 @@ rule modify_ini_conditions_subRun1:
         touch {output.outFile}
         '''
 
-
-
-
-
 rule run_model_solution3_subRun1:
     input:
         rules.modify_ini_conditions_subRun1.output.outFile,

@@ -4,8 +4,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 
-inputFolder = Path('/scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5')
-saveDir = Path('/home/bvjaarsveld1/projects/workflow/GLOBGM/analysis/initial_conditions/_plots')
+inputFolder = Path('/projects/prjs1222/globgm_output/output_initial_conditions')
+saveDir = Path('/projects/prjs1222/GLOBGM/analysis/initial_conditions/_plots')
 fig, axes = plt.subplots(nrows=4, ncols=2, figsize=(15, 20))
 axes = axes.flatten()
 for layer in [1, 2]:

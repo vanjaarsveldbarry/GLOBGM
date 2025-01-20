@@ -129,9 +129,10 @@ dmypy.json
 .pyre/
 
 .out
-
 .snakemake/
 
 run_calibration/model_job_scripts/_slurmOut/
 run_initial_conditions/model_job_scripts/slurmOut/
 run_simulation/model_job_scripts/slurmOut/
+
+analysis/
