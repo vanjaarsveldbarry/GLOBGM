@@ -57,9 +57,15 @@ for _year in range(int(startYear), int(endYear) + 1):
             os.remove(f"{delFile}.bb.asc")
             return savePath
 
-        with concurrent.futures.ProcessPoolExecutor(2) as executor:
-            futures = {executor.submit(convert_file, file) for file in input_files}
-            tempZarrPaths = [f.result() for f in concurrent.futures.as_completed(futures)]
+        tempZarrPaths = []
+        for f in input_files:
+            resultFile = convert_file(f)
+            tempZarrPaths.append(resultFile)
+            
+        # with concurrent.futures.ProcessPoolExecutor(2) as executor:
+            # futures = {executor.submit(convert_file, file) for file in input_files}
+            # concurrent.futures.wait(futures)
+            # tempZarrPaths = [f.result() for f in concurrent.futures.as_completed(futures)]
 
         for f in tempZarrPaths:
             timeStamp = Path(f).stem[-11:-3]

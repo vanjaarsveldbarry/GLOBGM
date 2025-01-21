@@ -59,12 +59,13 @@ rule all:
         # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun2_label}",
         f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun1_label}",
         f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun1_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun1_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun1_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun1_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun1_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun1_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun1_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun1_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun1_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun1_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun1_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun1_label}",
+        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun1_label}",
+
 
 rule setup_simulation:
     output:
@@ -601,14 +602,16 @@ rule modify_ini_conditions_subRun1:
         outFile=f"{SLURMDIR_TR}/2_write_model_input/done_modify_ini_conditions_subRun{subRun1_label}"
 
     params:
-        run_script=f"{RUN_GLOBGM_DIR}/model_tools_src/python/initial_states/initial_statesModifyPath.py",
-        iniStatesFolder=f"{DATA_DIR}/initial_states/tr/",
+        createIniConditionsScript=f"{RUN_GLOBGM_DIR}/model_tools_src/python/initial_states/initial_states.py",
+        previousRunModDir=f"{OUTPUTDIRECTORY}/historical/mf6_mod/mf6_mod_4/glob_tr/models/run_output_bin",
+        modifyPathScript=f"{RUN_GLOBGM_DIR}/model_tools_src/python/initial_states/initial_statesModifyPath.py",
         label=f"{subRun1_label}",
     shell:
         '''
-        mkdir -p {MODELROOT_TR}/mf6_mod/mf6_mod_{params.label}/glob_tr/models/run_output_bin/_ini_hds && \
-        cp -r {params.iniStatesFolder}* {MODELROOT_TR}/mf6_mod/mf6_mod_{params.label}/glob_tr/models/run_output_bin/_ini_hds && \
-        python {params.run_script} {MODELROOT_TR}/mf6_mod/mf6_mod_{params.label} && \
+        python {params.createIniConditionsScript} {params.previousRunModDir} {MODELROOT_TR}/mf6_mod/mf6_mod_{params.label}/glob_tr/models/run_output_bin/
+        wait
+        python {params.modifyPathScript} {MODELROOT_TR}/mf6_mod/mf6_mod_{params.label}
+        wait
         touch {output.outFile}
         '''
 
