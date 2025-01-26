@@ -83,7 +83,9 @@ def _readRecharge_ds(gwRechargeFile, varName, timeStamp, cloneMapFileName):
     else:
         f = nc.Dataset(gwRechargeFile)
         filecache[gwRechargeFile] = f
-
+    # Determine the correct dimension names
+    lat_dim = 'latitude' if 'latitude' in f.variables else 'lat'
+    lon_dim = 'longitude' if 'longitude' in f.variables else 'lon'
     # sameClone = False
     attributeClone = getMapAttributesALL(cloneMapFileName)
     cellsizeClone = attributeClone['cellsize']
@@ -92,14 +94,14 @@ def _readRecharge_ds(gwRechargeFile, varName, timeStamp, cloneMapFileName):
     xULClone = attributeClone['xUL']
     yULClone = attributeClone['yUL']
     # get the attributes of input (netCDF) 
-    cellsizeInput = f.variables['lat'][0]- f.variables['lat'][1]
+    cellsizeInput = f.variables[lat_dim][0]- f.variables[lat_dim][1]
     cellsizeInput = float(cellsizeInput)
 
     factor = 1                                 # needed in regridData2FinerGrid
     factor = int(round(float(cellsizeInput)/float(cellsizeClone)))
     # crop to cloneMap:
-    minX    = min(abs(f.variables['lon'][:] - (xULClone + 0.5*cellsizeInput)))# ; print(minX)
-    xIdxSta = int(np.where(abs(f.variables['lon'][:] - (xULClone + 0.5*cellsizeInput)) == minX)[0]) -1
+    minX    = min(abs(f.variables[lon_dim][:] - (xULClone + 0.5*cellsizeInput)))# ; print(minX)
+    xIdxSta = int(np.where(abs(f.variables[lon_dim][:] - (xULClone + 0.5*cellsizeInput)) == minX)[0]) -1
     if xIdxSta == -1: xIdxSta = 0 
 
     #~ xIdxSta = int(np.where(np.abs(f.variables['lon'][:] - (xULClone - cellsizeInput/2)) == minX)[0][0])
@@ -108,9 +110,9 @@ def _readRecharge_ds(gwRechargeFile, varName, timeStamp, cloneMapFileName):
     #~ xIdxEnd = int(math.ceil(xIdxSta + colsClone /(cellsizeInput/cellsizeClone)))
     xIdxEnd = int(math.ceil((xIdxSta +1 ) + colsClone /(factor))) + 1 
 
-    minY    = min(abs(f.variables['lat'][:] - (yULClone - 0.5*cellsizeInput))) # ; print(minY)
+    minY    = min(abs(f.variables[lat_dim][:] - (yULClone - 0.5*cellsizeInput))) # ; print(minY)
 
-    yIdxSta = int(np.where(abs(f.variables['lat'][:] - (yULClone - 0.5*cellsizeInput)) == minY)[0])
+    yIdxSta = int(np.where(abs(f.variables[lat_dim][:] - (yULClone - 0.5*cellsizeInput)) == minY)[0])
 
     #~ yIdxSta = int(np.where(np.abs(f.variables['lat'][:] - (yULClone - cellsizeInput/2)) == minY)[0][0])
     #~ # see: https://github.com/UU-Hydro/PCR-GLOBWB_model/pull/13
@@ -118,7 +120,7 @@ def _readRecharge_ds(gwRechargeFile, varName, timeStamp, cloneMapFileName):
     # ~ yIdxEnd = int(math.ceil(yIdxSta + rowsClone /(cellsizeInput/cellsizeClone)))
     yIdxEnd = int(math.ceil((yIdxSta +1) + rowsClone /(factor))) 
     
-    yIdxEnd = min(len(f.variables['lat'][:]), yIdxEnd+1)
+    yIdxEnd = min(len(f.variables[lat_dim][:]), yIdxEnd+1)
     yIdxSta = max(0, yIdxSta-1) 
     
     time_values = f['time'][:]
@@ -129,8 +131,8 @@ def _readRecharge_ds(gwRechargeFile, varName, timeStamp, cloneMapFileName):
     # standard nc file
     cropData = f.variables[varName][int(time_index), yIdxSta:yIdxEnd,xIdxSta:xIdxEnd] 
     cropData = xr.DataArray(cropData, dims=['latitude', 'longitude'],
-                                coords=dict(latitude=f.variables['lat'][yIdxSta:yIdxEnd],
-                                                longitude=f.variables['lon'][xIdxSta:xIdxEnd])).sortby('latitude')
+                                coords=dict(latitude=f.variables[lat_dim][yIdxSta:yIdxEnd],
+                                                longitude=f.variables[lon_dim][xIdxSta:xIdxEnd])).sortby('latitude')
     res_ds=cropData.latitude.values[1] - cropData.latitude.values[0]
     ds_lats = np.insert(cropData.latitude.values, 0, cropData.latitude.values[0] - res_ds)
     ds_lats = np.append(ds_lats, cropData.latitude.values[-1] + res_ds)
