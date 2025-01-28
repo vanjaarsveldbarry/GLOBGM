@@ -128,8 +128,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 .png
-.out 
-.out
+*.out
 .snakemake/
 
 run_calibration/model_job_scripts/_slurmOut/
