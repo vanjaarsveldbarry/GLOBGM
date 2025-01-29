@@ -1,35 +1,15 @@
 #!/bin/bash -l
 
 ################ UPLOAD TO DAG ##############
-module load 2023
-module load mpifileutils/0.11.1-gompi-2023a
-
-#To compress the calibration folder
-#  iput -rvP /scratch-shared/bvjaarsveld/calibration_round1.tar.gz /nluu14p/home/deposit-pilot/globgm/calibration
-
-#To compress the calibration folder
-srun --partition=genoa --nodes=1 --ntasks-per-node=32 --job-name="interact" --time=01:00:00 --pty bash -i
-mpirun -np 10 dtar --progress 3 -c -f /gpfs/scratch1/shared/bvjaarsveld/dir_test.tar /gpfs/scratch1/shared/bvjaarsveld/calibration
-
-
-cd /projects/prjs1222/globgm_output/calibration
-mpirun -np 10 dtar -x -f calibration.tar
-
-
-# saveDir=/scratch-shared/globgm_scratch/calibrition
-# mkdir -p $saveDir
+# Start interactive session
+# srun --partition=genoa --exclusive --nodes=1 --ntasks-per-node=192 --job-name="interact" --time=03:00:00 --pty bash -i
 
 # module load 2023
 # module load mpifileutils/0.11.1-gompi-2023a
 
-# #To compress the calibration folder
-# #  iput -rvP /scratch-shared/bvjaarsveld/calibration_round1.tar.gz /nluu14p/home/deposit-pilot/globgm/calibration
+#To compress the calibration folder
+# cd /scratch-shared/globgm_scratch/historical_reference_gswp3-w5e5
+# mpirun -np 120 dtar --progress 3 -c -f /gpfs/scratch1/shared/globgm_scratch/historical_reference_gswp3-w5e5/historical_no_pump_natural.tar /gpfs/scratch1/shared/globgm_scratch/historical_reference_gswp3-w5e5/historical_no_pump_natural
 
-# #To decompress the calibration folder
-# srun --partition=genoa --nodes=1 --ntasks-per-node=32 --job-name="interact" --time=01:00:00 --pty bash -i
-# mpirun -np 10 dtar --progress 3 -c -f /gpfs/scratch1/shared/bvjaarsveld/dir_test.tar /gpfs/scratch1/shared/bvjaarsveld/calibration
+iput -PvK /scratch-shared/globgm_scratch/historical_reference_gswp3-w5e5/historical_no_pump_natural.tar /nluu14p/home/deposit-pilot/globgm/globgm_output/historical_reference_gswp3-w5e5
 
-
-# cd /projects/prjs1222/globgm_output/calibration
-# mpirun -np 10 dtar -x -f calibration.tar
-# iget -vPf /nluu14p/home/deposit-pilot/globgm/calibration/calibration.tar $saveDir
