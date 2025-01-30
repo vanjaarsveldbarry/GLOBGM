@@ -13,49 +13,17 @@ MODELROOT_TR=f"{OUTPUTDIRECTORY}/{PERIOD}"
 SLURMDIR_TR=f"{MODELROOT_TR}/slurm_logs"
 DATA_DIR = config["data_dir"]
 
-# STARTYEAR = 1960
-# ENDYEAR = 2014
-
-# subRun1_start,subRun1_end,subRun1_label = 1960,1975,1
-# subRun2_start,subRun2_end,subRun2_label = 1976,1991,2
-# subRun3_start,subRun3_end,subRun3_label = 1992,2007,3
-# subRun4_start,subRun4_end,subRun4_label = 2008,2014,4
-# nSpin = 1
-
-STARTYEAR = 2011
+STARTYEAR = 1960
 ENDYEAR = 2014
-subRun1_start,subRun1_end,subRun1_label = 2011,2011,1
-subRun2_start,subRun2_end,subRun2_label = 2012,2012,2
-subRun3_start,subRun3_end,subRun3_label = 2013,2013,3
-subRun4_start,subRun4_end,subRun4_label = 2014,2014,4
+
+subRun1_start,subRun1_end,subRun1_label = 1960,1975,1
+subRun2_start,subRun2_end,subRun2_label = 1976,1991,2
+subRun3_start,subRun3_end,subRun3_label = 1992,2007,3
+subRun4_start,subRun4_end,subRun4_label = 2008,2014,4
 nSpin = 1
 
 rule all:
     input:
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun4_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun4_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun4_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun4_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun4_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun4_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun4_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun4_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun3_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun3_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun3_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun3_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun3_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun3_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun3_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun3_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun2_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun2_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun2_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun2_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun2_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun2_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun2_label}",
-        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun2_label}",
         f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun1_label}",
         f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun1_label}",
         f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun1_label}",
@@ -64,6 +32,31 @@ rule all:
         f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun1_label}",
         f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun1_label}",
         f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun1_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun4_label}",
+
 
 rule setup_simulation:
     output:
@@ -592,6 +585,10 @@ rule modify_ini_conditions_subRun1:
         touch {output.outFile}
         '''
 
+
+
+
+
 rule run_model_solution3_subRun1:
     input:
         rules.modify_ini_conditions_subRun1.output.outFile,
@@ -777,8 +774,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun1 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=28000,
-        tasks=16,
+        mem_mb=56000,
+        tasks=32,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_wtd_subRun{subRun1_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun1 with:
@@ -797,8 +794,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun1 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=28000,
-        tasks=16,
+        mem_mb=56000,
+        tasks=32,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_hds_subRun{subRun1_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun1 with:
@@ -1116,8 +1113,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun2 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=28000,
-        tasks=16,
+        mem_mb=56000,
+        tasks=32,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_wtd_subRun{subRun2_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun2 with:
@@ -1136,8 +1133,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun2 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=28000,
-        tasks=28,
+        mem_mb=56000,
+        tasks=32,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_hds_subRun{subRun2_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun2 with:
@@ -1444,8 +1441,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun3 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=28000,
-        tasks=16,
+        mem_mb=56000,
+        tasks=32,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_wtd_subRun{subRun3_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun3 with:
@@ -1464,8 +1461,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun3 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=28000,
-        tasks=16,
+        mem_mb=56000,
+        tasks=32,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_hds_subRun{subRun3_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun3 with:
@@ -1771,8 +1768,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun4 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=28000,
-        tasks=16,
+        mem_mb=56000,
+        tasks=32,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_wtd_subRun{subRun4_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun4 with:
@@ -1791,8 +1788,8 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun4 wi
         nodes=1,
         runtime=7140,
         constraint='scratch-node',
-        mem_mb=28000,
-        tasks=16,
+        mem_mb=56000,
+        tasks=32,
         cpus_per_task=1,
         slurm_extra=f" --output={SLURMDIR_TR}/4_post-processing/_post_model_solution4_hds_subRun{subRun4_label}.out",
 use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun4 with:
