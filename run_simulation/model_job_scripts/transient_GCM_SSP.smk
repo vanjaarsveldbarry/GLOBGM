@@ -12,59 +12,50 @@ MODELROOT_TR=f"{OUTPUTDIRECTORY}/{PERIOD}"
 SLURMDIR_TR=f"{MODELROOT_TR}/slurm_logs"
 DATA_DIR = config["data_dir"]
 
-# STARTYEAR = 1960
-# ENDYEAR = 2019
-
-# subRun1_start,subRun1_end,subRun1_label = 1960,1975,1
-# subRun2_start,subRun2_end,subRun2_label = 1976,1991,2
-# subRun3_start,subRun3_end,subRun3_label = 1992,2007,3
-# subRun4_start,subRun4_end,subRun4_label = 2008,2014,4
-# nSpin = 1
-
 STARTYEAR = 2015
-ENDYEAR = 2020
-subRun1_start,subRun1_end,subRun1_label = 2015,2015,1
-subRun2_start,subRun2_end,subRun2_label = 2016,2016,2
-subRun3_start,subRun3_end,subRun3_label = 2017,2017,3
-subRun4_start,subRun4_end,subRun4_label = 2018,2018,4
-subRun5_start,subRun5_end,subRun5_label = 2019,2019,5
-subRun6_start,subRun6_end,subRun6_label = 2020,2020,6
+ENDYEAR = 2100
+subRun1_start,subRun1_end,subRun1_label = 2015,2029,1
+subRun2_start,subRun2_end,subRun2_label = 2031,2043,2
+subRun3_start,subRun3_end,subRun3_label = 2044,2058,3
+subRun4_start,subRun4_end,subRun4_label = 2059,2072,4
+subRun5_start,subRun5_end,subRun5_label = 2073,2086,5
+subRun6_start,subRun6_end,subRun6_label = 2087,2100,6
 nSpin = 1
 
 rule all:
     input:
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun4_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun4_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun4_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun4_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun4_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun4_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun4_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun4_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun3_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun3_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun3_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun3_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun3_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun3_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun3_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun3_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun2_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun2_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun2_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun2_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun2_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun2_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun2_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun4_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun3_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun2_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun2_label}",
         f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_hds_subRun{subRun1_label}",
         f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution1_wtd_subRun{subRun1_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun1_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun1_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun1_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun1_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun1_label}",
-        # f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun1_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_wtd_subRun{subRun1_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution2_hds_subRun{subRun1_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_wtd_subRun{subRun1_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution3_hds_subRun{subRun1_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_wtd_subRun{subRun1_label}",
+        f"{SLURMDIR_TR}/4_post-processing/done_post_model_solution4_hds_subRun{subRun1_label}",
 
 
 rule setup_simulation:
