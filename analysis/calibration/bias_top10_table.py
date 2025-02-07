@@ -6,8 +6,8 @@ import warnings
 # Silence the PerformanceWarning
 warnings.filterwarnings("ignore", category=pd.errors.PerformanceWarning)
 pd.set_option('display.max_colwidth', None)
-dataFolder = Path("/projects/prjs1222/globgm_output/calibration/calibration/validation/ss_validation_output/observed_gwh_for_ss_valex_hotspots")
-saveFolder = Path("/projects/prjs1222/GLOBGM/analysis/calibration/_plots")
+dataFolder = Path("/scratch-shared/globgm_scratch/calibrition/calibration/validation/ss_validation_output/observed_gwh_for_ss_valex_hotspots")
+saveFolder = Path("/scratch-shared/globgm_scratch/analysis/calibration/_plots")
 selected_parameter_setting= 'khuncon0.1_khcon0.1_khcar0.1_kvconf0.1_riverres0.1'	
 
 depth_cats = labels = ["<0", "0-5", "5-10", "10-20", "20-60", ">60"]

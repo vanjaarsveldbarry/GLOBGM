@@ -3,14 +3,14 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import warnings
-# Silence the PerformanceWarning
+
 warnings.filterwarnings("ignore", category=pd.errors.PerformanceWarning)
 
-dataFolder = Path("/projects/prjs1222/globgm_output/calibration/calibration/validation/ss_validation_output/observed_gwh_for_ss_valex_hotspots")
-saveFolder = Path("/projects/prjs1222/GLOBGM/analysis/calibration/_plots")
+dataFolder = Path("/scratch-shared/globgm_scratch/calibrition/calibration/validation/ss_validation_output/observed_gwh_for_ss_valex_hotspots")
+saveFolder = Path("/scratch-shared/globgm_scratch/analysis/calibration/_plots")
+saveFolder.mkdir(parents=True, exist_ok=True)
+
 selected_parameter_setting= 'khuncon0.1_khcon0.1_khcar0.1_kvconf0.1_riverres0.1'	
-
-
 df_merged = pd.DataFrame()
 data_files = sorted((dataFolder).glob('*.csv'))
 data_files = [file for file in data_files if 'bias_results_jarno_ss.csv' not in file.name]
@@ -18,7 +18,7 @@ for file in sorted(data_files):
     data = pd.read_csv(file)['bias']
     name = file.name[13:-4]
     df_merged[name] = data *-1
-print(df_merged,shape)
+print(df_merged.shape)
 
 df_selected = df_merged[[selected_parameter_setting]]
 df_merged = df_merged.drop(columns=[selected_parameter_setting])

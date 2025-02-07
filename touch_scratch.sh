@@ -11,3 +11,10 @@ cd /scratch-shared/globgm_scratch
 ls -lah .
 find . -exec touch {} \;
 ls -lah .
+
+squeue -u bvjaarsveld1 -o "%.10i %.10P %.24j %.10u %.12T %.12M %.12l %.5D %16R %20S"
+
+cd /scratch-shared/_bvjaarsveld1
+ls -lah .
+find . -exec touch {} \;
+ls -lah .

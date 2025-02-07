@@ -7,8 +7,8 @@ import math
 from sklearn.preprocessing import MaxAbsScaler
 import matplotlib.ticker as ticker
 
-dataPath = Path('/scratch-shared/_bvjaarsveld1/output_initial_conditions/gswp3-w5e5')
-saveDir = Path('/home/bvjaarsveld1/projects/workflow/GLOBGM/analysis/initial_conditions/_plots')
+dataPath = Path('/scratch-shared/globgm_scratch/initial_conditions/output_initial_conditions')
+saveDir = Path('/scratch-shared/globgm_scratch/analysis/initial_conditions/_plots')
 unique_solutions = [1, 2, 3]
 
 ########################

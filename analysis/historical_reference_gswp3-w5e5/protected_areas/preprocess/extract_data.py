@@ -7,7 +7,7 @@ from pathlib import Path
 from concurrent.futures import ProcessPoolExecutor, as_completed
 import time
 
-saveDir = Path('/scratch-shared/globgm_scratch/analysis/anthro_influence/output')
+saveDir = Path('/scratch-shared/globgm_scratch/analysis/historical_reference_gswp3-w5e5/output')
 
 df_no_pump = pd.DataFrame()
 df_with_pump = pd.DataFrame()
