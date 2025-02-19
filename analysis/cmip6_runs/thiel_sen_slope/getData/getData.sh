@@ -15,4 +15,4 @@ for scenario in historical; do
 done
 
 mpirun -np 190 dchmod --mode 777 /scratch-shared/globgm_scratch
-wait 
+wait

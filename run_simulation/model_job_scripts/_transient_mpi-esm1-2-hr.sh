@@ -1,14 +1,14 @@
 #!/bin/bash -l
 #SBATCH -N 1
-#SBATCH -J ini_con
+#SBATCH -J mpi-esm1-2-hr_ssp126
 #SBATCH -t 119:00:00
-#SBATCH --partition=genoa
-#SBATCH --output=/projects/prjs1222/GLOBGM/run_simulation/model_job_scripts/slurmOut/ipsl-cm6a-lr_future_ssp126.out
+#SBATCH --partition=genoa,rome
+#SBATCH --output=/projects/prjs1222/GLOBGM/run_simulation/model_job_scripts/slurmOut/mpi-esm1-2-hr_ssp126.out
 
 source ${HOME}/.bashrc
 mamba activate globgm
 
-simulation=ipsl-cm6a-lr
+simulation=mpi-esm1-2-hr
 
 #RUN HISTORICAL
 outputDirectory=/projects/prjs1222/globgm_output/$simulation
@@ -17,7 +17,7 @@ run_globgm_dir=/projects/prjs1222/GLOBGM/run_simulation
 
 cd $run_globgm_dir/model_job_scripts
 
-# snakemake -n --report transient_ipsl-cm6a-lr_historical_report.html --cores 16 \
+# snakemake --cores 16 \
 #           --snakefile transient_GCM_historical.smk \
 #           --executor slurm --jobs 100 --default-resources slurm_account=uus2024031 \
 #           --config simulation=$simulation \
@@ -28,19 +28,18 @@ cd $run_globgm_dir/model_job_scripts
 # wait
 
 # RUN SSP126
-# snakemake -n --report transient_ipsl-cm6a-lr_ssp126_report.html --cores 16 \
-# snakemake  --cores 16 \
-#           --snakefile transient_GCM_SSP.smk \
-#           --executor slurm --jobs 100 --default-resources slurm_account=uus2024031 \
-#           --config simulation=$simulation \
-#                     outputDirectory=$outputDirectory \
-#                     run_globgm_dir=$run_globgm_dir \
-#                     data_dir=$data_dir \
-#                     period="ssp126"
+snakemake --cores 16 \
+          --snakefile transient_GCM_SSP.smk \
+          --executor slurm --jobs 100 --default-resources slurm_account=uus2024031 \
+          --config simulation=$simulation \
+                    outputDirectory=$outputDirectory \
+                    run_globgm_dir=$run_globgm_dir \
+                    data_dir=$data_dir \
+                    period="ssp126"
+wait
 
 # RUN SSP370
 # snakemake --cores 16 \
-# snakemake -n --report transient_ipsl-cm6a-lr_ssp370_report.html --cores 16 \
 #           --snakefile transient_GCM_SSP.smk \
 #           --executor slurm --jobs 100 --default-resources slurm_account=uus2024031 \
 #           --config simulation=$simulation \
@@ -48,11 +47,9 @@ cd $run_globgm_dir/model_job_scripts
 #                     run_globgm_dir=$run_globgm_dir \
 #                     data_dir=$data_dir \
 #                     period="ssp370"
-# wait
 
 # # RUN SSP585
 # snakemake --cores 16 \
-# snakemake -n --report transient_ipsl-cm6a-lr_ssp585_report.html --cores 16 \
 #           --snakefile transient_GCM_SSP.smk \
 #           --executor slurm --jobs 100 --default-resources slurm_account=uus2024031 \
 #           --config simulation=$simulation \
