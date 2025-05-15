@@ -4,53 +4,99 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 
-inputFolder = Path('/scratch-shared/globgm_scratch/initial_conditions/output_initial_conditions')
-saveDir = Path('/scratch-shared/globgm_scratch/analysis/initial_conditions/_plots')
+inputFolder = Path('/projects/prjs1222/scratch_backup/globgm_scratch/initial_conditions/output_initial_conditions')
+saveDir = Path('/projects/prjs1222/scratch_backup/globgm_scratch/analysis/initial_conditions/_plots')
 saveDir.mkdir(parents=True, exist_ok=True)
 
-fig, axes = plt.subplots(nrows=4, ncols=2, figsize=(15, 20))
+fig, axes = plt.subplots(nrows=2, ncols=4, figsize=(20, 10))
 axes = axes.flatten()
-for layer in [1, 2]:
-    for idx, solution in enumerate([1, 2, 3, 4]):
-        df_ss = pd.read_csv(inputFolder / f'ss/mf6_post/s0{solution}_hds_l{layer}_abs.csv').melt(var_name='Iteration', value_name='Value')
-        df_ss['Iteration'] = df_ss['Iteration'].str.extract(r'(\d+)').astype(int)
-        df_ss = df_ss.rename(columns={'Value': 'bias_ss'})
-        df_ss['Label'] = 'ss'
+for idx, solution in enumerate([2, 1, 3, 4]):
+    df_ss_l1 = pd.read_csv(inputFolder / f'ss/mf6_post/s0{solution}_hds_l1_abs.csv').melt(var_name='Iteration', value_name='Value').rename(columns={'Value': 'bias_ss'})
+    df_ss_l1['Label'] = 'Steady-state'
+    df_ss_l1['Layer'] = 1    
+
+    df_ss_l2 = pd.read_csv(inputFolder / f'ss/mf6_post/s0{solution}_hds_l2_abs.csv').melt(var_name='Iteration', value_name='Value').rename(columns={'Value': 'bias_ss'})
+    df_ss_l2['Label'] = 'Steady-state'
+    df_ss_l2['Layer'] = 2   
+    
         
-        df_no_pump = pd.read_csv(inputFolder / f'tr_no_pump/mf6_post/s0{solution}_hds_l{layer}_abs.csv').melt(var_name='Iteration', value_name='Value')
-        df_no_pump['Iteration'] = df_no_pump['Iteration'].str.extract(r'(\d+)').astype(int)
-        df_no_pump = df_no_pump.rename(columns={'Value': 'no_pump'})
-        df_no_pump['Label'] = 'no_pump'
+    df_no_pump_l1 = pd.read_csv(inputFolder / f'tr_no_pump/mf6_post/s0{solution}_hds_l1_abs.csv').melt(var_name='Iteration', value_name='Value').rename(columns={'Value': 'no_pump'})
+    df_no_pump_l1['Label'] = 'Transient: no pumping'
+    df_no_pump_l1['Layer'] = 1
+    
+    df_no_pump_l2 = pd.read_csv(inputFolder / f'tr_no_pump/mf6_post/s0{solution}_hds_l2_abs.csv').melt(var_name='Iteration', value_name='Value').rename(columns={'Value': 'no_pump'})
+    df_no_pump_l2['Label'] = 'Transient: no pumping'
+    df_no_pump_l2['Layer'] = 2
+    
         
-        df_with_pump = pd.read_csv(inputFolder / f'tr_with_pump/mf6_post/s0{solution}_hds_l{layer}_abs.csv').melt(var_name='Iteration', value_name='Value')
-        df_with_pump['Iteration'] = df_with_pump['Iteration'].str.extract(r'(\d+)').astype(int)
-        df_with_pump = df_with_pump.rename(columns={'Value': 'with_pump'})
-        df_with_pump['Label'] = 'with_pump'
+    df_with_pump_l1 = pd.read_csv(inputFolder / f'tr_with_pump/mf6_post/s0{solution}_hds_l1_abs.csv').melt(var_name='Iteration', value_name='Value').rename(columns={'Value': 'with_pump'})
+    df_with_pump_l1['Label'] = 'Transient: with pumping'
+    df_with_pump_l1['Layer'] = 1
+    
+    df_with_pump_l2 = pd.read_csv(inputFolder / f'tr_with_pump/mf6_post/s0{solution}_hds_l2_abs.csv').melt(var_name='Iteration', value_name='Value').rename(columns={'Value': 'with_pump'})
+    df_with_pump_l2['Label'] = 'Transient: with pumping'
+    df_with_pump_l2['Layer'] = 2
+    
         
-        combined_df = pd.concat([df_ss, df_no_pump, df_with_pump])
-        combined_df['Index'] = range(len(combined_df))
-        combined_df['bias'] = combined_df['bias_ss'].combine_first(combined_df['no_pump']).combine_first(combined_df['with_pump'])
-        combined_df = combined_df.drop(columns=['bias_ss', 'no_pump', 'with_pump'])
-        melted_df = combined_df.melt(id_vars=['Iteration', 'Index', 'Label'], value_vars=['bias'], value_name='Value')
+    combined_df = pd.concat([df_ss_l1, df_ss_l2, df_no_pump_l1, df_no_pump_l2, df_with_pump_l1, df_with_pump_l2])
+    combined_df['Index'] = combined_df.groupby('Layer').cumcount()
+    combined_df['bias'] = combined_df['bias_ss'].combine_first(combined_df['no_pump']).combine_first(combined_df['with_pump'])
+    combined_df = combined_df.drop(columns=['bias_ss', 'no_pump', 'with_pump'])
+    melted_df = combined_df.melt(id_vars=['Index', 'Label', 'Layer'], value_vars=['bias'], value_name='Value')
+    melted_df['Index'] = melted_df['Index'] + 1
+    
+    print(melted_df)
+    layer1_df = melted_df[melted_df['Layer'] ==1]
+    layer2_df = melted_df[melted_df['Layer'] ==2]
+    
+    col_index = idx
+    if col_index in [0, 4]: _legend='brief'
+    else: _legend=False
+    sns.lineplot(data=layer1_df, x='Index', y='Value', color='black', marker='', ax=axes[col_index], legend=_legend)
+    sns.lineplot(data=layer1_df, x='Index', y='Value', marker='o', hue='Label', ax=axes[col_index], legend=_legend)
+    sns.lineplot(data=layer2_df, x='Index', y='Value', color='black', marker='', ax=axes[4 + col_index], legend=_legend)
+    sns.lineplot(data=layer2_df, x='Index', y='Value', marker='o', hue='Label', ax=axes[4 + col_index], legend=_legend)
+    
+for i in range(8):
+    if i in [4, 5, 6, 7]:
+        axes[i].set_xlabel('Iteration')
+        axes[i].tick_params(axis='x', labelsize=14)
+        axes[i].xaxis.label.set_size(16)
+    else:
+        axes[i].set_xlabel('')
+        axes[i].tick_params(axis='x', labelbottom=False)
         
-        col_index = 0 if layer == 1 else 1
-        row_index = idx
-        sns.lineplot(data=melted_df, x='Index', y='Value', marker='o', hue='Label', ax=axes[row_index * 2 + col_index])
-        axes[row_index * 2 + col_index].set_xlabel('Iteration')
-        if solution == 1:
-            title = f'Afro-Eurasia hds Layer {layer}'
-        elif solution == 2:
-            title = f'Americas hds Layer {layer}'
-        elif solution == 3:
-            title = f'Australia hds Layer {layer}'
-        elif solution == 4:
-            title = f'Islands hds Layer {layer}'
+    if i == 4:
+        axes[i].set_ylabel('Layer 2 Mean HDS')
+        axes[i].yaxis.label.set_size(16)
+        axes[i].tick_params(axis='y', labelsize=14)
+        legend = axes[i].legend(frameon=False)
+        legend.set_title(None)
+        for text in legend.get_texts():
+            text.set_fontsize(14) 
         
-        axes[row_index * 2 + col_index].set_title(title)
+    elif i == 0:
+        axes[i].set_ylabel('Layer 1 Mean HDS')
+        axes[i].yaxis.label.set_size(16)
+        axes[i].tick_params(axis='y', labelsize=14)
+        legend = axes[i].legend(frameon=False)
+        legend.set_title(None)
+        for text in legend.get_texts():
+            text.set_fontsize(14) 
         
-        if col_index == 0:
-            axes[row_index * 2 + col_index].set_ylabel('Absolute hds values')
-        else:
-            axes[row_index * 2 + col_index].set_ylabel('')
+        
+    else:
+        axes[i].set_ylabel('')
+        axes[i].tick_params(axis='y', labelsize=14)
+        
+        
+    axes[i].yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{x:.1f}'))
+    
+    if i == 0:axes[i].set_title('Americas', fontsize=16)
+    if i == 1:axes[i].set_title('Afro-Eurasia', fontsize=16)
+    if i == 2:axes[i].set_title('Australia', fontsize=16)
+    if i == 3:axes[i].set_title('Islands', fontsize=16)
+    
+
 fig.tight_layout()
 fig.savefig(saveDir / 'absolute_change.png')

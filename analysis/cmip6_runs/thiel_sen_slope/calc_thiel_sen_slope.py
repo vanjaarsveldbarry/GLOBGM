@@ -10,8 +10,6 @@ from pathlib import Path
 from scipy.stats import norm
 from math import erf, sqrt
 import itertools as itt
-import pymannkendall as mk
-from pymannkendall import original_test
 
 def timit(func):
     def wrapper(*args, **kwargs):
@@ -27,15 +25,12 @@ save_dir = Path("/scratch-shared/globgm_scratch/analysis/cmip6_runs/thiel_sen_sl
 save_dir.mkdir(parents=True, exist_ok=True)
 
 input_dir = Path(sys.argv[1])
-GCM = sys.argv[2]
-scenario = sys.argv[3]
-variable = sys.argv[4]
+variable = sys.argv[2]
+name = sys.argv[3]
 for layer in [2, 1]:
     ds = xr.open_zarr(input_dir / f'{variable}.zarr')[f'l{layer}_{variable}']
-    # ds = ds.sel(latitude=slice(-33, -34), longitude=slice(18, 19))
     lat_coords = ds.coords["latitude"].values
     lon_coords = ds.coords["longitude"].values
-    ds = ds.resample(time='YE').mean()
     ds = ds.compute()
     ds = ds.values.astype(np.float32)
     print('load')
@@ -120,26 +115,9 @@ for layer in [2, 1]:
     with ProgressBar(total=number_of_iterations) as progress:
         medslope_barry, p_barry = calculate_theil_sen_slope(ds, valid_indices, time_pairs, time_idx, progress, number_of_iterations)
 
-    # def calculate_theil_sen_slope_test(data, valid_indices, time_pairs, time_idx, number_of_iterations):
-    #     medslope_scipy = np.full(data.shape[1:], np.nan, dtype=np.float32)
-    #     p_scipy = np.full(data.shape[1:], np.nan, dtype=np.float32)
-
-    #     for iterat in tqdm(range(number_of_iterations)):
-    #         i, j = valid_indices[iterat]
-    #         y = data[:, i, j]
-    #         # Perform Mann-Kendall test
-    #         mk_result = original_test(y)
-    #         p_scipy[i, j] = mk_result.p
-    #         medslope_scipy[i, j] = mk_result.slope
-    #     return medslope_scipy, p_scipy
- 
-    # medslope_scipy, p_scipy = calculate_theil_sen_slope_test(ds, valid_indices, time_pairs, time_idx, number_of_iterations)
-
-    ds_out = xr.Dataset({"slope": (("latitude", "longitude"),
-                                       medslope_barry),
-                         "p": (("latitude", "longitude"),
-                                            p_barry),
+    ds_out = xr.Dataset({"slope": (("latitude", "longitude"), medslope_barry),
+                         "p": (("latitude", "longitude"), p_barry),
                         },
-                                coords={"latitude": lat_coords,
-                                        "longitude": lon_coords})
-    ds_out.to_netcdf(save_dir / f'{GCM}_{scenario}_l{layer}_{variable}.nc', mode='w')
+                            coords={"latitude": lat_coords,
+                                    "longitude": lon_coords})
+    ds_out.to_netcdf(save_dir / f'{name}_l{layer}_{variable}.nc', mode='w')

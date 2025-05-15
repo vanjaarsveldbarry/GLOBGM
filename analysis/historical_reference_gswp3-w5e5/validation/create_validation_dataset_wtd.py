@@ -9,15 +9,12 @@ from datetime import date, timedelta
 from pandas import to_datetime 
 
 
-test = 'barry'
-solutions = [1, 2, 3]
-startTime, endTime = '1960', '2015'
-min_obs_freq=24
-sim_data_dir = Path(f'/scratch-shared/_bvjaarsveld1/temp/data/{test}')
-obsFile = '/home/bvjaarsveld1/projects/workflow/GLOBGM/analysis/validation_gswp3-w5e5/data/observed_gwh_withlayers_data.parquet'
-layerFile = '/home/bvjaarsveld1/projects/workflow/GLOBGM/analysis/validation_gswp3-w5e5/data/observed_gwh_withlayers_points.gpkg'
-saveDir = Path(f'/scratch-shared/_bvjaarsveld1/temp/validation/output/{test}')
-#CHECK models_tool_src for validation data 
+startTime, endTime = '1960', '2019'
+min_obs_freq=36
+sim_data_dir = Path(f'/projects/prjs1222/globgm_output/reference_gswp3-w5e5/historical_with_pump/merged')
+obsFile = '/projects/prjs1222/GLOBGM/analysis/historical_reference_gswp3-w5e5/validation/data/observed_gwh_withlayers_data.parquet'
+layerFile = '/projects/prjs1222/GLOBGM/analysis/historical_reference_gswp3-w5e5/validation/data/observed_gwh_withlayers_points.gpkg'
+saveDir = Path(f'/projects/prjs1222/scratch_backup/globgm_scratch/analysis/historical_reference_gswp3-w5e5/validation/output')
 saveDir.mkdir(parents=True, exist_ok=True)
 
 def _read_obs(simFile, obsFile, startTime, endTime):
@@ -49,6 +46,7 @@ def reindex_time(obs_data_ds, startTime, endTime):
 
 def _read_sim(simFile, startTime, endTime, x_coords, y_coords):
     sim_ds = xr.open_zarr(simFile).rename({'latitude': 'lat', 'longitude': 'lon'}).sel(time=slice(f"{startTime}-01-01", f"{endTime}-12-31"))
+    # sim_ds = xr.open_zarr(simFile).rename({'latitude': 'lat', 'longitude': 'lon'}).sel(time=slice(f"2000-01-01", f"2000-12-31"))
     sim_ds = sim_ds.sel(lon=x_coords, lat=y_coords, method='nearest')
     sim_ds = pl.from_pandas(sim_ds.to_dataframe().reset_index())
     sim_ds = sim_ds.cast({pl.Datetime: pl.Date})
@@ -59,24 +57,24 @@ def _create_validation_df(sim_ds, obs_data_ds):
     combined_df = combined_df.with_columns(pl.when(pl.col('layer_no') == 1).then(pl.col('l1_wtd')).when(pl.col('layer_no') == 2).then(pl.col('l2_wtd')).alias('sim_wtd'))
     combined_df = combined_df.select(['id_gerbil', 'lat', 'lon', 'time', 'layer_no', 'obs_wtd', 'sim_wtd'])
     combined_df = combined_df.drop_nulls(subset=['sim_wtd', 'obs_wtd'])
-    combined_df = combined_df.with_columns(pl.lit(solution).alias('solution'))
     combined_df = combined_df.with_columns(pl.col('id_gerbil').count().over('id_gerbil').alias('obs_freq'))
-    combined_df = combined_df.with_columns(pl.when(pl.col('obs_wtd') < 5).then(pl.lit('0_5'))
-                                    .when((pl.col('obs_wtd') >= 5) & (pl.col('obs_wtd') < 10)).then(pl.lit('5_10'))
-                                    .when((pl.col('obs_wtd') >= 10) & (pl.col('obs_wtd') < 20)).then(pl.lit('10_20'))
-                                    .when((pl.col('obs_wtd') >= 20) & (pl.col('obs_wtd') < 60)).then(pl.lit('20_60'))
-                                    .when(pl.col('obs_wtd') >= 60).then(pl.lit('>60'))
+    combined_df = combined_df.with_columns(pl.col('obs_wtd').mean().over('id_gerbil').alias('mean_obs_wtd'))
+    combined_df = combined_df.with_columns(pl.when(pl.col('mean_obs_wtd') <= 0).then(pl.lit('<0'))
+                                    .when((pl.col('mean_obs_wtd') > 0) & (pl.col('mean_obs_wtd') <= 5)).then(pl.lit('0_5'))
+                                    .when((pl.col('mean_obs_wtd') > 5) & (pl.col('mean_obs_wtd') <= 10)).then(pl.lit('5_10'))
+                                    .when((pl.col('mean_obs_wtd') > 10) & (pl.col('mean_obs_wtd') <= 20)).then(pl.lit('10_20'))
+                                    .when((pl.col('mean_obs_wtd') > 20) & (pl.col('mean_obs_wtd') <= 60)).then(pl.lit('20_60'))
+                                    .when(pl.col('mean_obs_wtd') > 60).then(pl.lit('>60'))
                                     .otherwise(pl.lit('Other')).alias('depthCat'))
     return combined_df
 
 all_validation_dfs = []
 
-for solution in solutions:
-    obs_data_ds, x_coords, y_coords = _read_obs(sim_data_dir / f's0{solution}_wtd.zarr', obsFile, startTime, endTime)
-    obs_data_ds = reindex_time(obs_data_ds, startTime, endTime)
-    sim_ds = _read_sim(sim_data_dir / f's0{solution}_wtd.zarr', startTime, endTime, x_coords, y_coords)
-    validation_df = _create_validation_df(sim_ds, obs_data_ds)
-    all_validation_dfs.append(validation_df)
-combined_df = pl.concat(all_validation_dfs)
-combined_df = combined_df.filter(pl.col('obs_freq') > min_obs_freq)
-combined_df.write_parquet(saveDir / 'timeseries_wtd.parquet')
+obs_data_ds, x_coords, y_coords = _read_obs(sim_data_dir / 'wtd.zarr', obsFile, startTime, endTime)
+obs_data_ds = reindex_time(obs_data_ds, startTime, endTime)
+sim_ds = _read_sim(sim_data_dir / f'wtd.zarr', startTime, endTime, x_coords, y_coords)
+validation_df = _create_validation_df(sim_ds, obs_data_ds)
+validation_df = validation_df.sort('id_gerbil')
+print(validation_df.select(pl.all()))
+validation_df = validation_df.filter(pl.col('obs_freq') > min_obs_freq)
+validation_df.write_parquet(saveDir / 'timeseries_wtd.parquet')

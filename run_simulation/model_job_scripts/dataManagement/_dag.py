@@ -66,13 +66,13 @@ p = sorted(simPath.glob('**/*'))
 files = [x for x in p if x.is_file()]
     
 session = setup_iRodsSession(env_config, password, ca_file, timeout)
-with session as s:
-    home_collection = rootSavePath.parent.as_posix()
-    collections = (s.query(Collection.name)
-                .filter(Collection.parent_name == home_collection)
-                .get_results())
     
-    for file in tqdm(files):
+for file in tqdm(files):
+    with session as s:
+        home_collection = rootSavePath.parent.as_posix()
+        collections = (s.query(Collection.name)
+                    .filter(Collection.parent_name == home_collection)
+                    .get_results())
         tqdm.write(f"Processing file: {file.name}")
         saveFile = (rootSavePath / file.relative_to(simPath.parent))
         saveDirectory = saveFile.parent

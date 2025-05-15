@@ -6,14 +6,16 @@ import warnings
 # Silence the PerformanceWarning
 warnings.filterwarnings("ignore", category=pd.errors.PerformanceWarning)
 pd.set_option('display.max_colwidth', None)
-dataFolder = Path("/scratch-shared/globgm_scratch/calibrition/calibration/validation/ss_validation_output/observed_gwh_for_ss_valex_hotspots")
-saveFolder = Path("/scratch-shared/globgm_scratch/analysis/calibration/_plots")
+dataFolder = Path("/projects/prjs1222/scratch_backup/globgm_scratch/calibration/calibration/validation/ss_validation_output/observed_gwh_for_ss_valex_hotspots")
+saveFolder = Path("/projects/prjs1222/scratch_backup/globgm_scratch/analysis/calibration/_plots")
 selected_parameter_setting= 'khuncon0.1_khcon0.1_khcar0.1_kvconf0.1_riverres0.1'	
 
 depth_cats = labels = ["<0", "0-5", "5-10", "10-20", "20-60", ">60"]
 
 data_files = sorted((dataFolder).glob('*.csv'))
 data_files = [file for file in data_files if 'bias_results_jarno_ss.csv' not in file.name]
+jarno_results_file = dataFolder / 'bias_results_jarno_ss.csv'
+jarno_results = pd.read_csv(jarno_results_file)
 print(len(data_files))
 for i, file in enumerate(sorted(data_files)):
     if i == 0:
@@ -39,9 +41,22 @@ for i, file in enumerate(sorted(data_files)):
         df_merged = pd.merge(df_merged, data, on=['depth_category'], how='inner')
         
 df_melted = df_merged.melt(id_vars=['depth_category'], var_name='Name', value_name='Bias')
+jarno_results['depth_category'] = pd.cut(jarno_results['obs_gw'], bins=[-float('inf'), 0, 5, 10, 20, 60, float('inf')], labels=depth_cats)
+jarno_results = jarno_results[['depth_category', 'bias']].rename(columns={'bias': 'jarno_results'})
+jarno_results['jarno_results'] = jarno_results['jarno_results'].abs()
+jarno_results = jarno_results.groupby('depth_category', observed=False).mean().reset_index()
+overall_mean_row = jarno_results.iloc[:, 1:].mean(axis=0).to_frame().T
+jarno_results = pd.concat([jarno_results, overall_mean_row], ignore_index=True)
+jarno_results['depth_category'] = jarno_results['depth_category'].cat.add_categories(['overall_mean'])
+jarno_results.iloc[-1, 0] = 'overall_mean'
+jarno_results = jarno_results.pivot(columns='depth_category', values='jarno_results')
+jarno_results = jarno_results.max(axis=0).to_frame().T
+jarno_results.insert(0, 'Name', ['jarno_results'])
+jarno_results = jarno_results.set_index('Name')
 df_pivoted = df_melted.pivot(index='Name', columns='depth_category', values='Bias')
 df_pivoted = df_pivoted.sort_values(by='overall_mean', ascending=True)
 df_top10 = df_pivoted.head(10)
 df_top10 = df_top10.sort_values(by='0-5', ascending=True)
+df_top10 = pd.concat([df_top10, jarno_results], ignore_index=False)
 df_top10 = df_top10.round(1)
 df_top10.to_csv(saveFolder / 'top10_bias.csv')

@@ -16,7 +16,7 @@ for file in files:
     except Exception as e:
         continue
     idx=len(hds.get_times())-1
-    aa = hds.get_data(idx=idx)
+    aa = hds.get_data(idx=idx) 
     _aa_shape=aa.shape
     text = "HEAD"
     ilay = 1

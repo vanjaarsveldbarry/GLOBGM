@@ -220,7 +220,7 @@ rule write_model_forcing_sub1:
         subSet=1,
     resources:
         slurm_partition='fat_genoa', 
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=1440000,
         cpus_per_task=1,
@@ -290,7 +290,7 @@ use rule write_model_forcing_sub1 as write_model_forcing_sub2 with:
         subSet=2,
     resources:
         slurm_partition='fat_genoa', 
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=1440000,
         cpus_per_task=1,
@@ -728,7 +728,7 @@ rule post_model_solution3_wtd_subRun1:
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -787,7 +787,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution3_hds_subRun1 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -807,7 +807,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun1 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=56000,
         tasks=32,
@@ -827,7 +827,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun1 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=56000,
         tasks=32,
@@ -847,7 +847,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun1 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -867,7 +867,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_hds_subRun1 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -887,7 +887,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_wtd_subRun1 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -907,7 +907,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_hds_subRun1 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -1106,7 +1106,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution3_wtd_subRun2 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -1126,7 +1126,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution3_hds_subRun2 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -1146,7 +1146,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun2 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=56000,
         tasks=32,
@@ -1166,7 +1166,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun2 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=56000,
         tasks=32,
@@ -1186,7 +1186,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun2 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -1206,7 +1206,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_hds_subRun2 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -1226,7 +1226,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_wtd_subRun2 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -1246,7 +1246,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_hds_subRun2 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -1434,7 +1434,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution3_wtd_subRun3 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -1454,7 +1454,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution3_hds_subRun3 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -1474,7 +1474,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun3 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=56000,
         tasks=32,
@@ -1494,7 +1494,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun3 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=56000,
         tasks=32,
@@ -1514,7 +1514,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun3 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -1534,7 +1534,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_hds_subRun3 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -1554,7 +1554,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_wtd_subRun3 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -1574,7 +1574,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_hds_subRun3 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -1761,7 +1761,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution3_wtd_subRun4 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -1781,7 +1781,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution3_hds_subRun4 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -1801,7 +1801,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun4 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=56000,
         tasks=32,
@@ -1821,7 +1821,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun4 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=56000,
         tasks=32,
@@ -1841,7 +1841,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun4 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -1861,7 +1861,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_hds_subRun4 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -1881,7 +1881,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_wtd_subRun4 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -1901,7 +1901,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_hds_subRun4 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -2086,7 +2086,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution3_wtd_subRun5 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -2106,7 +2106,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution3_hds_subRun5 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -2126,7 +2126,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun5 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=56000,
         tasks=32,
@@ -2146,7 +2146,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun5 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=56000,
         tasks=32,
@@ -2166,7 +2166,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun5 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -2186,7 +2186,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_hds_subRun5 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -2206,7 +2206,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_wtd_subRun5 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -2226,7 +2226,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_hds_subRun5 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -2412,7 +2412,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution3_wtd_subRun6 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -2432,7 +2432,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution3_hds_subRun6 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -2452,7 +2452,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_wtd_subRun6 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=56000,
         tasks=32,
@@ -2472,7 +2472,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution4_hds_subRun6 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=56000,
         tasks=32,
@@ -2492,7 +2492,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_wtd_subRun6 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -2512,7 +2512,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution2_hds_subRun6 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -2532,7 +2532,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_wtd_subRun6 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
@@ -2552,7 +2552,7 @@ use rule post_model_solution3_wtd_subRun1 as post_model_solution1_hds_subRun6 wi
     resources:
         slurm_partition='genoa', 
         nodes=1,
-        runtime=7140,
+        runtime=1440,
         constraint='scratch-node',
         mem_mb=28000,
         tasks=16,
