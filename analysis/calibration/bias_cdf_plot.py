@@ -50,7 +50,7 @@ if jarno_ss_file:
 
 plt.axvline(x=0, color='black', linestyle='--')
 plt.xlim(-50, 50)
-plt.legend(loc='lower right', frameon=False, fontsize=17)
+plt.legend(loc='upper left', frameon=False, fontsize=17)
 plt.tick_params(direction='in', labelsize=19)
 plt.xlabel('Water Table Depth Bias (m)', fontsize=21)
 plt.ylabel('CDF', fontsize=21)

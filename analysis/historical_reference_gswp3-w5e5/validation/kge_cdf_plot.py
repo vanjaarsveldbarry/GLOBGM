@@ -11,7 +11,8 @@ saveDir = Path(f'/projects/prjs1222/scratch_backup/globgm_scratch/analysis/histo
 saveDir.mkdir(parents=True, exist_ok=True)
 
 ds_kge = pd.read_parquet(dataDir / 'kge_wtd.parquet')
-depth_categories = ['<0', '0_5', '5_10', '10_20', '20_60', '>60']
+# depth_categories = ['<0', '0_5', '5_10', '10_20', '20_60', '>60']
+depth_categories = ['0_5', '5_10', '10_20', '20_60', '>60']
 custom_palette = ['#0d47a1', '#1f77b4', '#4c8cb5', '#739fc6', '#9ab3d7', '#c1c7e8'][::-1]  # Add a darker color at the beginning
 metrics = ['KGE', 'r', 'alpha', 'beta']
 titles = {'KGE': 'KGE', 'r': 'Correlation (r)', 'alpha': 'Alpha', 'beta': 'Beta'}

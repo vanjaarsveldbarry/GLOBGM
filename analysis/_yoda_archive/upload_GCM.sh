@@ -25,8 +25,7 @@ input_dir=/projects/prjs1222/scratch_backup/globgm_scratch/archive/cmip6/GCM/ann
 
 imkdir -p $save_dir
 for file in "$input_dir"/*; do
-    echo $file
-    # echo "Processing file: $(basename "$file")"
+    echo "Processing file: $(basename "$file")"
     iput -PfT -N 3 $file $save_dir
 done
 

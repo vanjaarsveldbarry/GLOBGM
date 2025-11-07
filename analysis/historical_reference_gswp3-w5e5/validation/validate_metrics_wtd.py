@@ -27,7 +27,7 @@ def calculate_kge_by_station(validation_df):
         obs_std, sim_std = np.std(obs), np.std(sim)
         obs_mean, sim_mean = np.mean(obs), np.mean(sim)
         
-        if obs_std == 0 or obs_mean == 0:
+        if obs_std == 0 or obs_mean == 0 or obs_mean < 0 or sim_mean < 0:
             return pd.Series({'KGE': np.nan, 'r': np.nan, 'alpha': np.nan, 'beta': np.nan})
         else:
                 
@@ -41,6 +41,7 @@ def calculate_kge_by_station(validation_df):
     kge_by_station = kge_by_station.dropna()
     kge_by_station = kge_by_station.reset_index()
     kge_by_station = kge_by_station.merge(validation_df[['id_gerbil', 'depthCat', 'lat', 'lon']].drop_duplicates(), on='id_gerbil', how='left')
+    kge_by_station = kge_by_station[~kge_by_station['depthCat'].str.contains('<0')]
     kge_by_station.to_parquet(dataDir / 'kge_wtd.parquet')
     
 calculate_kge_by_station(validation_df)

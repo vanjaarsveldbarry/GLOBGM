@@ -8,7 +8,7 @@ inputFolder = Path('/projects/prjs1222/scratch_backup/globgm_scratch/initial_con
 saveDir = Path('/projects/prjs1222/scratch_backup/globgm_scratch/analysis/initial_conditions/_plots')
 saveDir.mkdir(parents=True, exist_ok=True)
 
-fig, axes = plt.subplots(nrows=2, ncols=4, figsize=(20, 10))
+fig, axes = plt.subplots(nrows=2, ncols=4, figsize=(18, 10))
 axes = axes.flatten()
 for idx, solution in enumerate([2, 1, 3, 4]):
     df_ss_l1 = pd.read_csv(inputFolder / f'ss/mf6_post/s0{solution}_hds_l1_abs.csv').melt(var_name='Iteration', value_name='Value').rename(columns={'Value': 'bias_ss'})
@@ -67,7 +67,7 @@ for i in range(8):
         axes[i].tick_params(axis='x', labelbottom=False)
         
     if i == 4:
-        axes[i].set_ylabel('Layer 2 Mean HDS')
+        axes[i].set_ylabel('Layer 2')
         axes[i].yaxis.label.set_size(16)
         axes[i].tick_params(axis='y', labelsize=14)
         legend = axes[i].legend(frameon=False)
@@ -76,7 +76,7 @@ for i in range(8):
             text.set_fontsize(14) 
         
     elif i == 0:
-        axes[i].set_ylabel('Layer 1 Mean HDS')
+        axes[i].set_ylabel('Layer 1')
         axes[i].yaxis.label.set_size(16)
         axes[i].tick_params(axis='y', labelsize=14)
         legend = axes[i].legend(frameon=False)
@@ -84,11 +84,9 @@ for i in range(8):
         for text in legend.get_texts():
             text.set_fontsize(14) 
         
-        
     else:
         axes[i].set_ylabel('')
         axes[i].tick_params(axis='y', labelsize=14)
-        
         
     axes[i].yaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f'{x:.1f}'))
     

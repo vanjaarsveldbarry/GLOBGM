@@ -13,7 +13,7 @@ mamba activate globgm
 
 cd /projects/prjs1222/GLOBGM/analysis/historical_reference_gswp3-w5e5/validation
 
-taskset -c 0-190 python -u ./create_validation_dataset_wtd.py
+# taskset -c 0-190 python -u ./create_validation_dataset_wtd.py
 wait
 python -u ./validate_metrics_wtd.py
 wait
