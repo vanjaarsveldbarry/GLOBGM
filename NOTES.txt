@@ -1,0 +1,14 @@
+For the datamap part:
+
+plus there is a sea option to opt in or out, think about this. do i realy need this option?
+
+what did jarnon do did he include sea ops or not?
+
+hydrobasins cuase problems because we have ldd cells but not hydrobasins cells, which in this implimenations means we drop them. Since bram mentioned that we should make sure globgm is aligned with pcrgklobwb basins somehow it would be good idea to replace the hydrobasins part with custom solver that respects pcrglob basins somehow.
+
+sort out window reads to accept coords. then raise synthetic fields right to the top o fteh workflow. 
+
+
+green land is included in the global run at the moment, pcr globwb will need to produce a landmask variable as an output
+
+is the serial modlfow at all necessary surely if you just say 1 core then it will be serial?

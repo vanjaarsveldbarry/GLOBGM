@@ -1,0 +1,270 @@
+# GLOBGM run configuration: every user-facing choice of one run, British Isles
+# window. main.nf runs src/python/globgm_config.py on it first, which writes
+# the mf6ggm and mf6ggmpost .inp files and the Nextflow params under
+# ../output/config/; those are build artefacts, edit this file instead. Paths
+# are relative to this file's directory. The run's layout (../output,
+# ../output/work, the executor) is nextflow.config's; the build is
+# configured in ../../build.toml.
+
+[globals]
+# Nodata of every float raster this run writes: the synthetic fields'
+# _FillValue and the mf6ggmpost output rasters (float32, -9999 in the
+# reference .flt). The catchment raster's nodata is [hydrobasins]
+# rasterize_nodata instead, which datamap requires to be 0.
+nodata = -9999.0
+
+[run]
+# Phases to run, always in this order. "spin-up" and "transient" both need
+# "steady-state" for their starting heads. A transient without "spin-up"
+# starts from the steady-state heads (mf6ggm's ic_ss simulation) instead of
+# the spin-up heads (ic_spu). Any ordered subset that starts with "steady-state".
+phases = ["steady-state", "spin-up", "transient"]
+# Where build.toml's [tools] installed datamap, process_hydbas, mf6ggm,
+# mf6ggmpost, mf6 and mf6_par.
+binaries = "../output/binaries"
+# "ser": one mf6 process per simulation. "par": mpirun with one rank per
+# mpi_ranks entry of [partition] (mf6_par, DOMAIN_DECOMPOSITION from the nam).
+mf6_mode = "par"
+# Extra mpirun options in front of the executable, e.g. "--bind-to none".
+mpirun_args = ""
+
+[grid]
+# The global 30-arcsecond grid every input raster is on: 43200 x 21600 cells
+# of 1/120 degree from (-180, -90). Changes only with a different input
+# dataset, never per run. The single source of the -ts/-te of gdal_rasterize,
+# the raster headers the Python tools write and line 1 of every .inp.
+ncol = 43200
+nrow = 21600
+xmin = -180.0
+ymin = -90.0
+cellsize = 0.008333333333333333
+# Model layers: uppermost (confining) and lowermost. The tools hardwire two.
+nlay = 2
+
+[window]
+# The model domain as bounds in degrees. Snapped outward to the enclosing
+# grid cells, so the window is never smaller than asked; the generator
+# prints the resulting 1-based rows/cols (row 1 is north, col 1 at -180).
+# A global run sets -90/90/-180/180. Upstream's other window, ICE:
+# north 66.508333, south 63.25, west -24.591667, east -13.458333
+# (upstream's rows 2820-3210, cols 18650-19985).
+north = 61.0
+south = 49.8
+west = -11.0
+east = 2.0
+
+[inputs]
+# Directory holding the three static rasters stage 1 derives everything from
+# (v1.0 inputs from Yoda, converted to NetCDF by globgm_raster.py).
+dir = "../../reference/ref_globgm_input"
+# PCR-GLOBWB drainage directions (keypad codes 1-9). Land is where the ldd
+# drains and the connected component holds a HydroBASINS cell.
+ldd = "lddsound_30sec_version_202005XX_correct_lat.nc"
+# Average surface elevation, m: the model top and the synthetic initial head.
+dem = "dem_average_topography_parameters_30sec_february_2021_global_covered_with_zero.nc"
+# Confining-layer thickness, m. Cells with more than 0.1001 m get two layers.
+confining = "confining_layer_thickness_version_2016_remapbil_to_30sec.nc"
+
+[hydrobasins]
+# HydroBASINS "with lakes" regions, mosaicked with each region's ids offset
+# by the running maximum: merge order == id order; do not change.
+regions = ["af", "ar", "as", "au", "eu", "na", "sa", "si"]
+# Pfafstetter level of the catchments; "08" is the published GLOBGM. A finer
+# level must keep the id count below 2^24 (process_hydbas stops otherwise).
+level = "08"
+# Download base; the archive is hybas_lake_<region>_lev01-12_v1c.zip.
+url = "https://data.hydrosheds.org/file/hydrobasins/customized_with_lakes/"
+# Where the archives are kept between runs (the only thing that is).
+cache = "../output/work/_cache/hydrobasins"
+# curl --retry count for the download.
+curl_retries = 3
+# Shapefile attribute burnt into the catchment raster (gdal_rasterize -a)
+# and the value outside every polygon (-a_nodata). SORT is HydroBASINS'
+# 1-based polygon index, which is what process_hydbas offsets and merges.
+# datamap requires the nodata to be 0: it marks sea by overwriting id 0.
+rasterize_attribute = "SORT"
+rasterize_nodata = 0.0
+
+[datamap]
+# true: sea cells next to land become constant-head boundary nodes (negative
+# ids in map_glob.nodes.bin, the .sea CHD package, sea in the post rasters).
+# false: sea cells are outside the model. The published GLOBGM uses true.
+sea_boundary = true
+# Confining-layer thickness, m, above which a cell gets two layers.
+# make_synthetic_fields.py places its wells on two-layer cells by the same test.
+layer_threshold = 0.1001
+# Size of datamap's neighbour work arrays per catchment; it stops when a
+# catchment has more neighbours than this.
+max_neighbours = 100000
+# Prefix of the tile rasters (<prefix><i>-<ntile>.nc) and index (<prefix><ntile>.txt).
+tile_prefix = "tile_"
+
+[time]
+# First stress period, YYYY-MM; the steady state is this single month.
+start = "1960-01"
+# Day of the month the period dates are counted from (STARTDATE's last two
+# digits). Upstream: 1.
+start_day = 1
+# TDIS TIME_UNITS of every simulation. Upstream: DAYS; the field units assume it.
+time_units = "DAYS"
+# Stress periods (months) of the spin-up and transient trees. Must be at
+# least 12 * spinup_years: the spin-up cycles that much forcing (design.md,
+# Known traps). Upstream: 696 (1958-2015).
+months = 12
+# Spin-up length in years: the spin-up simulation runs 12 * spinup_years
+# periods over the first year of forcing. Needed by any spin-up or transient.
+spinup_years = 1
+
+[partition]
+# One entry per multi-model MODFLOW 6 solution, each its own simulation.
+# datamap ranks the regions by size; solution i takes region i. submodels:
+# METIS parts of the solution, one groundwater model each. mpi_ranks: MPI
+# ranks those models are spread over in the .par nam, 1 <= mpi_ranks <=
+# submodels; anything in between METIS-groups models onto ranks. active =
+# false keeps the solution's model ids but writes nothing for it (mf6ggm's
+# iact 0). partition_file = "<file>" instead of submodels/mpi_ranks: mf6ggm's
+# "nmod < 0" form, the submodel count and the model-to-catchment partition
+# read from that binary file (absolute path; not staged into the task).
+# Upstream global: 224, 96, 32, 32.
+solutions = [
+  { submodels = 4, mpi_ranks = 4 },
+]
+# true: the last solution takes every region not taken by an earlier one
+# (mf6ggm's "-<n>" form). false: each solution takes exactly its region.
+last_takes_remaining = true
+# Solutions of one model each, METIS-partitioned over the regions the
+# multi-model solutions leave (the second value of mf6ggm's solution-count
+# line). Upstream: 0.
+single_model_solutions = 0
+# METIS load imbalance tolerance (ubvec) of every partitioning.
+metis_imbalance = 1.00001
+# What mf6ggm writes: "all" (models, exchanges, solutions), "solutions"
+# (exchanges and solutions only, mf6ggm's "0" argument) or [first, last]
+# model ids (models only, mf6ggm's "<modid0> <modid1>" form). Nextflow
+# -resume is the normal way to skip work; the partial forms are upstream's.
+mf6ggm_write = "all"
+# Also write s<NN>.modmap.nc and m<NNNNN>.nodmap.l<N>.nc rasters of model ids.
+write_model_ids = true
+
+[solver]
+# IMS preset: SIMPLE | MODERATE | COMPLEX (mf6ggm's three default sets).
+complexity = "SIMPLE"
+# IMS PRINT_OPTION: NONE | SUMMARY | ALL | ALLITER.
+print_option = "ALLITER"
+# Appended to INNER_RCLOSE: "" | STRICT | L2NORM_RCLOSE | RELATIVE_RCLOSE.
+rclose_option = ""
+# NEWTON UNDER_RELAXATION in every model nam.
+newton = false
+# NEWTON in every exchange file.
+exchange_newton = false
+
+[solver.ims]
+# Overrides of the preset by MODFLOW 6 IMS keyword, written verbatim. Only
+# the 21 mf6ggm knows: OUTER_HCLOSE OUTER_MAXIMUM UNDER_RELAXATION
+# UNDER_RELAXATION_THETA UNDER_RELAXATION_KAPPA UNDER_RELAXATION_GAMMA
+# UNDER_RELAXATION_MOMENTUM BACKTRACKING_NUMBER BACKTRACKING_TOLERANCE
+# BACKTRACKING_REDUCTION_FACTOR BACKTRACKING_RESIDUAL_LIMIT INNER_MAXIMUM
+# INNER_HCLOSE INNER_RCLOSE LINEAR_ACCELERATION RELAXATION_FACTOR
+# PRECONDITIONER_LEVELS PRECONDITIONER_DROP_TOLERANCE
+# NUMBER_ORTHOGONALIZATIONS SCALING_METHOD REORDERING_METHOD.
+# SIMPLE defaults: OUTER_HCLOSE 0.001, OUTER_MAXIMUM 25, INNER_MAXIMUM 50,
+# INNER_HCLOSE 0.001, INNER_RCLOSE 0.1, LINEAR_ACCELERATION CG.
+OUTER_MAXIMUM = 10000
+INNER_MAXIMUM = 150
+
+[model]
+# NPF ICELLTYPE for every cell: 0 confined, 1 convertible.
+icelltype = 0
+# true: sea constant heads are forced to 0 instead of the initial head.
+force_sea = false
+# Time steps per stress period = days in the month * nstp_fac.
+nstp_fac = 1
+# Drain and river systems (mf6ggm's NDRNSYS / NRIVSYS). Above 1, the DRN and
+# RIV fields carry an _S<n> suffix per system in [fields.files] and every
+# system's cells go into the one package.
+drain_systems = 1
+river_systems = 1
+
+[model.packages]
+# Packages written. DRN and RCH are always on; chd is the sea boundary, chd2
+# the interface constant heads of the single-model solutions (upstream: on),
+# ghb and ghb2 the two general-head packages (upstream: off; they need the
+# GHB_BHEAD/GHB_COND and GHB2_BHEAD/GHB2_COND fields in [fields.files]).
+sto = true
+riv = true
+wel = true
+chd = true
+chd2 = true
+ghb = false
+ghb2 = false
+
+[fields]
+# "synthetic": the fields stage writes placeholder fields from [synthetic]
+# into <output>/fields/{steady-state,transient}. Otherwise a directory with
+# those two subdirectories holding the twenty NetCDF fields of the forcing
+# contract (design.md, "Forcing interface"); the PCR-GLOBWB delivery goes here.
+source = "synthetic"
+
+[fields.files]
+# The fields mf6ggm reads, by mf6ggm key: file name without .nc under
+# <source>/{steady-state,transient} (or written there by the synthetic
+# stage). Keys are TOP BOT K K_33 STRT PRIM_STO RECHARGE RIV_STAGE RIV_COND
+# RIV_RBOT DRN_ELEV DRN_COND WEL_Q GHB_BHEAD GHB_COND GHB2_BHEAD GHB2_COND with
+# an optional _L<n> or _L<n>:<m> layer range and _S<n> system number; the
+# period range is appended to the periodic ones. These twenty are the forcing
+# contract (design.md, "Forcing interface"); the synthetic stage makes only these.
+TOP = "top_uppermost_layer"
+BOT_L1 = "bottom_uppermost_layer"
+BOT_L2 = "bottom_lowermost_layer"
+K_L1 = "horizontal_conductivity_uppermost_layer"
+K_L2 = "horizontal_conductivity_lowermost_layer"
+K_33_L1 = "vertical_conductivity_uppermost_layer"
+K_33_L2 = "vertical_conductivity_lowermost_layer"
+PRIM_STO_L1 = "primary_storage_coefficient_uppermost_layer"
+PRIM_STO_L2 = "primary_storage_coefficient_lowermost_layer"
+STRT_L1 = "initial_head_uppermost_layer"
+STRT_L2 = "initial_head_lowermost_layer"
+RECHARGE = "net_RCH"
+RIV_STAGE_L1 = "surface_water_elevation"
+RIV_RBOT_L1 = "surface_water_bed_elevation_used"
+RIV_COND_L1 = "bed_conductance_used"
+DRN_ELEV_L1 = "drain_elevation_uppermost_layer"
+DRN_ELEV_L2 = "drain_elevation_lowermost_layer"
+"DRN_COND_L1:2" = "drain_conductance"
+WEL_Q_L1 = "abstraction_uppermost_layer"
+WEL_Q_L2 = "abstraction_lowermost_layer"
+
+[fields.multiply]
+# Per-field multipliers by [fields.files] key, applied cell by cell on read.
+# Upstream's calibration knobs. Empty: none.
+
+[fields.add]
+# Per-field additive offsets by mf6ggm key, applied after the multiplier.
+
+[synthetic]
+# Constants of make_synthetic_fields.py; used only while [fields] source is
+# "synthetic". Placeholders that are never compared with anything.
+thickness_l2 = 100.0         # m, thickness of the lowermost layer under the confining layer
+k_l1 = 1.0                   # m/d, horizontal conductivity of the uppermost layer (vertical is k/10)
+k_l2 = 10.0                  # m/d, horizontal conductivity of the lowermost layer
+sto_l1 = 0.15                # primary storage coefficient, uppermost layer
+sto_l2 = 1.0e-4              # primary storage coefficient, lowermost layer
+recharge = 1.0e-3            # m/d net recharge on land, times 1 + 0.5 cos with a January peak
+river_min_accumulation = 50  # cells; land with at least this in-window flow accumulation is river
+river_conductance = 100.0    # m2/d
+drain_conductance = 10.0     # m2/d
+well_q_l1 = -500.0           # m3/d per well, uppermost layer; negative is abstraction
+well_q_l2 = -1000.0          # m3/d per well, lowermost layer
+n_wells = 20                 # two-layer land cells with a well, spread evenly through the node order
+
+[post]
+# Phases to post-process, a subset of [run] phases. Never "spin-up": it saves
+# heads for its last period only and mf6ggmpost reads periods by position.
+phases = ["steady-state", "transient"]
+# "hds": heads. "wtd": water table depth, top minus head. One raster per
+# period, layer and solution: s<NN>_<output>.<ss|tr>.<yyyymmdd>_l<N>.nc.
+outputs = ["wtd", "hds"]
+# Layer range [min, max]; min 0 means the uppermost active layer of each column.
+layers = [1, 2]
+# true: sea (constant-head) nodes appear in the rasters; false: nodata there.
+include_sea = true

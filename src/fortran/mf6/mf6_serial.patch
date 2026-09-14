@@ -1,0 +1,149 @@
+diff --git a/src/Utilities/InputOutput.f90 b/src/Utilities/InputOutput.f90
+index db7495c..323a1b2 100644
+--- a/src/Utilities/InputOutput.f90
++++ b/src/Utilities/InputOutput.f90
+@@ -155,8 +155,7 @@ module InputOutputModule
+         ivar = -1
+       else
+         open(unit=iu, file=fname(1:iflen), form=fmtarg, access=accarg,           &
+-       status=filstat, action=filact, iostat=ivar,                           &
+-         share='denynone') !PAR
++       status=filstat, action=filact, iostat=ivar)
+       endif
+       !
+       ! -- Check for an error
+diff --git a/src/Utilities/MpiWrapper.f90 b/src/Utilities/MpiWrapper.f90
+index 110144e..ae4f7d1 100644
+--- a/src/Utilities/MpiWrapper.f90
++++ b/src/Utilities/MpiWrapper.f90
+@@ -7,6 +7,8 @@ module MpiWrapper
+ 
+ #ifdef MPI_PARALLEL
+   include 'mpif.h'
++#else
++  integer, parameter :: MPI_STATUS_SIZE = 6
+ #endif
+ 
+   private
+@@ -14,8 +16,8 @@ module MpiWrapper
+   integer, parameter :: mpiwrplblk_size = 64
+ #ifdef MPI_PARALLEL
+   character(len=MPI_MAX_PROCESSOR_NAME) :: mpiwrpmyname
+-  integer, dimension(MPI_STATUS_SIZE,mpiwrplblk_size) :: mpiwrpstats
+ #endif
++  integer, dimension(MPI_STATUS_SIZE,mpiwrplblk_size) :: mpiwrpstats
+   integer :: mpiwrpcomm_world, mpiwrpcomm_null
+   integer :: mpiwrpnrproc, mpiwrpmyrank
+   integer, dimension(1000) :: rreq, sreq
+@@ -279,7 +281,7 @@ module MpiWrapper
+ #ifdef MPI_PARALLEL
+      call MPI_Get_count(status, datatype, count, ierr)
+ #else
+-     call mpiwrperror(comm, 'mpiwrpgetcount', 'invalid operation')
++     call mpiwrperror(mpiwrpcomm_world, 'mpiwrpgetcount', 'invalid operation')
+ #endif
+     ! -- return
+     return
+@@ -708,7 +710,7 @@ module MpiWrapper
+ #ifdef MPI_PARALLEL
+     call MPI_Group_incl(old_group, n, rnks, new_group, ierr)
+ #else
+-    call mpiwrperror(comm, 'mpiwrpgroupincl', 'invalid operation')
++    call mpiwrperror(mpiwrpcomm_world, 'mpiwrpgroupincl', 'invalid operation')
+ #endif
+     ! -- return
+     return
+@@ -732,7 +734,7 @@ module MpiWrapper
+ #ifdef MPI_PARALLEL
+     call MPI_Comm_create(old_comm, group, new_comm, ierr)
+ #else
+-    call mpiwrperror(comm, 'mpiwrpcommcreate', 'invalid operation')
++    call mpiwrperror(mpiwrpcomm_world, 'mpiwrpcommcreate', 'invalid operation')
+ #endif
+     ! -- return
+     return
+@@ -755,7 +757,7 @@ module MpiWrapper
+ #ifdef MPI_PARALLEL
+     call mpi_group_rank(group, rank, ierr)
+ #else
+-    call mpiwrperror(comm, 'mpiwrpgrouprank', 'invalid operation')
++    call mpiwrperror(mpiwrpcomm_world, 'mpiwrpgrouprank', 'invalid operation')
+ #endif
+     ! -- return
+     return
+diff --git a/src/Utilities/MpiWrapperMemory.f90 b/src/Utilities/MpiWrapperMemory.f90
+index a7daf69..778647a 100644
+--- a/src/Utilities/MpiWrapperMemory.f90
++++ b/src/Utilities/MpiWrapperMemory.f90
+@@ -7,6 +7,8 @@ module MpiWrapperMemory
+  
+ #ifdef MPI_PARALLEL
+   include 'mpif.h'
++#else
++  integer, parameter :: MPI_ADDRESS_KIND = 8
+ #endif
+   
+   private
+@@ -79,7 +81,7 @@ module MpiWrapperMemory
+     call MPI_Isend(buf, count, datatype, dest, tag, comm, req, ierr)
+ #else
+     req = -1
+-    call mpiwrperror(comm, 'mpiwrpisendmmt', 'invalid operation')
++    error stop 'mpiwrpisendmmt: invalid operation'
+ #endif
+     ! -- return
+     return
+@@ -110,7 +112,7 @@ module MpiWrapperMemory
+     call MPI_Isend(buf, count, datatype, dest, tag, comm, req, ierr)
+ #else
+     req = -1
+-    call mpiwrperror(comm, 'mpiwrpisendmt', 'invalid operation')
++    error stop 'mpiwrpisendmt: invalid operation'
+ #endif
+     ! -- return
+     return
+@@ -140,7 +142,7 @@ module MpiWrapperMemory
+     call MPI_Irecv(buf, count, datatype, dest, tag, comm, req, ierr)
+ #else
+     req = -1
+-    call mpiwrperror(comm, 'mpiwrpirecvmmt', 'invalid operation')
++    error stop 'mpiwrpirecvmmt: invalid operation'
+ #endif
+     ! -- return
+     return
+@@ -171,7 +173,7 @@ module MpiWrapperMemory
+     call MPI_Irecv(buf, count, datatype, dest, tag, comm, req, ierr)
+ #else
+     req = -1
+-    call mpiwrperror(comm, 'mpiwrpirecvmt', 'invalid operation')
++    error stop 'mpiwrpirecvmt: invalid operation'
+ #endif
+     ! -- return
+     return
+@@ -259,7 +261,7 @@ module MpiWrapperMemory
+     call MPI_TYPE_CREATE_STRUCT(7, blocklengths, displacements, types, newtype, ierr)
+     call MPI_TYPE_COMMIT(newtype, ierr)
+ #else
+-    call mpiwrperror(comm, 'mpiwrpcolstruct', 'invalid operation')
++    error stop 'mpiwrpcolstruct: invalid operation'
+ #endif
+     ! -- return
+     return
+@@ -317,7 +319,7 @@ module MpiWrapperMemory
+     call MPI_TYPE_CREATE_STRUCT(7, blocklengths, displacements, types, newtype, ierr)
+     call MPI_TYPE_COMMIT(newtype, ierr)
+ #else
+-    call mpiwrperror(comm, 'mpiwrpmmtstruct', 'invalid operation')
++    error stop 'mpiwrpmmtstruct: invalid operation'
+ #endif
+     ! -- return
+     return
+@@ -519,7 +521,7 @@ module MpiWrapperMemory
+     !
+     deallocate(types, blocklengths, displacements)
+ #else
+-    call mpiwrperror(comm, 'mpiwrpmtstruct', 'invalid operation')
++    error stop 'mpiwrpmtstruct: invalid operation'
+ #endif    
+     !
+     ! -- return

@@ -1,0 +1,53 @@
+# GLOBGM build configuration, read by src/scripts/build_globgm.sh,
+# build_metis.sh and build_mf6.sh through
+#   eval "$(python src/python/globgm_config.py build-env build.toml)"
+# as BUILD_TYPE, METIS_URL, MF6_REV, ... Paths are relative to this file.
+# The run itself is configured in run_uk/globgm.toml.
+
+[build]
+# CMake configuration of the four tools: Release (-O3) or Debug (-O2 -g,
+# bounds checking).
+type = "Release"
+# Fortran compiler of the tools: gfortran here, ifx or ifort on HPC.
+fc = "gfortran"
+# Parallel jobs for the tool build.
+jobs = 8
+# macOS only: glob of the SDKs pixi's cctools ld accepts, newest wins
+# (design.md, Known traps, "macOS SDK 27"). "" leaves SDKROOT alone (Linux).
+sdk_glob = "/Library/Developer/CommandLineTools/SDKs/MacOSX2[0-6].[0-9].sdk"
+# CMake build tree of the tools; METIS and mf6 also compile under it.
+dir = "run_uk/output/work/build"
+# true: rebuild METIS and mf6 even when they are already installed.
+rebuild_deps = false
+
+[tools]
+# Install directory of datamap, process_hydbas, mf6ggm, mf6ggmpost, mf6 and
+# mf6_par; [run] binaries in globgm.toml must point here.
+bindir = "run_uk/output/binaries"
+
+[metis]
+# METIS release, tarball and checksum. Built with IDXTYPEWIDTH 64 and
+# REALTYPEWIDTH 32 unconditionally: metis_module.f90 requires both.
+version = "5.1.0"
+url = "https://src.fedoraproject.org/repo/pkgs/metis/metis-5.1.0.tar.gz/5465e67079419a69e0116de24fce58fe/metis-5.1.0.tar.gz"
+sha256 = "76faebe03f6c963127dbb73c13eab58c9a3faeae48779f049066a21c087c5db2"
+# Where the tarball is cached and unpacked (git-ignored).
+src = "src/c/metis"
+# Install prefix; CMake takes it as METIS_ROOT.
+prefix = "run_uk/output/work/build/metis"
+
+[mf6]
+# The parallel MODFLOW 6 fork and the pinned commit: the only mf6 that reads
+# mf6ggm's packed binary input (design.md, "Non-goals").
+repo = "https://github.com/verkaik/modflow6-parallel.git"
+rev = "7dcb61e3511102638e1e2344e2e380ad4da70219"
+# Patch that makes the fork's serial (#else) branches compile.
+patch = "src/fortran/mf6/mf6_serial.patch"
+# Clone of the fork (git-ignored); mf6 and mf6_par install into [tools] bindir.
+src = "src/fortran/mf6/modflow6-parallel"
+# Serial and MPI compiler drivers.
+fc = "gfortran"
+mpifc = "mpif90"
+# Flags of both builds, and the extra flags of the MPI build.
+flags = "-O2 -cpp -ffree-line-length-none -fbacktrace"
+mpi_flags = "-DMPI_PARALLEL -fallow-argument-mismatch"

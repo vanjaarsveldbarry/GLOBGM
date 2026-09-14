@@ -131,11 +131,23 @@ dmypy.json
 *.out
 .snakemake/
 .vscode/
-run_calibration/model_job_scripts/_slurmOut/
-run_initial_conditions/model_job_scripts/slurmOut/
-run_simulation/model_job_scripts/slurmOut/
-
-analysis/validation_gswp3-w5e5/data
 
 CLAUDE.md
 .code-workspace
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+
+reference/ref_globgm_input/
+
+*.md
+
+# local model runs
+run_*/output/
+
+# third-party sources fetched by src/scripts/build_{metis,mf6}.sh
+src/c/metis/metis-*
+src/fortran/mf6/modflow6-parallel/
+run_*/.nextflow*
+run_*/logs/
+

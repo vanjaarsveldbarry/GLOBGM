@@ -1,0 +1,21 @@
+[workspace]
+authors = ["Barry van Jaarsveld <a.s.vanjaarsveld@uu.nl>"]
+channels = ["conda-forge", "bioconda"]
+name = "GLOBGM"
+platforms = ["osx-arm64"]
+version = "0.1.0"
+
+[dependencies]
+python = ">=3.14.7,<3.15"
+fortran-compiler = ">=2.0.0,<3"
+cmake = ">=3.28,<4"
+netcdf-fortran = ">=4.6.4,<5"
+numpy = ">=2.5.3,<3"
+netcdf4 = ">=1.7.4,<2"
+gdal = ">=3.13.3,<4"
+nextflow = ">=26.4.6,<27"
+openmpi = ">=5.0.10,<6"
+
+[tasks]
+build_globgm = "bash src/scripts/build_globgm.sh"
+run_uk = { cmd = "nextflow -log logs/nextflow.log run scripts/main.nf", cwd = "run_uk" }
