@@ -6,8 +6,10 @@
 // the files themselves, and publishDir hard-links the products under the
 // output root. The Fortran tools and Python scripts a process runs are path
 // inputs too, so a rebuild or an edit reruns what depends on it; only the
-// pixi environment (python, gdal, mpirun) is ambient. Every tool's stdout is
-// a `*.log` at the task's top level, published flat under params.logs.
+// pixi environment (python, gdal, mpirun) is ambient. Every tool's stdout and
+// stderr is a `*.log` at the task's top level, published flat under
+// params.logs; publishDir skips a failed task, so on failure the log's tail
+// goes to stderr, where Nextflow's error report shows it.
 
 // Builds every intermediate map_glob's datamap call needs: rasterised
 // HydroBASINS regions, the filtered catchment raster and d_top_2.
@@ -42,7 +44,8 @@ process preprocess_inputs {
   done
 
   python tools/make_landmask.py ${ldd} landmask.nc ${regs.collect { it + '.nc' }.join(' ')}
-  tools/process_hydbas landmask ${cat} ${regs.join(' ')} > process_hydbas.log
+  tools/process_hydbas landmask ${cat} ${regs.join(' ')} > process_hydbas.log 2>&1 \\
+    || { tail -n 40 process_hydbas.log >&2; exit 1; }
   python tools/make_d_top_2.py ${dem} ${confining} d_top_2.nc
 
   rm -rf shp *.flt *.hdr *.prj *.aux.xml   # ~30 GB of global rasterize scratch
@@ -64,7 +67,8 @@ process map_glob {
   """
   mkdir -p datamap
   tools/datamap ${c.sea_boundary} datamap/map_glob ${cat} ${d_top_2} \\
-    ${c.layer_threshold} ${c.max_neighbours} ${c.window} > datamap.log
+    ${c.layer_threshold} ${c.max_neighbours} ${c.window} > datamap.log 2>&1 \\
+    || { tail -n 40 datamap.log >&2; exit 1; }
   """
 }
 
@@ -100,7 +104,8 @@ process mf6_input {
   script:
   """
   mkdir ${phase}
-  ./${mf6ggm} ${ggm} ${args} > mf6ggm.${phase}.log
+  ./${mf6ggm} ${ggm} ${args} > mf6ggm.${phase}.log 2>&1 \\
+    || { tail -n 40 mf6ggm.${phase}.log >&2; exit 1; }
   """
 }
 
@@ -136,8 +141,8 @@ process mf6 {
   log=\$PWD/mf6.${phase}.${sol}.log
   cp -RLl input ${phase}
   cd ${phase}/solutions/run_output
-  ${launch} -s ${nam} > \$log 2>&1
-  grep -q 'Normal termination' \$log
+  { ${launch} -s ${nam} > \$log 2>&1 && grep -q 'Normal termination' \$log; } \\
+    || { tail -n 40 \$log >&2; exit 1; }
   ls ../../models/run_output_bin/*.${hds} > /dev/null
   cd ../../..
   mkdir -p overlay.${sol}/models overlay.${sol}/solutions
@@ -179,6 +184,7 @@ process post {
     path '*.log'
   script:
   """
-  ./${mf6ggmpost} ${inp} > mf6ggmpost.${phase}.${job}.log
+  ./${mf6ggmpost} ${inp} > mf6ggmpost.${phase}.${job}.log 2>&1 \\
+    || { tail -n 40 mf6ggmpost.${phase}.${job}.log >&2; exit 1; }
   """
 }

@@ -5,6 +5,11 @@ rasters cover the zarr's latitude span, a window of the global 30" grid.
 Variables with a layer dimension (hds, wtd) are model output, not fields, and
 are skipped. NODATA is globgm.toml's [globals] nodata.
 
+The zarr leaves the uppermost layer NaN where the column has one layer, but
+mf6ggm puts that layer in the lowermost one and takes its top from
+bottom_uppermost_layer, so that field is filled there with top minus
+make_d_top_2.py's 0.1 m minimum confining thickness.
+
 Usage: ss_zarr_to_fields.py <ss.zarr> <out_dir>
 """
 import sys
@@ -19,6 +24,7 @@ from globgm_raster import Header, write_nc  # noqa: E402
 
 NODATA = -9999.0
 WORKERS = 20
+D_TOP_2_MIN = np.float32(0.1)
 
 
 class Filled:
@@ -34,6 +40,26 @@ class Filled:
         return a
 
 
+class BotUpper(Filled):
+    """bottom_uppermost_layer with its one-layer gaps filled as top - 0.1."""
+
+    def __init__(self, g, nodata):
+        super().__init__(g["bottom_uppermost_layer"], nodata)
+        self.top, self.bot2 = g["top_uppermost_layer"], g["bottom_lowermost_layer"]
+
+    def __getitem__(self, rows):
+        bot1 = self.arr[0, rows].astype("<f4")
+        top = self.top[0, rows].astype("<f4")
+        gap = np.isnan(bot1) & ~np.isnan(top)
+        bot1[gap] = top[gap] - D_TOP_2_MIN
+        bad = gap & ~(bot1 > self.bot2[0, rows].astype("<f4"))
+        if bad.any():
+            raise ValueError(f"rows {rows}: {bad.sum()} filled bottom_uppermost_layer "
+                             "cells not above bottom_lowermost_layer")
+        bot1[np.isnan(bot1)] = self.nodata
+        return bot1
+
+
 def convert(args):
     src, name, out_dir, nodata = args
     g = zarr.open_group(src, mode="r")
@@ -43,7 +69,8 @@ def convert(args):
                  xmin=round(lon[0] - d / 2, 6), ymin=round(lat[-1] - d / 2, 6),
                  xmax=round(lon[-1] + d / 2, 6), ymax=round(lat[0] + d / 2, 6),
                  dx=d, dy=d, nodata=nodata, dtype="<f4")
-    write_nc(out_dir / f"{name}.nc", hdr, Filled(g[name], nodata))
+    arr = BotUpper(g, nodata) if name == "bottom_uppermost_layer" else Filled(g[name], nodata)
+    write_nc(out_dir / f"{name}.nc", hdr, arr)
     return name
 
 

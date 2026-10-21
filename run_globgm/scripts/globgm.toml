@@ -20,7 +20,7 @@ nodata = -9999.0
 # the spin-up heads (ic_spu). Any ordered subset that starts with "steady-state".
 phases = ["steady-state", "spin-up", "transient"]
 # Where build.toml's [tools] installed datamap, process_hydbas, mf6ggm,
-# mf6ggmpost, mf6 and mf6_par.
+# mf6ggmpost, mf6 and mf6_par; the launch scripts build them first.
 binaries = "../../../output/run_globgm/binaries"
 # "ser": one mf6 process per simulation. "par": mpirun with one rank per
 # mpi_ranks entry of [partition] (mf6_par, DOMAIN_DECOMPOSITION from the nam).
@@ -48,21 +48,25 @@ nlay = 2
 # A global run sets -90/90/-180/180. Upstream's other window, ICE:
 # north 66.508333, south 63.25, west -24.591667, east -13.458333
 # (upstream's rows 2820-3210, cols 18650-19985).
-# north = 61.0
-# south = 49.8
-# west = -11.0
-# east = 2.0
+
+#British Isles
+north = 61.0
+south = 49.8
+west = -11.0
+east = 2.0
+
+
 # Australia
 # north = -9.0
 # south = -43.6
 # west = 112.0
 # east = 154.0
 
-# Australia
-north = 90.0
-south = -90.0
-west = -180.0
-east = 180.0
+# Global run: the full 30-arcsecond grid.
+# north = 90.0
+# south = -90.0
+# west = -180.0
+# east = 180.0
 
 [inputs]
 # Directory holding the three static rasters stage 1 derives everything from
@@ -86,7 +90,7 @@ level = "08"
 # Download base; the archive is hybas_lake_<region>_lev01-12_v1c.zip.
 url = "https://data.hydrosheds.org/file/hydrobasins/customized_with_lakes/"
 # Where the archives are kept between runs (the only thing that is).
-cache = "../../../output/run_globgm/work/_cache/hydrobasins"
+cache = "../../../output/run_globgm_full_run/work/_cache/hydrobasins"
 # curl --retry count for the download.
 curl_retries = 3
 # Shapefile attribute burnt into the catchment raster (gdal_rasterize -a)
@@ -123,7 +127,7 @@ months = 12
 # Spin-up length in months: the spin-up simulation runs this many periods
 # over the first year of forcing. Needed by any spin-up or transient.
 # Upstream counts years (NYEAR_SPINUP, 12 each); mf6ggm reads NMONTH_SPINUP.
-spinup_months = 1
+spinup_months = 12
 
 [partition]
 # One entry per multi-model MODFLOW 6 solution, each its own simulation.
@@ -135,14 +139,31 @@ spinup_months = 1
 # iact 0). partition_file = "<file>" instead of submodels/mpi_ranks: mf6ggm's
 # "nmod < 0" form, the submodel count and the model-to-catchment partition
 # read from that binary file (absolute path; not staged into the task).
-# Upstream global: 224, 96, 32, 32.
-# Australia: solution 1 -> the largest region (mainland), solution 2 (last,
-# last_takes_remaining) -> every other region (Tasmania + islands).
+# Global (upstream): use with the global [window].
+# solutions = [
+#   { submodels = 224, mpi_ranks = 224 },
+#   { submodels = 96,  mpi_ranks = 96 },
+#   { submodels = 32,  mpi_ranks = 32 },
+#   { submodels = 32,  mpi_ranks = 32 },
+# ]
+
+# Australia: use with the Australia [window]. Solution 1 -> the largest
+# region (mainland, 16.3M cells, 11318 catchments), solution 2 (last,
+# last_takes_remaining) -> every other region (Tasmania + islands, 140k
+# cells, 119 catchments: too few for more than a handful of parts).
+# solutions = [
+#   { submodels = 32, mpi_ranks = 32 },
+#   { submodels = 2,  mpi_ranks = 2 },
+# ]
+
+# British Isles: use with the British Isles [window]. About 0.67M land
+# cells in the window (estimated, check datamap.log's "Top 10 regions").
+# Solution 1 -> the largest region (Great Britain, ~0.45M cells), solution 2
+# (last, last_takes_remaining) -> every other region (Ireland ~0.17M, the
+# islands not joined to either, the clipped strip of northern France).
 solutions = [
-  { submodels = 224, mpi_ranks = 224 },
-  { submodels = 96,  mpi_ranks = 96 },
-  { submodels = 32,  mpi_ranks = 32 },
-  { submodels = 32,  mpi_ranks = 32 },
+  { submodels = 8, mpi_ranks = 8 },
+  { submodels = 4, mpi_ranks = 4 },
 ]
 
 # true: the last solution takes every region not taken by an earlier one
@@ -220,13 +241,17 @@ ghb2 = false
 # reads `dir` directly, which must already hold it. Moving from dev to the
 # real PCR-GLOBWB delivery later is just pointing `dir` there and flipping
 # this to "external".
-source = "synthetic"
+source = "external"
 # Directory holding {steady-state,transient}, each with the twenty NetCDF
 # fields of the forcing contract (design.md, "Forcing interface"). Matches
 # the fields stage's own publishDir (<output>/fields) while source is
-# "synthetic"; must already exist with both subdirectories once source is
-# "external".
-dir = "../../../output/run_globgm/fields"
+# "synthetic"; once source is "external" it must already hold the
+# subdirectories the phases read: steady-state, plus transient for a
+# spin-up or transient. The 5-arcmin PCR-GLOBWB fields resampled to 30
+# arcsec, steady-state only, lat -76.775 to 83.225: every active cell of
+# the full run lies within it.
+dir = "../../../output/input_data/synthetic_fields"
+# dir = "../../../output/input_data/5arcmin_derived"
 
 [fields.files]
 # The fields mf6ggm reads, by mf6ggm key: file name without .nc under

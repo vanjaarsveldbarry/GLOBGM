@@ -98,9 +98,9 @@ def load_run(path):
         if not f.is_file():
             fail(f"inputs.{k}: {f} does not exist")
     if cfg["fields"]["source"] == "external":
-        for phase in ("steady-state", "transient"):
-            if not (cfg["fields"]["dir"] / phase).is_dir():
-                fail(f"fields.dir: {cfg['fields']['dir'] / phase} does not exist")
+        for sub in sorted({fields_dir(ph).name for ph in cfg["run"]["phases"]}):
+            if not (cfg["fields"]["dir"] / sub).is_dir():
+                fail(f"fields.dir: {cfg['fields']['dir'] / sub} does not exist")
     cfg["_file"] = path
     return cfg
 
