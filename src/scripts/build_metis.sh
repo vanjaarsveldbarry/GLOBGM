@@ -22,7 +22,9 @@ tar xzf "$tar" -C "$METIS_SRC"
 cd "$src"
 
 # REALTYPEWIDTH stays 32: metis_module declares tpwgts/ubvec real(r4b)
-sed -i '' 's/^#define IDXTYPEWIDTH 32/#define IDXTYPEWIDTH 64/' include/metis.h
+# -i.bak (not BSD's -i '') is the form both macOS and GNU sed accept alike
+sed -i.bak 's/^#define IDXTYPEWIDTH 32/#define IDXTYPEWIDTH 64/' include/metis.h
+rm -f include/metis.h.bak
 grep -q '^#define IDXTYPEWIDTH 64' include/metis.h
 grep -q '^#define REALTYPEWIDTH 32' include/metis.h
 

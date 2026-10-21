@@ -1,11 +1,11 @@
 program datamap
 ! ******************************************************************************
   ! --- local
-  use raster_io, only: raster_t, raster_open, raster_close, raster_read_block, raster_read_all
+  use raster_io, only: raster_t, raster_open, raster_close, raster_read_block
   use cfn_mod, only: cfn_unique_i
-  use utilsmod, only: mxslen, i1b, i2b, i4b, r4b, r8b, DZERO, &
+  use utilsmod, only: mxslen, i1b, i4b, r4b, r8b, DZERO, &
     tBB, errmsg, quicksort_d, addboundary, open_file, &
-    chkexist, logmsg, ta
+    logmsg, ta
   !
   implicit none
   !
@@ -68,36 +68,32 @@ program datamap
   type(tIntf), pointer :: intf => null()
   type(treg), dimension(:), pointer :: regwk => null()
   !
-  character(len=mxslen) :: f, out_pref, s, tile_pref
-  logical :: lskip
+  character(len=mxslen) :: f, out_pref, s
   integer(i4b), dimension(:,:), allocatable :: landmask
   integer(i1b), dimension(:,:), allocatable :: nlay
-  integer(i2b), dimension(:,:), allocatable :: itile
   integer(i4b) :: p
   integer(i4b) :: gir0, gir1, gic0, gic1
   integer(i4b) :: ir, ic, jr, jc, kr, kc, nbr, m, n, iact, nja, mja, nreg, nlnd, nsea, ncell
   integer(i4b) :: i, j, k, ist, nc, nr, ir0, ir1, ic0, ic1, mxgid, mxlid
-  integer(i4b) :: jc1, jr1, jc2, jr2, ntile
-  integer(i4b) :: id, id1, id2, iu, nct, nrt
+  integer(i4b) :: jc1, jr1, jc2, jr2
+  integer(i4b) :: id, id1, id2, iu
   integer(i1b), dimension(:), allocatable :: i1wk1d
-  integer(i2b), dimension(:), allocatable :: i2wk1d
   integer(i4b), dimension(:), allocatable :: i4wk1d1, i4wk1d2
   integer(i4b), dimension(:,:), allocatable :: i4wk2d
   integer(i4b), dimension(:), allocatable :: g2l, l2g, ia, gja, lja, reg, regncat, stack
   integer(i4b), dimension(:,:), pointer :: xid => null()
   real(r4b) :: r4val, r4nodata, thr
   real(r4b), dimension(:,:), pointer :: r4wk2d => null()
-  real(r8b), dimension(:,:), pointer :: r8tile => null()
   real(r8b), dimension(:), allocatable :: regncell
 ! ------------------------------------------------------------------------------
   !
   sea_opt = 1
   !
-  !1        2           3         4           5              6          7    8      9    10   11   12
-  !sea_opt  ./map_glob  cat.nc    d_top.nc    tile_157.txt   tile_      thr  mxnnb  gir0 gir1 gic0 gic1
-  if (command_argument_count() /= 12) then
+  !1        2           3         4           5    6      7    8    9    10
+  !sea_opt  ./map_glob  cat.nc    d_top.nc    thr  mxnnb  gir0 gir1 gic0 gic1
+  if (command_argument_count() /= 10) then
     call errmsg('Usage: datamap <sea_opt> <out_pref> <catchments> <thickness>'// &
-      ' <tile index> <tile prefix> <layer threshold> <max neighbours> gir0 gir1 gic0 gic1')
+      ' <layer threshold> <max neighbours> gir0 gir1 gic0 gic1')
   end if
   call get_command_argument(1,s); read(s,*) sea_opt
   !
@@ -107,12 +103,12 @@ program datamap
     call logmsg("***** Using inclusive sea option *****")
   end if
   !
-  call get_command_argument(7,s); read(s,*) thr
-  call get_command_argument(8,s); read(s,*) mxnnb
-  call get_command_argument(9,s); read(s,*) gir0
-  call get_command_argument(10,s); read(s,*) gir1
-  call get_command_argument(11,s); read(s,*) gic0
-  call get_command_argument(12,s); read(s,*) gic1
+  call get_command_argument(5,s); read(s,*) thr
+  call get_command_argument(6,s); read(s,*) mxnnb
+  call get_command_argument(7,s); read(s,*) gir0
+  call get_command_argument(8,s); read(s,*) gir1
+  call get_command_argument(9,s); read(s,*) gic0
+  call get_command_argument(10,s); read(s,*) gic1
   write(*,'(a,4(i5.5,a))') &
     '*** Processing for global bounding box (gir0,gir1,gic0,gic1) = (', &
   gir0,',',gir1,',',gic0,',',gic1,')...'
@@ -558,83 +554,6 @@ program datamap
   write(iu)(i4wk1d2(i),i=1,mja-1)
   close(iu)
   !
-  ! prepare for the tiles
-  if (allocated(i4wk2d)) deallocate(i4wk2d)
-  allocate(i4wk2d(nc,nr))
-  allocate(itile(nc,nr))
-  do ir = 1, nr
-    do ic = 1, nc
-      i4wk2d(ic,ir) = 0
-      itile(ic,ir) = 0
-    end do
-  end do  
-  call get_command_argument(5, f); call chkexist(f)
-  call open_file(f, iu, 'r')
-  read(iu,*) ntile
-  call get_command_argument(6, tile_pref)
-  !
-  do i = 1, ntile
-    read(iu,*) ic0, ic1, ir0, ir1
-    !
-    lskip = .false.
-    if (ic1 < gic0) lskip = .true.
-    if (ic0 > gic1) lskip = .true.
-    if (ir1 < gir0) lskip = .true.
-    if (ir0 > gir1) lskip = .true.
-    if (lskip) then
-      cycle
-    end if
-    !
-    nct = ic1-ic0+1; nrt = ir1-ir0+1
-    write(f,'(a,2(i3.3,a))') trim(tile_pref), i, '-', ntile, '.nc'
-    call chkexist(f)
-    write(*,'(a)') 'Reading '//trim(f)//'...'
-    call raster_open(idf, f)
-    call raster_read_all(idf, r8tile) ! real(8), as idf%x was
-    !
-    ! check sizes
-    if ((idf%nrow /= nrt).or.(idf%ncol /= nct)) then
-      call errmsg('Invalid tile.')
-    end if
-    !
-    ! add the sea boundary
-    if (sea_opt == 1) call addboundary(r8tile, idf%ncol, idf%nrow, idf%nodata)
-    !
-    do ir = 1, idf%nrow
-      do ic = 1, idf%ncol
-        jc = ic0 + ic - 1; jr = ir0 + ir - 1 ! global
-        kc = jc - gic0 + 1; kr = jr - gir0 + 1
-        if ((kc >= 1).and.(kc <= nc).and.(kr >= 1).and.(kr <= nr)) then
-          r4val = r8tile(ic,ir)
-          if ((r4val /= idf%nodata) .and.(r4val > 0.)) then
-            itile(kc,kr) = i
-          end if
-          if ((landmask(kc,kr) == 2).and.(sea_opt == 1)) then
-            if ((r4val /= idf%nodata) .and.(r4val < 0.).and.(i4wk2d(kc,kr) <= 0.)) then
-              i4wk2d(kc,kr) = i
-            else
-              i4wk2d(kc,kr) = -i
-            end if
-          end if
-        end if
-      end do
-    end do
-    !
-    call raster_close(idf) ! reference called idfallocatex here (trap: meant idfdeallocatex)
-  end do
-  close(iu)
-  !
-  do ir = 1, nr
-    do ic = 1, nc
-      if (i4wk2d(ic,ir) /= 0) then
-        itile(ic,ir) = -abs(i4wk2d(ic,ir))
-      end if
-      if ((landmask(ic,ir) == 2).and.(itile(ic,ir) == 0)) then
-        call errmsg("Some sea-cells do not have an associated tile.")
-      end if
-    end do
-  end do
-  !
   ! prepare the nodal data
   n = 0
   do i = 1, mxlid
@@ -642,8 +561,7 @@ program datamap
   end do
   if (allocated(i4wk2d)) deallocate(i4wk2d)
   if (allocated(i1wk1d)) deallocate(i1wk1d)
-  if (allocated(i2wk1d)) deallocate(i2wk1d)
-  allocate(i4wk2d(2,n),i1wk1d(n),i2wk1d(n))
+  allocate(i4wk2d(2,n),i1wk1d(n))
   n = 0
   do i = 1, mxlid
     bb => cat(i)%lbb
@@ -655,11 +573,6 @@ program datamap
           jc = ic + gic0 - 1; jr = ir + gir0 - 1
           i4wk2d(1,n) = jc; i4wk2d(2,n) = jr ! global node number
           i1wk1d(n) = nlay(ic,ir)
-          i2wk1d(n) = itile(ic,ir)  !tile
-          ! check
-          if (i2wk1d(n) == 0) then
-            call errmsg("No tile found.")
-          end if
           if (id < 0) then
             i4wk2d(1,n) = -i4wk2d(1,n)
           end if
@@ -668,7 +581,7 @@ program datamap
     end do
   end do
   deallocate(xid)
-  
+
   ! ---------------
   ! write the nodes
   f = trim(out_pref)//'.nodes.bin'
@@ -682,38 +595,6 @@ program datamap
   call open_file(f, iu, 'w', .true.)
   write(iu)(i1wk1d(i),i=1,n)
   close(iu)
-  !
-  ! ---------------
-  ! write the tiles
-  f = trim(out_pref)//'.tiles.bin'
-  call open_file(f, iu, 'w', .true.)
-  write(iu)(i2wk1d(i),i=1,n)
-  close(iu)
-  !
-  if (allocated(i1wk1d)) deallocate(i1wk1d)
-  allocate(i1wk1d(ntile))
-  do i = 1, ntile
-    i1wk1d(i) = 0
-  end do
-  do i = 1, n
-    j = int(i2wk1d(i),i4b)
-    j = abs(j)
-    i1wk1d(j) = 1
-  end do
-  m = 0
-  do i = 1, ntile
-    if (i1wk1d(i) == 1) m = m + 1
-  end do
-  if (allocated(i4wk1d1)) deallocate(i4wk1d1)
-  allocate(i4wk1d1(m))
-  m = 0
-  do i = 1, ntile
-    if (i1wk1d(i) == 1) then
-      m = m + 1
-      i4wk1d1(m) = i
-    end if
-  end do
-  write(*,'(a)') 'Tiles found: '//ta(i4wk1d1)
   !
   ! ---------------
   ! write the interfaces

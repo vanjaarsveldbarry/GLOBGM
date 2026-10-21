@@ -1,12 +1,13 @@
 program mf6ggm
   ! modules
   use utilsmod, only: i1b, i2b, i4b, i8b, r4b, r8b, mxslen, open_file, chkexist, errmsg, &
-    logmsg, quicksort_d, label_node, tBB, DZERO, create_dir, swap_slash, &
+    logmsg, quicksort_d, label_node, tBB, DZERO, create_dir, &
     change_work_dir, get_work_dir, ta
   use raster_io, only: raster_write
+  use omp_lib, only: omp_get_wtime
   use metis_module, only: tMetis, tolimbal
   use mf6_module, only:  tMf6_sol, tMf6_mod, tReg, raw, tExchange, &
-    gncol, gnrow, gnlay, gxmin, gymin, gcs
+    gncol, gnrow, gnlay, gxmin, gymin, gcs, mf6_write_models
   !
   implicit none
   !
@@ -99,12 +100,17 @@ program mf6ggm
   integer(i4b), dimension(:), allocatable :: ia_reg, ja_reg, ia_cat, catlid, catgid
   integer(i4b), dimension(:), allocatable :: ia, ja
   integer(i4b), dimension(:), allocatable :: mapping
+  integer(i4b), dimension(:), allocatable :: wmod, wflag, icir
+  integer(i1b), dimension(:), allocatable :: nlaybuf
+  integer(i4b) :: nw
+  real(r8b) :: t_start
   integer(i4b), dimension(:,:), allocatable :: solmodid
   integer(i8b) :: pp8
   real(r8b) :: xmin, ymin
   real(r8b), dimension(:), allocatable :: ncell_reg
 ! ------------------------------------------------------------------------------
   !
+  t_start = omp_get_wtime()
   lwmod = .true.
   lwsol = .true.
   modid0 = 0; modid1 = huge(0)
@@ -187,7 +193,8 @@ program mf6ggm
       end if
     end do
   end do
-  allocate(smod(nmod))
+  allocate(smod(nmod), wmod(nmod), wflag(nmod))
+  nw = 0
   !
   ! open all mapping files
   miu = 0
@@ -680,11 +687,8 @@ program mf6ggm
     do j = 1, s%nmod
       md => s%mod(j); mmd => smod(md%lmodid)
       allocate(mmd%rootdir, mmd%bindir)
-      !mmd%rootdir = trim(out_dir)//'models\'//trim(mmd%modelname)//'\'
-      mmd%rootdir = '..\..\models\run_input\'//trim(mmd%modelname)//'\'
-      call swap_slash(mmd%rootdir)
-      !mmd%bindir = trim(mmd%rootdir)//'bin\'; call swap_slash(mmd%bindir)
-      mmd%bindir = trim(mmd%rootdir); call swap_slash(mmd%bindir)
+      mmd%rootdir = '../../models/run_input/'//trim(mmd%modelname)//'/'
+      mmd%bindir = trim(mmd%rootdir)
     end do
   end do
   !
@@ -815,13 +819,13 @@ program mf6ggm
   !
   ! create empty output directories
   d = trim(out_dir)//'log'; call create_dir(d,.true.);
-  d = trim(out_dir)//'models\run_output_lst'; call create_dir(d,.true.);
-  d = trim(out_dir)//'models\run_output_bin'; call create_dir(d,.true.);
-  d = trim(out_dir)//'solutions\run_output'; call create_dir(d,.true.);
-  d = trim(out_dir)//'solutions\post_mappings'; call create_dir(d,.true.);
+  d = trim(out_dir)//'models/run_output_lst'; call create_dir(d,.true.);
+  d = trim(out_dir)//'models/run_output_bin'; call create_dir(d,.true.);
+  d = trim(out_dir)//'solutions/run_output'; call create_dir(d,.true.);
+  d = trim(out_dir)//'solutions/post_mappings'; call create_dir(d,.true.);
   !
   ! change the cwd to directory with mfsim nam files.
-  d = trim(out_dir)//'solutions\run_input'
+  d = trim(out_dir)//'solutions/run_input'
   call create_dir(d,.true.); call change_work_dir(d)
   !
   do isol = 1, nsol ! BEGIN loop over all solutions
@@ -884,14 +888,17 @@ program mf6ggm
         p = 2*i4b + p0 + (nn-1)*i4b + 7*i4b + n*i4b + 1
         read(miu(iucat),pos=p) ncell
         read(miu(iucat),pos=p+2*n*i4b) pp
-        ! set the nodal pointers
+        ! set the nodal pointers and read the catchment's cells in one go
         pnod  = 2*(pp-1)*i4b + 1
         pnlay =   (pp-1)*i1b + 1
+        if (allocated(icir)) then
+          if (size(icir) < 2*ncell) deallocate(icir, nlaybuf)
+        end if
+        if (.not.allocated(icir)) allocate(icir(2*ncell), nlaybuf(ncell))
+        read(miu(iunod), pos=pnod)  icir(1:2*ncell)
+        read(miu(iunlay),pos=pnlay) nlaybuf(1:ncell)
         do kk = 1, ncell ! BEGIN loop over catchments cells
-          ! read the nodal data
-          read(miu(iunod), pos=pnod)  ic;    pnod  = pnod  + i4b
-          read(miu(iunod), pos=pnod)  ir;    pnod  = pnod  + i4b
-          read(miu(iunlay),pos=pnlay) nlay;  pnlay = pnlay + i1b
+          ic = icir(2*kk-1); ir = icir(2*kk); nlay = nlaybuf(kk)
           !
           jc = abs(ic) - bb%ic0 + 1; jr = ir - bb%ir0 + 1
           if ((jc < 1).or.(jc > bb%ncol).or.(jr < 1).or.(jr > bb%nrow)) then
@@ -1053,14 +1060,10 @@ program mf6ggm
         end do
       end do
       !
-      ! write the model TODO
+      ! the models are written together once every nodmap exists
       if ((lwmod).and.(modid0 <= md%gmodid).and.(md%gmodid <= modid1)) then
-        call mmd%write()
-        call mmd%write_post_map(s%iwrite_modid)
+        nw = nw + 1; wmod(nw) = md%lmodid; wflag(nw) = s%iwrite_modid
       end if
-      !
-      ! clean up regions
-      call mmd%clean_regions()
       !
     end do ! END loop over all models
     !
@@ -1068,8 +1071,7 @@ program mf6ggm
       call logmsg('**************************************************************')
       call logmsg('***** Writing model IDs... *****')
       call logmsg('**************************************************************')
-      f = '..\post_mappings\s'//ta((/isol/),'(i2.2)')//'.modmap.nc'
-      call swap_slash(f)
+      f = '../post_mappings/s'//ta((/isol/),'(i2.2)')//'.modmap.nc'
       xmin = gxmin + (sbb%ic0-1)*gcs
       ymin = gymin + (gnrow-sbb%ir1)*gcs
       call raster_write(f, solmodid, dble(xmin), dble(ymin), dble(gcs), 0)
@@ -1077,6 +1079,12 @@ program mf6ggm
       sbb => null()
     end if
   end do ! BEGIN loop over all solutions
+  !
+  call logmsg('setup (partitioning, interfaces, node maps): '// &
+    ta((/real(omp_get_wtime()-t_start,r4b)/))//' s')
+  if (nw > 0) then
+    call mf6_write_models(smod, wmod(1:nw), wflag(1:nw))
+  end if
   !
   if (.not.lwsol) then
     ! close the mapping-files
@@ -1238,6 +1246,7 @@ program mf6ggm
   do i = 1, size(miu)
     if (miu(i) > 0) close(miu(i))
   end do
-  
+  call logmsg('total: '//ta((/real(omp_get_wtime()-t_start,r4b)/))//' s')
+
 end program
 

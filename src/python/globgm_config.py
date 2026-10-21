@@ -67,7 +67,7 @@ def field_base(key):
 # mf6ggm copied verbatim into the .ic files, hence TREE_UP on those two.
 TASK_LAYOUT = """
   datamap/map_glob.*.bin                 map_glob output
-  fields/{steady-state,transient}/*.nc   fields output or the [fields] source
+  fields/{steady-state,transient}/*.nc   fields output or [fields] dir
   <phase>/                               the mf6ggm tree of the phase
   ./                                     mf6ggmpost writes here
 """
@@ -92,17 +92,15 @@ def load_run(path):
         if "partition_file" in sol:
             sol["partition_file"] = (base / sol["partition_file"]).resolve()
     cfg["inputs"]["dir"] = (base / cfg["inputs"]["dir"]).resolve()
-    if cfg["fields"]["source"] != "synthetic":
-        cfg["fields"]["source"] = (base / cfg["fields"]["source"]).resolve()
+    cfg["fields"]["dir"] = (base / cfg["fields"]["dir"]).resolve()
     for k in ("ldd", "dem", "confining"):
         f = cfg["inputs"]["dir"] / cfg["inputs"][k]
         if not f.is_file():
             fail(f"inputs.{k}: {f} does not exist")
-    src = cfg["fields"]["source"]
-    if src != "synthetic":
+    if cfg["fields"]["source"] == "external":
         for phase in ("steady-state", "transient"):
-            if not (src / phase).is_dir():
-                fail(f"fields.source: {src / phase} does not exist")
+            if not (cfg["fields"]["dir"] / phase).is_dir():
+                fail(f"fields.dir: {cfg['fields']['dir'] / phase} does not exist")
     cfg["_file"] = path
     return cfg
 
@@ -138,8 +136,6 @@ def validate_run(cfg):
         fail("datamap.layer_threshold: positive, m")
     if dm["max_neighbours"] < 1:
         fail("datamap.max_neighbours: at least 1")
-    if not dm["tile_prefix"]:
-        fail("datamap.tile_prefix: non-empty")
     s = t["start"]
     if len(s) != 7 or s[4] != "-" or not (s[:4] + s[5:]).isdigit() or not 1 <= int(s[5:]) <= 12:
         fail("time.start: YYYY-MM")
@@ -150,10 +146,10 @@ def validate_run(cfg):
     if t["time_units"] not in ("UNKNOWN", "SECONDS", "MINUTES", "HOURS", "DAYS", "YEARS"):
         fail("time.time_units: a MODFLOW 6 TDIS TIME_UNITS value")
     if len(phases) > 1:
-        if t["spinup_years"] < 1:
-            fail("time.spinup_years: at least 1 for a spin-up or transient")
-        if t["months"] < 12 * t["spinup_years"]:
-            fail("time.months: the spin-up cycles 12 * spinup_years months of forcing, "
+        if t["spinup_months"] < 1:
+            fail("time.spinup_months: at least 1 for a spin-up or transient")
+        if t["months"] < t["spinup_months"]:
+            fail("time.months: the spin-up cycles spinup_months months of forcing, "
                  "so months must be at least that (design.md, Known traps)")
     pt = cfg["partition"]
     sols = pt["solutions"]
@@ -191,6 +187,8 @@ def validate_run(cfg):
         fail(f"model.packages: exactly the keys {PACKAGES}")
     if m["drain_systems"] < 1 or m["river_systems"] < 1:
         fail("model.drain_systems, model.river_systems: at least 1")
+    if cfg["fields"]["source"] not in ("synthetic", "external"):
+        fail("fields.source: synthetic or external")
     files = cfg["fields"]["files"]
     if not files:
         fail("fields.files: empty")
@@ -283,7 +281,7 @@ def write_mf6_mod_inp(cfg, phase, out):
     nper = 1 if run == "ss" else t["months"]
     lines = [f"# generated from {cfg['_file'].name}; edit that file, not this one", f"NPER {nper}"]
     if run != "ss":
-        lines += [f"NYEAR_SPINUP {t['spinup_years']}", f"SS_STRT_DIR {heads_dir('steady-state')}"]
+        lines += [f"NMONTH_SPINUP {t['spinup_months']}", f"SS_STRT_DIR {heads_dir('steady-state')}"]
     if run == "tr" and "spin-up" in cfg["run"]["phases"]:
         lines.append(f"SPU_STRT_DIR {heads_dir('spin-up')}")
     lines += [f"STARTDATE {start_yyyymm(cfg)}{t['start_day']:02d}", f"TIME_UNITS {t['time_units']}", ""]
@@ -312,18 +310,24 @@ def write_mf6_mod_inp(cfg, phase, out):
     return write(out / f"mf6_mod_{run}.inp", lines)
 
 
-def write_mf6ggmpost_inp(cfg, phase, out):
+# mf6ggmpost is serial, so each (solution, output) is its own .inp of one job
+# and its own Nextflow task.
+def post_jobs(cfg):
+    return [(isol, o) for isol in range(1, len(cfg["partition"]["solutions"]) + 1)
+            for o in cfg["post"]["outputs"]]
+
+
+def write_mf6ggmpost_inps(cfg, phase, out):
     run = RUN[phase]
     p = cfg["post"]
     beg = start_yyyymm(cfg)
     end = beg if run == "ss" else end_yyyymm(cfg)
-    jobs = [f"{phase}/ s {isol} .{run}.hds {int(o == 'wtd')} {p['layers'][0]} {p['layers'][1]} "
-            f"{beg} {end} nc ./ {o}.{run}."
-            for isol in range(1, len(cfg["partition"]["solutions"]) + 1) for o in p["outputs"]]
-    return write(out / f"mf6ggmpost_{run}.inp", [
+    return [write(out / f"mf6ggmpost_{run}.s{isol:02d}_{o}.inp", [
         grid_line(cfg), beg, fields_dir(phase) / f"{cfg['fields']['files']['TOP']}.nc",
-        int(p["include_sea"]), cfg["globals"]["nodata"], len(jobs), *jobs,
-    ])
+        int(p["include_sea"]), cfg["globals"]["nodata"], 1,
+        f"{phase}/ s {isol} .{run}.hds {int(o == 'wtd')} {p['layers'][0]} {p['layers'][1]} "
+        f"{beg} {end} nc ./ {o}.{run}.",
+    ]) for isol, o in post_jobs(cfg)]
 
 
 def rasterize_te(cfg):
@@ -352,9 +356,11 @@ def write_synthetic_json(cfg, out):
         "start": start_yyyymm(cfg),
         "layer_threshold": cfg["datamap"]["layer_threshold"],
         "files": cfg["fields"]["files"],
-        "dem": i["dem"],
-        "confining": i["confining"],
-        "ldd": i["ldd"],
+        # nextflow's `path` inputs stage ldd/dem/confining into the fields
+        # task directory by basename, dropping any subdirectory in inputs.*
+        "dem": Path(i["dem"]).name,
+        "confining": Path(i["confining"]).name,
+        "ldd": Path(i["ldd"]).name,
         "nodata": cfg["globals"]["nodata"],
         **cfg["synthetic"],
     }, indent=2) + "\n")
@@ -370,14 +376,16 @@ def write_params_json(cfg, out):
         "binaries": str(r["binaries"]),
         "phases": phases,
         "post_phases": cfg["post"]["phases"],
+        "post_jobs": [f"s{isol:02d}_{o}" for isol, o in post_jobs(cfg)],
         "sim": {ph: RUN[ph] for ph in phases},
         "nam": {"steady-state": "ic_sh0", "spin-up": "spu",
                 "transient": "ic_spu" if "spin-up" in phases else "ic_ss"},
         "hds": HDS,
         "inputs_dir": str(i["dir"]),
         "ldd": i["ldd"], "dem": i["dem"], "confining": i["confining"],
-        "fields_source": str(cfg["fields"]["source"]),
-        "map_glob": {
+        "fields_source": cfg["fields"]["source"],
+        "fields_dir": str(cfg["fields"]["dir"]),
+        "preprocess_inputs": {
             "window": " ".join(str(x) for x in window(cfg)),
             "grid": cfg["grid"],
             "rasterize_te": rasterize_te(cfg),
@@ -388,19 +396,21 @@ def write_params_json(cfg, out):
             "rasterize_attribute": h["rasterize_attribute"],
             "rasterize_nodata": h["rasterize_nodata"],
             "curl_retries": h["curl_retries"],
+        },
+        "map_glob": {
+            "window": " ".join(str(x) for x in window(cfg)),
             "sea_boundary": int(dm["sea_boundary"]),
             "layer_threshold": dm["layer_threshold"],
             "max_neighbours": dm["max_neighbours"],
-            "tile_prefix": dm["tile_prefix"],
         },
         "mf6_input": {"mf6ggm_args": mf6ggm_args(cfg)},
         "mf6": {"mode": r["mf6_mode"], "mpirun_args": r["mpirun_args"]},
     }, indent=2) + "\n")
 
 
-# what stages.nf publishes under the output root; work/ and binaries/ live
+# what stages.nf publishes under the output root; work/, binaries/ and logs/ live
 # beside them and must survive a regenerate
-PRODUCTS = ("datamap", "tiles", "fields", "mf6ggm", "post")
+PRODUCTS = ("datamap", "fields", "mf6ggm", "post")
 
 
 def write_run(cfg, out):
@@ -409,7 +419,7 @@ def write_run(cfg, out):
     for phase in cfg["run"]["phases"]:
         written += [write_mf6ggm_inp(cfg, phase, out), write_mf6_mod_inp(cfg, phase, out)]
     for phase in cfg["post"]["phases"]:
-        written.append(write_mf6ggmpost_inp(cfg, phase, out))
+        written += write_mf6ggmpost_inps(cfg, phase, out)
     if cfg["fields"]["source"] == "synthetic":
         written.append(write_synthetic_json(cfg, out))
     written.append(write_params_json(cfg, out))

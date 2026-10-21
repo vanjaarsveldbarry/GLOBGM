@@ -2,7 +2,7 @@
 authors = ["Barry van Jaarsveld <a.s.vanjaarsveld@uu.nl>"]
 channels = ["conda-forge", "bioconda"]
 name = "GLOBGM"
-platforms = ["osx-arm64"]
+platforms = ["osx-arm64", "linux-64"]
 version = "0.1.0"
 
 [dependencies]
@@ -18,4 +18,6 @@ openmpi = ">=5.0.10,<6"
 
 [tasks]
 build_globgm = "bash src/scripts/build_globgm.sh"
-run_uk = { cmd = "nextflow -log logs/nextflow.log run scripts/main.nf", cwd = "run_uk" }
+# launched from the run's output root, so .nextflow/ and logs/ land there
+run_globgm = "mkdir -p ../output/run_globgm && cd ../output/run_globgm && nextflow -log logs/nextflow.log run $PIXI_PROJECT_ROOT/run_globgm/scripts/main.nf"
+run_globgm_slurm = "mkdir -p ../output/run_globgm && cd ../output/run_globgm && nextflow -log logs/nextflow.log run $PIXI_PROJECT_ROOT/run_globgm/scripts/main.nf -profile slurm"

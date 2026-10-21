@@ -1,7 +1,7 @@
 module mf6_post_module
   ! -- modules
   use utilsmod, only: i4b, i8b, r4b, r8b, mxslen, tBb, DZERO, DONE, &
-    errmsg, logmsg, swap_slash, open_file, chkexist, get_jd, get_ymd_from_jd, ta
+    errmsg, logmsg, open_file, chkexist, get_jd, get_ymd_from_jd, ta
   use raster_io, only: raster_t, raster_open, raster_read_block, raster_write
   !
   implicit none
@@ -65,7 +65,7 @@ module mf6_post_module
     procedure :: read_nodbin => mf6_post_mod_read_nodbin
     procedure :: read_top    => mf6_post_mod_read_top
     procedure :: read        => mf6_post_mod_read
-    procedure :: get_data    => mf6_post_mod_get_data
+    procedure :: put_data    => mf6_post_mod_put_data
     procedure :: clean       => mf6_post_mod_clean
   end type tPostMod
   !
@@ -127,13 +127,8 @@ module mf6_post_module
     call this%read_nodbin()
     if (this%nodes == 0) return
     !
-    if (gen%itype == i_wtd) then
-      call this%read_top()
-    end if
-    !
-    f = trim(gen%in_dir)//'models\run_output_bin\'// &
+    f = trim(gen%in_dir)//'models/run_output_bin/'// &
       trim(this%modname)//trim(gen%in_postf)
-    call swap_slash(f)
     call chkexist(f)
     call open_file(f, this%iu, 'r', .true.)
     !
@@ -148,9 +143,8 @@ module mf6_post_module
     integer(i4b) :: iu, i, j
     character(len=mxslen) :: f
 ! ------------------------------------------------------------------------------
-    f = trim(this%gen%in_dir)//'models\post_mappings\'//trim(this%modname)// &
+    f = trim(this%gen%in_dir)//'models/post_mappings/'//trim(this%modname)// &
       '.nodmap.bin'
-    call swap_slash(f)
     !
     call open_file(f, iu, 'r', .true.)
     read(iu) this%bb%ic0, this%bb%ic1, this%bb%ir0, this%bb%ir1
@@ -164,30 +158,27 @@ module mf6_post_module
     return
   end subroutine mf6_post_mod_read_nodbin
   
-  subroutine mf6_post_mod_read_top(this)
+  subroutine mf6_post_mod_read_top(this, bb, blk)
 ! ******************************************************************************
     ! -- arguments
     class(tPostMod) :: this
+    type(tBb), intent(in) :: bb ! of blk, the solution's
+    real(r4b), dimension(:,:), intent(in) :: blk
     ! --- local
-    real(r4b), dimension(:,:), pointer :: blk => null()
     real(r4b) :: r4nodata
     integer(i4b) :: i, ic, ir
 ! ------------------------------------------------------------------------------
-    call raster_read_block(topr, &
-      this%bb%ir0-topiroff, this%bb%ir1-topiroff, &
-      this%bb%ic0-topicoff, this%bb%ic1-topicoff, blk)
     r4nodata = real(topr%nodata, r4b)
     !
     allocate(this%top(this%nodes))
     do i = 1, this%nodes
-      ir = this%giliric(2,i) - this%bb%ir0 + 1
-      ic = this%giliric(3,i) - this%bb%ic0 + 1
+      ir = this%giliric(2,i) - bb%ir0 + 1
+      ic = this%giliric(3,i) - bb%ic0 + 1
       if (blk(ic,ir) == r4nodata) then
         call errmsg('top is nodata at node '//ta((/i/))//' of '//trim(this%modname))
       end if
       this%top(i) = real(blk(ic,ir),r8b)
     end do
-    deallocate(blk)
     !
     return
   end subroutine mf6_post_mod_read_top
@@ -257,56 +248,48 @@ module mf6_post_module
     f = trim(gen%out_dir)//trim(name)//'_'//trim(gen%out_pref)// &
       trim(ts)//'_l'//ta((/il/))//'.nc'
     !
-    call swap_slash(f)
     return
   end function mf6_post_get_out_pref
   !
-  function mf6_post_mod_get_data(this, il) result(r8x)
+  subroutine mf6_post_mod_put_data(this, il, imod, bb, r8x, laytop)
 ! ******************************************************************************
+    ! Node by node into the solution raster: a model's own bounding box can
+    ! be near-global (scattered islands) for a few nodes.
     ! -- arguments
     class(tPostMod) :: this
     integer(i4b), intent(in) :: il
-    real(r8b), dimension(:,:), allocatable :: r8x
+    integer(i4b), intent(in) :: imod
+    type(tBb), intent(in) :: bb ! of r8x, the solution's
+    real(r8b), dimension(:,:), intent(inout) :: r8x
+    integer(i4b), dimension(:,:), allocatable, intent(inout) :: laytop ! il == 0 only
     ! --- local
-    logical :: ladd
     integer(i4b) :: gil, gir, gic, ir, ic, i
-    integer(i4b), dimension(:,:), allocatable :: laytop
+    real(r8b) :: r8v
 ! ------------------------------------------------------------------------------
-    allocate(r8x(this%bb%ncol,this%bb%nrow), laytop(this%bb%ncol,this%bb%nrow))
-    r8x = r8nodata
-    laytop = 0
-    !
     do i = 1, this%nodes
       gil = this%giliric(1,i); gir = this%giliric(2,i); gic = this%giliric(3,i) ! global
       if (include_sea) gil = abs(gil)
-      ir = gir - this%bb%ir0 + 1; ic = gic - this%bb%ic0 + 1 ! local
+      ir = gir - bb%ir0 + 1; ic = gic - bb%ic0 + 1 ! local
       !check
-      if ((ir < 1).or.(ir > this%bb%nrow).or.(ic < 1).or.(ic > this%bb%ncol)) then
-        call errmsg('mf6_post_mod_get_data')
+      if ((ir < 1).or.(ir > bb%nrow).or.(ic < 1).or.(ic > bb%ncol)) then
+        call errmsg('mf6_post_mod_put_data')
       end if
-      ladd = .true.
       if (il == 0) then
-        if (laytop(ic,ir) == 1) then
-          ladd = .false.
-        else
-          laytop(ic,ir) = 1
-        end if
+        if (laytop(ic,ir) == imod) cycle
+        laytop(ic,ir) = imod
       else
-        if (gil /= il) ladd = .false.
+        if (gil /= il) cycle
       end if
-      if (ladd) then
-        if (this%gen%itype == i_wtd) then
-          r8x(ic,ir) = this%top(i) - this%r8buff(i) !Water table depth > 0!
-        else
-          r8x(ic,ir) = this%r8buff(i)
-        end if
+      if (this%gen%itype == i_wtd) then
+        r8v = this%top(i) - this%r8buff(i) !Water table depth > 0!
+      else
+        r8v = this%r8buff(i)
       end if
+      if (r8v /= r8nodata) r8x(ic,ir) = r8v
     end do
     !
-    deallocate(laytop)
-    !
     return
-  end function mf6_post_mod_get_data
+  end subroutine mf6_post_mod_put_data
   
   subroutine mf6_post_mod_clean(this)
 ! ******************************************************************************
@@ -337,6 +320,7 @@ module mf6_post_module
     character(len=mxslen) :: f
     integer(i4b) :: i, iu, ys, mns, y, mn
     integer(i4b), dimension(:), allocatable :: i4wk
+    real(r4b), dimension(:,:), pointer :: blk => null()
 ! ------------------------------------------------------------------------------
     !
     ! 1                              2 3 4       5 6 7 8      9      10 11        12
@@ -384,8 +368,7 @@ module mf6_post_module
     gen%out_pref = sa(12)
     !
     write(this%solname,'(a,i2.2)') 's', this%solid
-    f = trim(gen%in_dir)//'solutions\post_mappings\'//trim(this%solname)//'.modmap.bin'
-    call swap_slash(f)
+    f = trim(gen%in_dir)//'solutions/post_mappings/'//trim(this%solname)//'.modmap.bin'
     call chkexist(f)
     !
     call open_file(f, iu, 'r', .true.)
@@ -412,6 +395,18 @@ module mf6_post_module
     this%bb%ncol = this%bb%ic1 - this%bb%ic0 + 1
     this%bb%nrow = this%bb%ir1 - this%bb%ir0 + 1
     !
+    ! one read of the top for the solution, not one per model
+    if (gen%itype == i_wtd) then
+      call raster_read_block(topr, &
+        this%bb%ir0-topiroff, this%bb%ir1-topiroff, &
+        this%bb%ic0-topicoff, this%bb%ic1-topicoff, blk)
+      do i = 1, this%nmod
+        if (this%mod(i)%nodes == 0) cycle
+        call this%mod(i)%read_top(this%bb, blk)
+      end do
+      deallocate(blk)
+    end if
+    !
     return
   end subroutine mf6_post_sol_init
   
@@ -421,11 +416,13 @@ module mf6_post_module
     class(tPostSol) :: this
     ! --- local
     character(len=:), allocatable :: f
-    integer(i4b) :: i, il, ic, ir, jc, jr, kper
+    integer(i4b) :: i, il, kper
     real(r8b) :: t, xmin, ymin
-    real(r8b), dimension(:,:), allocatable :: sr8wk, mr8wk
+    real(r8b), dimension(:,:), allocatable :: sr8wk
+    integer(i4b), dimension(:,:), allocatable :: laytop
 ! ------------------------------------------------------------------------------
     allocate(sr8wk(this%bb%ncol,this%bb%nrow))
+    if (this%gen%il_min == 0) allocate(laytop(this%bb%ncol,this%bb%nrow))
     xmin = gxmin + (this%bb%ic0-1)*gcs
     ymin = gymin + (gnrow-this%bb%ir1)*gcs
     !
@@ -445,22 +442,10 @@ module mf6_post_module
       !
       do il = this%gen%il_min, this%gen%il_max
         sr8wk = r8nodata
+        if (il == 0) laytop = 0
         do i = 1, this%nmod
-          associate(m => this%mod(i))
-          if (m%iu <= 0) cycle
-          mr8wk = m%get_data(il)
-          do ir = 1, m%bb%nrow
-            do ic = 1, m%bb%ncol
-              if (mr8wk(ic,ir) /= r8nodata) then
-                jr = ir + m%bb%ir0 - this%bb%ir0; jc = ic + m%bb%ic0 - this%bb%ic0
-                if ((jr < 1).or.(jr > this%bb%nrow).or.(jc < 1).or.(jc > this%bb%ncol)) then
-                  call errmsg('mf6_post_sol_write')
-                end if
-                sr8wk(jc,jr) = mr8wk(ic,ir)
-              end if
-            end do
-          end do
-          end associate
+          if (this%mod(i)%iu <= 0) cycle
+          call this%mod(i)%put_data(il, i, this%bb, sr8wk, laytop)
         end do
         f = mf6_post_get_out_pref(this%solname, t, il, this%gen)
         call logmsg('Writing '//f//'...')
@@ -469,7 +454,7 @@ module mf6_post_module
     end do
     !
     deallocate(sr8wk)
-    if (allocated(mr8wk)) deallocate(mr8wk)
+    if (allocated(laytop)) deallocate(laytop)
     !
     return
   end subroutine mf6_post_sol_write

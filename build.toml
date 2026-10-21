@@ -2,7 +2,7 @@
 # build_metis.sh and build_mf6.sh through
 #   eval "$(python src/python/globgm_config.py build-env build.toml)"
 # as BUILD_TYPE, METIS_URL, MF6_REV, ... Paths are relative to this file.
-# The run itself is configured in run_uk/globgm.toml.
+# The run itself is configured in run_globgm/scripts/globgm.toml.
 
 [build]
 # CMake configuration of the four tools: Release (-O3) or Debug (-O2 -g,
@@ -16,14 +16,14 @@ jobs = 8
 # (design.md, Known traps, "macOS SDK 27"). "" leaves SDKROOT alone (Linux).
 sdk_glob = "/Library/Developer/CommandLineTools/SDKs/MacOSX2[0-6].[0-9].sdk"
 # CMake build tree of the tools; METIS and mf6 also compile under it.
-dir = "run_uk/output/work/build"
+dir = "../output/run_globgm/work/build"
 # true: rebuild METIS and mf6 even when they are already installed.
 rebuild_deps = false
 
 [tools]
 # Install directory of datamap, process_hydbas, mf6ggm, mf6ggmpost, mf6 and
 # mf6_par; [run] binaries in globgm.toml must point here.
-bindir = "run_uk/output/binaries"
+bindir = "../output/run_globgm/binaries"
 
 [metis]
 # METIS release, tarball and checksum. Built with IDXTYPEWIDTH 64 and
@@ -34,7 +34,7 @@ sha256 = "76faebe03f6c963127dbb73c13eab58c9a3faeae48779f049066a21c087c5db2"
 # Where the tarball is cached and unpacked (git-ignored).
 src = "src/c/metis"
 # Install prefix; CMake takes it as METIS_ROOT.
-prefix = "run_uk/output/work/build/metis"
+prefix = "../output/run_globgm/work/build/metis"
 
 [mf6]
 # The parallel MODFLOW 6 fork and the pinned commit: the only mf6 that reads

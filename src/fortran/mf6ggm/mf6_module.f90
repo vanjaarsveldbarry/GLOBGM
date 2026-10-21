@@ -3,13 +3,17 @@ module mf6_module
    ! -- modules
   use, intrinsic :: iso_fortran_env , only: error_unit, output_unit, &
      i1b => int8, i2b => int16, i4b => int32, i8b => int64, r4b => real32, r8b => real64
-  use utilsmod, only: getlun, chkexist, readline, change_case, errmsg, logmsg, &
-    open_file, create_dir, swap_slash, ta, &
+  use utilsmod, only: getlun, chkexist, readline, change_case, errmsg, logmsg_u => logmsg, &
+    create_dir, ta_u => ta, get_work_dir, &
     get_jd, jd_next_month, getwords, getminmax, &
     IZERO, RZERO, DZERO, DONE, tBB, &
     get_ymd_from_jd, get_month_days_s
-  use raster_io, only: raster_t, raster_open, raster_read_block, raster_write, raster_time
-  
+  use raster_io, only: raster_t, raster_open, raster_read_block, raster_write, raster_time, &
+    raster_create_i4
+  use omp_lib, only: omp_get_wtime, omp_get_thread_num
+  use chunk_io, only: read_slice_chunks, write_raster_chunks
+  use, intrinsic :: iso_c_binding, only: c_int64_t, c_int, c_ptr, c_funptr, c_null_ptr, c_null_funptr
+
   implicit none 
 
   ! data keys
@@ -65,8 +69,8 @@ module mf6_module
   
   ! parameters
   integer(i4b),          parameter :: mxslen = 1024
-  character(len=mxslen), parameter :: resultsbindir = '..\..\models\run_output_bin'
-  character(len=mxslen), parameter :: resultslstdir = '..\..\models\run_output_lst'
+  character(len=mxslen), parameter :: resultsbindir = '../../models/run_output_bin'
+  character(len=mxslen), parameter :: resultslstdir = '../../models/run_output_lst'
   logical                          :: ltransient = .false.
   character(len=2)                 :: ctim = 'ss'
   !
@@ -89,7 +93,6 @@ module mf6_module
   character(len=4), dimension(npck) :: pck
   data pck/'nam ', 'tdis', 'disu', 'ic  ', 'oc  ', 'npf ', 'sto ', 'chd ', 'chd ',&
            'drn ', 'riv ', 'rch ', 'wel ', 'ghb ', 'ghb '/
-  integer(i4b), dimension(npck) :: pckact
   
   integer(i4b), parameter :: maxrun = 6
   character(len=10), dimension(npck,maxrun) :: pr
@@ -114,6 +117,30 @@ module mf6_module
           '.ic_spu   ','          ','          ','.spu      ','          ','          ','          ','.sea      ','-         ','          ','          ','          ','          ','.1        ','.2        ', &
           '.ic_ss    ','          ','          ','.ss       ','          ','          ','          ','.sea      ','-         ','          ','          ','          ','          ','.1        ','.2        '/
   !
+  ! gfortran's deferred-length function results (character(len=:),
+  ! allocatable) are not thread-safe: under OpenMP a result comes back empty
+  ! or as another thread's. Code that threads run therefore calls no such
+  ! function: integers are formatted here into results of automatic, exact
+  ! length; the one real-valued string, the cell area, is formatted once
+  ! before the threads start; utilsmod's ta stays for reals in the serial
+  ! parts; the .inp integers are parsed by atoi.
+  interface ta
+    module procedure :: ta_i4_pure, ta_i8_pure, ta_i4_pad, ta_i8_pad, ta_r4_serial, ta_r8_serial
+  end interface ta
+  character(len=64) :: area_str
+
+  ! netCDF turns HDF5's automatic error printing off for the thread that
+  ! initialises it only; every other thread that writes a raster does it here
+  interface
+    function h5eset_auto2(estack, func, cdata) bind(C, name='H5Eset_auto2') result(err)
+      import :: c_int64_t, c_int, c_ptr, c_funptr
+      integer(c_int64_t), value :: estack
+      type(c_funptr), value :: func
+      type(c_ptr), value :: cdata
+      integer(c_int) :: err
+    end function h5eset_auto2
+  end interface
+
   ! stencil
   integer(i4b), parameter :: jp = 1
   integer(i4b), parameter :: jt = 2
@@ -128,18 +155,22 @@ module mf6_module
   
   integer(I4B), parameter :: maxnraw = 1000
   
-  ! A raster field is read per model region: blk holds the region block of
-  ! period blkper in the raster's own (windowed) indices, global index minus
-  ! icoff/iroff. Nodata cells hold the file _FillValue.
+  ! A whole raster, one period, in the raster's own (windowed) indices: global
+  ! index minus icoff/iroff. Nodata cells hold the file _FillValue.
+  type tSlice
+    real(r4b), dimension(:,:), pointer :: a => null()
+    integer(i4b)                       :: iper = -1
+  end type tSlice
+
+  ! Two buffers so one stage can be gathered while the next is loaded; a
+  ! raster without a time axis lives in buffer 1 with iper 0.
   type tData
     character(mxslen)       :: s = ''
     logical                 :: lraster = .false.
     type(raster_t)          :: r
     integer(i4b)            :: icoff = 0
     integer(i4b)            :: iroff = 0
-    real(r4b), dimension(:,:), pointer :: blk => null()
-    type(tBB)               :: blkbb
-    integer(i4b)            :: blkper = -1
+    type(tSlice), dimension(2) :: buf
     real(r8b)               :: r8mult = DONE
     real(r8b)               :: r8add = DZERO
   end type tData
@@ -162,6 +193,9 @@ module mf6_module
     character(len=mxslen), dimension(:), allocatable :: perdate
   contains
     procedure :: init => mf6_raw_init
+    procedure :: load => mf6_raw_load
+    procedure :: free => mf6_raw_free
+    procedure :: slice => mf6_raw_slice
     procedure :: mf6_raw_get_index
     procedure :: mf6_raw_key_exists
     procedure :: mf6_raw_get_name_char, mf6_raw_get_name_i4b
@@ -191,6 +225,7 @@ module mf6_module
   real(r8b),             dimension(:),   pointer :: r8wrk   => null()
   real(r8b),             dimension(:),   pointer :: r8wrk2  => null()
   real(r8b),             dimension(:),   pointer :: r8wrk3  => null()
+  !$omp threadprivate(cwrk1d, cwrk2d, i1wrk, i1wrk2, i4wrk1d, i4wrk2d, r8wrk, r8wrk2, r8wrk3)
   
   type tDisu
     integer(i4b),               pointer :: nodes => null()
@@ -209,6 +244,21 @@ module mf6_module
     integer(i4b), dimension(:,:,:), pointer :: bndmap      => null()
   end type tReg
   
+  ! node -> global (col,row), node order
+  type tNodTab
+    integer(i4b) :: n = 0
+    integer(i4b), dimension(:), allocatable :: node, gic, gir
+  end type tNodTab
+
+  ! one list package of one model across the periods
+  type tListPck
+    integer(i4b) :: nsys = 1
+    integer(i4b) :: nx = 2
+    integer(i4b) :: maxbound = 0
+    logical,      dimension(:), allocatable :: lact
+    integer(i8b), dimension(:), allocatable :: p0, p1
+  end type tListPck
+
   type tExchange
     logical                               :: loutput = .true.
     type(tBb),                    pointer :: bb          => null()
@@ -240,6 +290,9 @@ module mf6_module
 
     character(len=mxslen),         pointer :: fbin        => null()
     integer(i4b),                  pointer :: iubin       => null()
+    integer(i4b), dimension(npck)          :: pckact      = 1
+    type(tNodTab), dimension(:,:), allocatable :: tab     ! (selection, layer)
+    type(tListPck), dimension(npck)        :: lp
   contains
     procedure :: get_model_name => mf6_mod_get_model_name
     procedure :: set_disu       => mf6_mod_set_disu
@@ -250,14 +303,12 @@ module mf6_module
                                    mf6_mod_write_array_r8
     procedure :: mf6_mod_write_array_i4
     procedure :: mf6_mod_write_array_r8
-    generic   :: write_list    => mf6_mod_write_list_1, &
-                                  mf6_mod_write_list_2, &
-                                  mf6_mod_write_list_3
-    procedure :: mf6_mod_write_list_1
-    procedure :: mf6_mod_write_list_2
-    procedure :: mf6_mod_write_list_3
+    procedure :: write_records => mf6_mod_write_records
+    procedure :: build_tables  => mf6_mod_build_tables
     !
-    procedure :: write       => mf6_mod_write
+    procedure :: write_static      => mf6_mod_write_static
+    procedure :: write_period_list => mf6_mod_write_period_list
+    procedure :: write_finish      => mf6_mod_write_finish
     procedure :: write_nam   => mf6_mod_write_nam
     procedure :: write_disu  => mf6_mod_write_disu
     procedure :: write_ic    => mf6_mod_write_ic
@@ -265,11 +316,6 @@ module mf6_module
     procedure :: write_npf   => mf6_mod_write_npf
     procedure :: write_sto   => mf6_mod_write_sto
     procedure :: write_chd   => mf6_mod_write_chd
-    procedure :: write_drn   => mf6_mod_write_drn
-    procedure :: write_riv   => mf6_mod_write_riv
-    procedure :: write_ghb   => mf6_mod_write_ghb
-    procedure :: write_rch   => mf6_mod_write_rch
-    procedure :: write_wel   => mf6_mod_write_wel
     !
     procedure :: write_exchanges => mf6_mod_write_exchanges
     !
@@ -305,6 +351,7 @@ module mf6_module
   public :: tReg
   public :: i1b, i4b, i8b, r4b, r8b
   public :: raw
+  public :: mf6_write_models
   public :: gncol, gnrow, gnlay, gxmin, gymin, gcs
   
   save
@@ -324,7 +371,7 @@ module mf6_module
     class(tRawDat) :: this
     character(len=*), intent(inout) :: f_in
     ! -- local
-    character(len=mxslen) :: s, units
+    character(len=mxslen) :: s, units, cwd
     integer(I4B) :: iu, ios, nw, n, i, y, m ,d, ymd, iper, ty, tm, td
     real(R8B) :: jd, tval
     character(len=mxslen), dimension(:), allocatable :: words
@@ -389,6 +436,12 @@ module mf6_module
           ! read header; the raster may be a window of the global grid
           if (dat%lraster) then
             call raster_open(dat%r, dat%s)
+            ! the models are written after a chdir; the chunk reader reopens
+            ! the file by name, so keep the absolute one
+            if (dat%s(1:1) /= '/') then
+              call get_work_dir(cwd)
+              dat%r%fname = trim(cwd)//'/'//trim(dat%s)
+            end if
             if (abs(dat%r%dx - gcs) > 1.d-9*gcs) then
               call errmsg('cell size of '//trim(dat%s)//' differs from the model grid')
             end if
@@ -398,6 +451,7 @@ module mf6_module
         end if
       end if
     end do
+    close(iu)
     !
     this%nper = this%geti('nper')
     if (this%nper > 1) then
@@ -450,34 +504,90 @@ module mf6_module
     return
   end subroutine mf6_raw_init
 
-  subroutine mf6_data_load(dat, bb, iper)
+  subroutine mf6_raw_load(this, i, iper, ibuf)
 ! ******************************************************************************
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
+! Load the whole raster of entry i: period iper into buffer ibuf; a raster
+! without a time axis once, into buffer 1.
 ! ------------------------------------------------------------------------------
-!
     ! -- dummy
-    type(tData), intent(inout) :: dat
-    type(tBB), intent(in) :: bb
-    integer(i4b), intent(in) :: iper
+    class(tRawDat) :: this
+    integer(i4b), intent(in) :: i, iper, ibuf
+    ! -- local
+    type(tData), pointer :: dat
+    type(tSlice), pointer :: b
+    logical :: lfast
+    integer(i4b) :: k
+    real(r8b) :: t0
 ! ------------------------------------------------------------------------------
-    if (associated(dat%blk)) then
-      if ((dat%blkper == iper).and. &
-          (dat%blkbb%ir0 == bb%ir0).and.(dat%blkbb%ir1 == bb%ir1).and. &
-          (dat%blkbb%ic0 == bb%ic0).and.(dat%blkbb%ic1 == bb%ic1)) return
-    end if
-    if (dat%r%nt > 0) then
-      call raster_read_block(dat%r, bb%ir0-dat%iroff, bb%ir1-dat%iroff, &
-        bb%ic0-dat%icoff, bb%ic1-dat%icoff, dat%blk, it=iper)
+    dat => this%raw(i)%dat
+    if (.not.dat%lraster) call errmsg(trim(this%raw(i)%key)//' is not a raster')
+    t0 = omp_get_wtime()
+    if (dat%r%nt == 0) then
+      b => dat%buf(1)
+      if (b%iper == 0) return
+      lfast = read_slice_chunks(dat%r%fname, 'data', 0, dat%r%nodata, b%a)
+      if (.not.lfast) call raster_read_block(dat%r, 1, dat%r%nrow, 1, dat%r%ncol, b%a)
+      b%iper = 0
     else
-      call raster_read_block(dat%r, bb%ir0-dat%iroff, bb%ir1-dat%iroff, &
-        bb%ic0-dat%icoff, bb%ic1-dat%icoff, dat%blk)
+      b => dat%buf(ibuf)
+      if (b%iper == iper) return
+      lfast = read_slice_chunks(dat%r%fname, 'data', iper, dat%r%nodata, b%a)
+      if (.not.lfast) call raster_read_block(dat%r, 1, dat%r%nrow, 1, dat%r%ncol, b%a, it=iper)
+      b%iper = iper
     end if
-    dat%blkbb = bb; dat%blkper = iper
+    if (iper > 1) return
+    k = index(dat%s, '/', back=.true.)
+    if (lfast) then
+      call logmsg('  read '//trim(dat%s(k+1:))//' period '//ta((/iper/))//' by chunks: '// &
+        secs(omp_get_wtime()-t0))
+    else
+      call logmsg('  read '//trim(dat%s(k+1:))//' period '//ta((/iper/))// &
+        ' through netCDF, not chunked shuffle+deflate float32 (later periods not reported): '// &
+        secs(omp_get_wtime()-t0))
+    end if
     !
     return
-  end subroutine mf6_data_load
+  end subroutine mf6_raw_load
+
+  subroutine mf6_raw_free(this, i, ibuf)
+! ******************************************************************************
+    ! -- dummy
+    class(tRawDat) :: this
+    integer(i4b), intent(in) :: i, ibuf
+    ! -- local
+    type(tSlice), pointer :: b
+! ------------------------------------------------------------------------------
+    b => this%raw(i)%dat%buf(ibuf)
+    if (associated(b%a)) deallocate(b%a)
+    b%a => null(); b%iper = -1
+    !
+    return
+  end subroutine mf6_raw_free
+
+  function mf6_raw_slice(this, i, iper, ibuf) result(b)
+! ******************************************************************************
+! The loaded slice of entry i for period iper (buffer 1 for a static raster).
+! ------------------------------------------------------------------------------
+    ! -- dummy
+    class(tRawDat) :: this
+    integer(i4b), intent(in) :: i, iper, ibuf
+    type(tSlice), pointer :: b
+    ! -- local
+    type(tData), pointer :: dat
+    integer(i4b) :: jper
+! ------------------------------------------------------------------------------
+    dat => this%raw(i)%dat
+    if (dat%r%nt == 0) then
+      b => dat%buf(1); jper = 0
+    else
+      b => dat%buf(ibuf); jper = iper
+    end if
+    if (b%iper /= jper) then
+      call errmsg('program error: '//trim(dat%s)//' period '//ta((/jper/))//' is not loaded')
+    end if
+    !
+    return
+  end function mf6_raw_slice
   
   
   function mf6_raw_get_index(this, key, ilay, iper, isys) result(ind)
@@ -632,7 +742,7 @@ module mf6_module
     integer(I4B), optional, intent(in) :: iper
     integer(I4B), optional, intent(in) :: isys
     character(len=*), optional, intent(in) :: cdef
-    character(len=:), allocatable :: cval
+    character(len=mxslen) :: cval   ! fixed: threads call this
     ! -- local
     integer(I4B) :: i
     integer(I4B) :: jlay, jper, jsys
@@ -692,10 +802,7 @@ module mf6_module
       end if
     end if
     s = this%mf6_raw_get_name_char(key, ilay, iper)
-    read(s,*,iostat=ios) ival
-    if (ios /= 0) then
-      call errmsg('Could not read target for '//trim(key)//' as integer 4 bytes')
-    end if
+    ival = atoi(s)
     !
     return
   end function mf6_raw_get_name_i4b
@@ -704,6 +811,202 @@ module mf6_module
 
 
   
+  pure function ndig(i) result(n)
+    ! characters of i in decimal, sign included
+    integer(i8b), intent(in) :: i
+    integer(i4b) :: n
+    integer(i8b) :: v
+    n = 1; v = abs(i)
+    do while (v >= 10)
+      v = v/10; n = n + 1
+    end do
+    if (i < 0) n = n + 1
+  end function ndig
+
+  pure function ta_len(arr, m) result(n)
+    ! length of ta(arr, m): the numbers zero-padded to m digits, one blank between
+    integer(i8b), dimension(:), intent(in) :: arr
+    integer(i4b), intent(in) :: m
+    integer(i4b) :: n, k
+    n = size(arr) - 1
+    do k = 1, size(arr)
+      n = n + max(ndig(arr(k)), m + merge(1, 0, arr(k) < 0))
+    end do
+  end function ta_len
+
+  function ta_i8_pad(arr, m) result(s)
+    ! the integers of arr, zero-padded to m digits (0: as they are), blank-separated
+    integer(i8b), dimension(:), intent(in) :: arr
+    integer(i4b), intent(in) :: m
+    character(len=ta_len(arr, m)) :: s
+    character(len=24) :: w
+    integer(i8b) :: v
+    integer(i4b) :: k, p, q, nd
+    q = 0
+    do k = 1, size(arr)
+      v = abs(arr(k)); p = 24
+      do
+        w(p:p) = achar(48 + int(mod(v, 10_i8b))); v = v/10; p = p - 1
+        if (v == 0) exit
+      end do
+      nd = 24 - p
+      do while (nd < m)
+        w(p:p) = '0'; p = p - 1; nd = nd + 1
+      end do
+      if (arr(k) < 0) then
+        w(p:p) = '-'; p = p - 1; nd = nd + 1
+      end if
+      if (k > 1) then
+        q = q + 1; s(q:q) = ' '
+      end if
+      s(q+1:q+nd) = w(p+1:24); q = q + nd
+    end do
+  end function ta_i8_pad
+
+  function ta_i8_pure(arr) result(s)
+    integer(i8b), dimension(:), intent(in) :: arr
+    character(len=ta_len(arr, 0)) :: s
+    s = ta_i8_pad(arr, 0)
+  end function ta_i8_pure
+
+  function ta_i4_pad(arr, m) result(s)
+    integer(i4b), dimension(:), intent(in) :: arr
+    integer(i4b), intent(in) :: m
+    character(len=ta_len(int(arr, i8b), m)) :: s
+    s = ta_i8_pad(int(arr, i8b), m)
+  end function ta_i4_pad
+
+  function ta_i4_pure(arr) result(s)
+    integer(i4b), dimension(:), intent(in) :: arr
+    character(len=ta_len(int(arr, i8b), 0)) :: s
+    s = ta_i8_pad(int(arr, i8b), 0)
+  end function ta_i4_pure
+
+  function atoi(s) result(i)
+    character(len=*), intent(in) :: s
+    integer(i4b) :: i
+    integer(i4b) :: k, sgn
+    logical :: ldig
+    i = 0; sgn = 1; ldig = .false.
+    do k = 1, len_trim(s)
+      select case (s(k:k))
+      case (' ')
+        if (ldig) exit
+      case ('-')
+        sgn = -1
+      case ('+')
+      case ('0':'9')
+        i = 10*i + (iachar(s(k:k)) - 48); ldig = .true.
+      case default
+        call errmsg('not an integer: '//trim(s))
+      end select
+    end do
+    if (.not.ldig) call errmsg('not an integer: '//trim(s))
+    i = sgn*i
+  end function atoi
+
+  function ta_r4_serial(arr, fmt_in) result(s)
+    real(r4b), dimension(:), intent(in) :: arr
+    character(len=*), intent(in), optional :: fmt_in
+    character(len=:), allocatable :: s
+    s = ta_u(arr, fmt_in)
+  end function ta_r4_serial
+
+  function ta_r8_serial(arr, fmt_in) result(s)
+    real(r8b), dimension(:), intent(in) :: arr
+    character(len=*), intent(in), optional :: fmt_in
+    character(len=:), allocatable :: s
+    s = ta_u(arr, fmt_in)
+  end function ta_r8_serial
+
+  function secs(t) result(s)
+    ! elapsed seconds with three decimals, for the log lines threads write
+    real(r8b), intent(in) :: t
+    character(len=ndig(nint(1000*t, i8b)/1000)+6) :: s
+    integer(i8b) :: ms
+    ms = nint(1000*t, i8b)
+    s = ta_i8_pad((/ms/1000/), 0)//'.'//ta_i8_pad((/mod(ms,1000_i8b)/), 3)//' s'
+  end function secs
+
+  subroutine wline(iu, s)
+! ******************************************************************************
+! One line of a text file opened by open_file: the bytes of a formatted
+! '(a)' record. Text files are written as byte streams, one write per line.
+! ------------------------------------------------------------------------------
+    integer(i4b), intent(in) :: iu
+    character(len=*), intent(in) :: s
+! ------------------------------------------------------------------------------
+    write(iu) s//new_line('a')
+    !
+    return
+  end subroutine wline
+
+  subroutine logmsg(msg)
+! ******************************************************************************
+! utilsmod's logmsg, one thread at a time, so log lines do not interleave.
+! ------------------------------------------------------------------------------
+    character(len=*), intent(in) :: msg
+! ------------------------------------------------------------------------------
+    !$omp critical(logio)
+    call logmsg_u(msg)
+    !$omp end critical(logio)
+    !
+    return
+  end subroutine logmsg
+
+  subroutine open_file(f, iu, act_in, lbin_in, unit_in)
+! ******************************************************************************
+! utilsmod's open_file scans for a free unit, which threads cannot share.
+! Units are fixed instead: unit_in for a file that stays open (the model
+! binary, 10000 + model id), else one text and one binary unit per thread;
+! a routine opens one file of each kind at a time. Text files are opened
+! as byte streams for wline. Same log lines.
+! ------------------------------------------------------------------------------
+    character(len=*), intent(inout) :: f
+    integer(i4b), intent(inout) :: iu
+    character(len=1), optional :: act_in
+    logical, intent(in), optional :: lbin_in
+    integer(i4b), intent(in), optional :: unit_in
+    ! -- local
+    character(len=1) :: act
+    logical :: lbin, lex
+! ------------------------------------------------------------------------------
+    act = 'r'
+    if (present(act_in)) act = change_case(act_in, 'l')
+    lbin = .false.
+    if (present(lbin_in)) lbin = lbin_in
+    if (present(unit_in)) then
+      iu = unit_in
+    else if (lbin) then
+      iu = 30000 + omp_get_thread_num()
+    else
+      iu = 20000 + omp_get_thread_num()
+    end if
+    inquire(unit=iu, opened=lex)
+    if (lex) call errmsg('program error: unit '//ta((/iu/))//' is still open, cannot open '//trim(f))
+    if (act == 'r') then
+      inquire(file=f, exist=lex)
+      if (.not.lex) call errmsg('File '//trim(f)//' does not exist.')
+    end if
+    if ((act == 'r').and.(.not.lbin)) then
+      call logmsg('Reading ascii file '//trim(f)//'...')
+      open(unit=iu, file=f, form='formatted', access='sequential', action='read', status='old')
+    else if ((act == 'w').and.(.not.lbin)) then
+      call logmsg('Writing ascii file '//trim(f)//'...')
+      open(unit=iu, file=f, form='unformatted', access='stream', action='write', status='replace')
+    else if ((act == 'r').and.(lbin)) then
+      call logmsg('Reading binary file '//trim(f)//'...')
+      open(unit=iu, file=f, form='unformatted', access='stream', action='readwrite', status='old')
+    else if ((act == 'w').and.(lbin)) then
+      call logmsg('Writing binary file '//trim(f)//'...')
+      open(unit=iu, file=f, form='unformatted', access='stream', action='write', status='replace')
+    else
+      call errmsg('open_file called with invalid option')
+    end if
+    !
+    return
+  end subroutine open_file
+
   subroutine clear_wrk()
 ! ******************************************************************************
 ! ******************************************************************************
@@ -751,7 +1054,29 @@ module mf6_module
     !
     return
   end subroutine clear_wrk
-  
+
+  subroutine write_block_begin(iu, name)
+! ******************************************************************************
+    ! -- arguments
+    integer(i4b), intent(in) :: iu
+    character(len=*), intent(in) :: name
+! ------------------------------------------------------------------------------
+    call wline(iu, 'BEGIN '//trim(name))
+    !
+    return
+  end subroutine write_block_begin
+
+  subroutine write_block_end(iu, name)
+! ******************************************************************************
+    ! -- arguments
+    integer(i4b), intent(in) :: iu
+    character(len=*), intent(in) :: name
+! ------------------------------------------------------------------------------
+    call wline(iu, 'END '//trim(name))
+    !
+    return
+  end subroutine write_block_end
+
   subroutine mf6_sol_write(this)
 ! ******************************************************************************
 ! ******************************************************************************
@@ -841,14 +1166,13 @@ module mf6_module
         f = trim(this%solname)//pcpu(icpu)//'.models'//trim(pr(inam,irun))//'.asc'
         call open_file(f, iu, 'w')
         do i = 1, this%nmod
-          ms =  'm'//ta((/this%mod_id(i)/),'(i5.5)')
-          s = 'GWF6 ..\..\models\run_input\'//trim(ms)// &
-            '\'//trim(ms)//trim(pr(inam,irun))//'.nam '//trim(ms)
-          call swap_slash(s)
+          ms =  'm'//ta((/this%mod_id(i)/), 5)
+          s = 'GWF6 ../../models/run_input/'//trim(ms)// &
+            '/'//trim(ms)//trim(pr(inam,irun))//'.nam '//trim(ms)
           if (icpu == ipar) then
-            write(iu,'(a)') trim(s)//' '//ta((/this%mod_part(i)/))
+            call wline(iu, trim(s)//' '//ta((/this%mod_part(i)/)))
           else
-            write(iu,'(a)') trim(s)
+            call wline(iu, trim(s))
           end if
         end do
         close(iu)
@@ -859,7 +1183,7 @@ module mf6_module
     f = trim(this%solname)//'.solmodels.asc'
     call open_file(f, iu, 'w')
     do i = 1, this%nmod
-      ms = 'm'//ta((/this%mod_id(i)/),'(i5.5)'); write(iu,'(a)') trim(ms)
+      ms = 'm'//ta((/this%mod_id(i)/), 5); call wline(iu, trim(ms))
     end do
     close(iu)
     !
@@ -867,29 +1191,27 @@ module mf6_module
     f = trim(this%solname)//'.cgc.solmodels.asc'
     call open_file(f, iu, 'w')
     do i = 1, this%nmod
-      ms = 'm'//ta((/this%mod_id(i)/),'(i5.5)')
-      write(iu,'(a)') trim(ms)//' '//ta((/i/))
+      ms = 'm'//ta((/this%mod_id(i)/), 5)
+      call wline(iu, trim(ms)//' '//ta((/i/)))
     end do
     close(iu)
     !
     ! solmodels.asc.wrp
     f = trim(this%solname)//'.solmodels.wrp.asc'
     call open_file(f, iu, 'w')
-    write(iu,'(   a)') 'BEGIN MODELS'
-    s = '..\run_input\'//trim(this%solname)//'.solmodels.asc'
-    call swap_slash(s)
-    write(iu,'(2x,a)') 'OPEN/CLOSE '//trim(s)
-    write(iu,'(   a)') 'END MODELS'
+    call write_block_begin(iu, 'MODELS')
+    s = '../run_input/'//trim(this%solname)//'.solmodels.asc'
+    call wline(iu, repeat(' ',2)//'OPEN/CLOSE '//trim(s))
+    call write_block_end(iu, 'MODELS')
     close(iu)
     !
     ! cgc.solmodels.asc.wrp
     f = trim(this%solname)//'.cgc.solmodels.wrp.asc'
     call open_file(f, iu, 'w')
-    write(iu,'(   a)') 'BEGIN MODELS'
-    s = '..\run_input\'//trim(this%solname)//'.cgc.solmodels.asc'
-    call swap_slash(s)
-    write(iu,'(2x,a)') 'OPEN/CLOSE '//trim(s)
-    write(iu,'(   a)') 'END MODELS'
+    call write_block_begin(iu, 'MODELS')
+    s = '../run_input/'//trim(this%solname)//'.cgc.solmodels.asc'
+    call wline(iu, repeat(' ',2)//'OPEN/CLOSE '//trim(s))
+    call write_block_end(iu, 'MODELS')
     close(iu)
     !
     return
@@ -915,7 +1237,7 @@ module mf6_module
     integer(i4b) :: iu, i, icpu, irun, irun0, irun1
 ! ------------------------------------------------------------------------------
     !
-    d = '..\run_input\'; call swap_slash(d)
+    d = '../run_input/'
     !
     lcpu = .true.
     if (this%nmod == 1) then
@@ -933,30 +1255,29 @@ module mf6_module
     !
     if (.not.ltransient .and.this%lmm) then
       do i = 1, this%nmod
-        ms =  'm'//ta((/this%mod_id(i)/),'(i5.5)')
+        ms =  'm'//ta((/this%mod_id(i)/), 5)
         nam = trim(this%solname)//pcpu(iser)//'.mfsim.'//trim(ms)//trim(pr(inam,irun0ss))//'.nam'
         call open_file(nam, iu, 'w')
-        write(iu,'(   a)') 'BEGIN OPTIONS'
-        write(iu,'(2x,a)') 'MEMORY_PRINT_OPTION SUMMARY'
-        write(iu,'(   a)') 'END OPTIONS'
-        write(iu,'(a)')
-        write(iu,'(   a)') 'BEGIN TIMING'
-        write(iu,'(2x,a)') 'TDIS6 '//trim(d)//trim(this%solname)//trim(pr(itdis,irun0ss))//'.tdis'
-        write(iu,'(   a)') 'END TIMING'
-        write(iu,'(a)')
-        write(iu,'(   a)') 'BEGIN MODELS'
-        s = 'GWF6 ..\..\models\run_input\'//trim(ms)// &
-          '\'//trim(ms)//trim(pr(inam,irun0ss))//'.nam '//trim(ms)
-        call swap_slash(s)
-        write(iu,'(2x,a)') trim(s)
-        write(iu,'(   a)') 'END MODELS'
-        write(iu,'(a)')
-        write(iu,'(   a)') 'BEGIN EXCHANGES'
-        write(iu,'(   a)') 'END EXCHANGES'
-        write(iu,'(a)')
-        write(iu,'(   a)') 'BEGIN SOLUTIONGROUP 1'
-        write(iu,'(2x,a)') 'IMS6 '//trim(d)//trim(this%solname)//'.ims '//trim(ms)
-        write(iu,'(   a)') 'END SOLUTIONGROUP'
+        call write_block_begin(iu, 'OPTIONS')
+        call wline(iu, repeat(' ',2)//'MEMORY_PRINT_OPTION SUMMARY')
+        call write_block_end(iu, 'OPTIONS')
+        call wline(iu, '')
+        call write_block_begin(iu, 'TIMING')
+        call wline(iu, repeat(' ',2)//'TDIS6 '//trim(d)//trim(this%solname)//trim(pr(itdis,irun0ss))//'.tdis')
+        call write_block_end(iu, 'TIMING')
+        call wline(iu, '')
+        call write_block_begin(iu, 'MODELS')
+        s = 'GWF6 ../../models/run_input/'//trim(ms)// &
+          '/'//trim(ms)//trim(pr(inam,irun0ss))//'.nam '//trim(ms)
+        call wline(iu, repeat(' ',2)//trim(s))
+        call write_block_end(iu, 'MODELS')
+        call wline(iu, '')
+        call write_block_begin(iu, 'EXCHANGES')
+        call write_block_end(iu, 'EXCHANGES')
+        call wline(iu, '')
+        call write_block_begin(iu, 'SOLUTIONGROUP 1')
+        call wline(iu, repeat(' ',2)//'IMS6 '//trim(d)//trim(this%solname)//'.ims '//trim(ms))
+        call write_block_end(iu, 'SOLUTIONGROUP')
         close(iu)
       end do
     end if
@@ -967,36 +1288,36 @@ module mf6_module
       do irun = irun0, irun1
         nam = trim(this%solname)//pcpu(icpu)//'.mfsim'//trim(pr(inam,irun))//'.nam'
         call open_file(nam, iu, 'w')
-        write(iu,'(   a)') 'BEGIN OPTIONS'
-        write(iu,'(2x,a)') 'MEMORY_PRINT_OPTION SUMMARY'
-        if (icpu == ipar) write(iu,'(2x,a)') 'DOMAIN_DECOMPOSITION '//ta((/this%npart/))
-        write(iu,'(   a)') 'END OPTIONS'
-        write(iu,'(a)')
-        write(iu,'(   a)') 'BEGIN TIMING'
-        write(iu,'(2x,a)') 'TDIS6 '//trim(d)//trim(this%solname)//trim(pr(itdis,irun))//'.tdis'
-        write(iu,'(   a)') 'END TIMING'
-        write(iu,'(a)')
-        write(iu,'(   a)') 'BEGIN MODELS'
-        write(iu,'(2x,a)') 'OPEN/CLOSE '//trim(d)//trim(this%solname)//pcpu(icpu)//'.models'//trim(pr(inam,irun))//'.asc'
-        write(iu,'(   a)') 'END MODELS'
-        write(iu,'(a)')
-        write(iu,'(   a)') 'BEGIN EXCHANGES'
+        call write_block_begin(iu, 'OPTIONS')
+        call wline(iu, repeat(' ',2)//'MEMORY_PRINT_OPTION SUMMARY')
+        if (icpu == ipar) call wline(iu, '  DOMAIN_DECOMPOSITION '//ta((/this%npart/)))
+        call write_block_end(iu, 'OPTIONS')
+        call wline(iu, '')
+        call write_block_begin(iu, 'TIMING')
+        call wline(iu, repeat(' ',2)//'TDIS6 '//trim(d)//trim(this%solname)//trim(pr(itdis,irun))//'.tdis')
+        call write_block_end(iu, 'TIMING')
+        call wline(iu, '')
+        call write_block_begin(iu, 'MODELS')
+        call wline(iu, repeat(' ',2)//'OPEN/CLOSE '//trim(d)//trim(this%solname)//pcpu(icpu)//'.models'//trim(pr(inam,irun))//'.asc')
+        call write_block_end(iu, 'MODELS')
+        call wline(iu, '')
+        call write_block_begin(iu, 'EXCHANGES')
         if (this%lmm) then
-          write(iu,'(2x,a)') 'OPEN/CLOSE '//trim(d)//trim(this%solname)//'.exchanges.asc'
+          call wline(iu, repeat(' ',2)//'OPEN/CLOSE '//trim(d)//trim(this%solname)//'.exchanges.asc')
         end if
-        write(iu,'(   a)') 'END EXCHANGES'
-        write(iu,'(a)')
-        write(iu,'(   a)') 'BEGIN SOLUTIONGROUP 1'
+        call write_block_end(iu, 'EXCHANGES')
+        call wline(iu, '')
+        call write_block_begin(iu, 'SOLUTIONGROUP 1')
         if (this%lmm) then
-          write(iu,'(2x,a)') '# IMS6_CGC '//trim(d)//trim(this%solname)//'.ims FILEIN '//trim(d)// &
-            trim(this%solname)//'.cgc.solmodels.wrp.asc'
-          write(iu,'(2x,a)') 'IMS6 '//trim(d)//trim(this%solname)//'.ims FILEIN '//trim(d)// &
-            trim(this%solname)//'.solmodels.wrp.asc'
+          call wline(iu, '  # IMS6_CGC '//trim(d)//trim(this%solname)//'.ims FILEIN '//trim(d)// &
+            trim(this%solname)//'.cgc.solmodels.wrp.asc')
+          call wline(iu, '  IMS6 '//trim(d)//trim(this%solname)//'.ims FILEIN '//trim(d)// &
+            trim(this%solname)//'.solmodels.wrp.asc')
         else
-          write(iu,'(2x,a)') 'IMS6 '//trim(d)//trim(this%solname)//'.ims FILEIN '//trim(d)// &
-            trim(this%solname)//'.solmodels.wrp.asc'
+          call wline(iu, '  IMS6 '//trim(d)//trim(this%solname)//'.ims FILEIN '//trim(d)// &
+            trim(this%solname)//'.solmodels.wrp.asc')
         end if
-        write(iu,'(   a)') 'END SOLUTIONGROUP'
+        call write_block_end(iu, 'SOLUTIONGROUP')
         close(iu)
       end do
     end do
@@ -1018,8 +1339,8 @@ module mf6_module
     integer(i4b) :: i, iu
 ! ------------------------------------------------------------------------------
     !
-    d = '..\post_mappings\'; call create_dir(d, .true.)
-    f = trim(d)//trim(this%solname)//'.modmap.bin'; call swap_slash(f)
+    d = '../post_mappings/'; call create_dir(d, .true.)
+    f = trim(d)//trim(this%solname)//'.modmap.bin'
     !
     call open_file(f, iu, 'w', .true.)
     write(iu) this%nmod
@@ -1046,61 +1367,61 @@ module mf6_module
     if (.not.ltransient) then !SS
       f = trim(this%solname)//'.tdis'
       call open_file(f, iu, 'w')
-      write(iu,'(   a)') 'BEGIN OPTIONS'
-      write(iu,'(2x,a)') 'TIME_UNITS '//trim(raw%getc('time_units',cdef='DAYS'))
-      write(iu,'(   a)') 'END OPTIONS'
-      write(iu,'(a)')
-      write(iu,'(   a)') 'BEGIN DIMENSIONS'
-      write(iu,'(2x,a)') 'NPER 1'
-      write(iu,'(   a)') 'END DIMENSIONS'
-      write(iu,'(a)')
-      write(iu,'(   a)') 'BEGIN PERIODDATA'
-      write(iu,'(2x,a)') '1 1 1'
-      write(iu,'(   a)') 'END PERIODDATA'
+      call write_block_begin(iu, 'OPTIONS')
+      call wline(iu, repeat(' ',2)//'TIME_UNITS '//trim(raw%getc('time_units',cdef='DAYS')))
+      call write_block_end(iu, 'OPTIONS')
+      call wline(iu, '')
+      call write_block_begin(iu, 'DIMENSIONS')
+      call wline(iu, repeat(' ',2)//'NPER 1')
+      call write_block_end(iu, 'DIMENSIONS')
+      call wline(iu, '')
+      call write_block_begin(iu, 'PERIODDATA')
+      call wline(iu, repeat(' ',2)//'1 1 1')
+      call write_block_end(iu, 'PERIODDATA')
       close(iu)
     !
     else !TR
       nstp_fac = raw%geti('nstp_fac',idef=1)
       !
-      nperspu = raw%geti('nyear_spinup')*12
+      nperspu = raw%geti('nmonth_spinup')
       f = trim(this%solname)//trim(pr(itdis,irun0tr))//'.tdis'
       call open_file(f, iu, 'w')
-      write(iu,'(   a)') 'BEGIN OPTIONS'
-      write(iu,'(2x,a)') 'TIME_UNITS '//trim(raw%getc('time_units',cdef='DAYS'))
-      write(iu,'(   a)') 'END OPTIONS'
-      write(iu,'(a)')
-      write(iu,'(   a)') 'BEGIN DIMENSIONS'
-      write(iu,'(2x,a)') 'NPER '//ta((/nperspu/))
-      write(iu,'(   a)') 'END DIMENSIONS'
-      write(iu,'(a)')
-      write(iu,'(   a)') 'BEGIN PERIODDATA'
+      call write_block_begin(iu, 'OPTIONS')
+      call wline(iu, repeat(' ',2)//'TIME_UNITS '//trim(raw%getc('time_units',cdef='DAYS')))
+      call write_block_end(iu, 'OPTIONS')
+      call wline(iu, '')
+      call write_block_begin(iu, 'DIMENSIONS')
+      call wline(iu, repeat(' ',2)//'NPER '//ta((/nperspu/)))
+      call write_block_end(iu, 'DIMENSIONS')
+      call wline(iu, '')
+      call write_block_begin(iu, 'PERIODDATA')
       do iper = 1, nperspu
         !jper = mod(iper,nperspu)
         !if (jper == 0) jper = nperspu
         jper = mod(iper,12)
         if (jper == 0) jper = 1
         nd = get_month_days_s(raw%perdate(jper))
-        write(iu,'(2x,a)') ta((/nd/))//' '//ta((/nd*nstp_fac/))//' 1'
+        call wline(iu, repeat(' ',2)//ta((/nd/))//' '//ta((/nd*nstp_fac/))//' 1')
       end do
-      write(iu,'(   a)') 'END PERIODDATA'
+      call write_block_end(iu, 'PERIODDATA')
       close(iu)
       !
       f = trim(this%solname)//'.tdis'
       call open_file(f, iu, 'w')
-      write(iu,'(   a)') 'BEGIN OPTIONS'
-      write(iu,'(2x,a)') 'TIME_UNITS '//trim(raw%getc('time_units',cdef='DAYS'))
-      write(iu,'(   a)') 'END OPTIONS'
-      write(iu,'(a)')
-      write(iu,'(   a)') 'BEGIN DIMENSIONS'
-      write(iu,'(2x,a)') 'NPER '//ta((/raw%nper/))
-      write(iu,'(   a)') 'END DIMENSIONS'
-      write(iu,'(a)')
-      write(iu,'(   a)') 'BEGIN PERIODDATA'
+      call write_block_begin(iu, 'OPTIONS')
+      call wline(iu, repeat(' ',2)//'TIME_UNITS '//trim(raw%getc('time_units',cdef='DAYS')))
+      call write_block_end(iu, 'OPTIONS')
+      call wline(iu, '')
+      call write_block_begin(iu, 'DIMENSIONS')
+      call wline(iu, repeat(' ',2)//'NPER '//ta((/raw%nper/)))
+      call write_block_end(iu, 'DIMENSIONS')
+      call wline(iu, '')
+      call write_block_begin(iu, 'PERIODDATA')
       do iper = 1, raw%nper
         nd = get_month_days_s(raw%perdate(iper))
-        write(iu,'(2x,a)') ta((/nd/))//' '//ta((/nd*nstp_fac/))//' 1'
+        call wline(iu, repeat(' ',2)//ta((/nd/))//' '//ta((/nd*nstp_fac/))//' 1')
       end do
-      write(iu,'(   a)') 'END PERIODDATA'
+      call write_block_end(iu, 'PERIODDATA')
       close(iu)
     end if
     !
@@ -1130,8 +1451,8 @@ module mf6_module
       character(mxslen), dimension(2,nlvar)  :: lvar
     end type tCompl
     !
-    type(tCompl), pointer :: c => null()
-    type(tCompl), dimension(:), pointer :: compl => null()
+    type(tCompl), pointer :: c
+    type(tCompl), dimension(:), pointer :: compl
     integer(i4b) :: ncompl, i, j
     character(mxslen) :: cname, rclose_option
 ! ------------------------------------------------------------------------------
@@ -1242,21 +1563,21 @@ module mf6_module
     f = trim(this%solname)//'.ims'
     call open_file(f, iu, 'w')
     !
-    write(iu,'(   a)') 'BEGIN OPTIONS'
-    write(iu,'(2x,a)') 'PRINT_OPTION '//raw%getc('print_option',cdef='ALLITER')
-    write(iu,'(   a)') 'END OPTIONS'
-    write(iu,'(a)')
-    write(iu,'(   a)') 'BEGIN NONLINEAR'
+    call write_block_begin(iu, 'OPTIONS')
+    call wline(iu, repeat(' ',2)//'PRINT_OPTION '//trim(raw%getc('print_option',cdef='ALLITER')))
+    call write_block_end(iu, 'OPTIONS')
+    call wline(iu, '')
+    call write_block_begin(iu, 'NONLINEAR')
     do j = 1, nnlvar
-      write(iu,'(2x,a)') trim(c%nlvar(1,j))//' '//trim(trim(c%nlvar(2,j)))
+      call wline(iu, repeat(' ',2)//trim(c%nlvar(1,j))//' '//trim(trim(c%nlvar(2,j))))
     end do
-    write(iu,'(   a)') 'END NONLINEAR'
-    write(iu,'(a)')
-    write(iu,'(   a)') 'BEGIN LINEAR'
+    call write_block_end(iu, 'NONLINEAR')
+    call wline(iu, '')
+    call write_block_begin(iu, 'LINEAR')
     do j = 1, nlvar
-      write(iu,'(2x,a)') trim(c%lvar(1,j))//' '//trim(trim(c%lvar(2,j)))
+      call wline(iu, repeat(' ',2)//trim(c%lvar(1,j))//' '//trim(trim(c%lvar(2,j))))
     end do
-    write(iu,'(   a)') 'END LINEAR'
+    call write_block_end(iu, 'LINEAR')
     close(iu)
     !
     deallocate(compl)
@@ -1294,8 +1615,7 @@ module mf6_module
     return
   end function mf6_mod_get_i_raw
   !
-  function mf6_mod_get_val_r8(this, i_raw, i_dat, ilay_dat, iper_dat, ireg, ic, ir) &
-    result(r8val)
+  function mf6_mod_get_val_r8(this, i_raw, ireg, ic, ir) result(r8val)
 ! ******************************************************************************
 ! ******************************************************************************
 !
@@ -1304,63 +1624,60 @@ module mf6_module
     ! -- dummy
     class(tMf6_mod) :: this
     integer(i4b), intent(in) :: i_raw
-    integer(i4b), intent(in) :: i_dat
-    integer(i4b), intent(in) :: ilay_dat
-    integer(i4b), intent(in) :: iper_dat
     integer(i4b), intent(in) :: ireg
     integer(i4b), intent(in) :: ic
     integer(i4b), intent(in) :: ir
     real(r8b) :: r8val
     ! -- local
-    type(tReg), pointer :: reg => null()
-    type(tData), pointer :: dat => null()
-    integer(i4b) :: gir, gic
+    type(tReg), pointer :: reg
+    type(tData), pointer :: dat
+    type(tSlice), pointer :: b
+    integer(i4b) :: gir, gic, jc, jr
     real(r4b) :: r4val
 ! ------------------------------------------------------------------------------
     dat => raw%raw(i_raw)%dat
+    b => raw%slice(i_raw, 0, 1)
     reg => this%reg(ireg)
     !
-    call mf6_data_load(dat, reg%bb, iper_dat)
-    r4val = dat%blk(ic,ir)
+    gir = ir + reg%bb%ir0 - 1; gic = ic + reg%bb%ic0 - 1
+    jc = gic - dat%icoff; jr = gir - dat%iroff
+    if ((jc < 1).or.(jc > size(b%a,1)).or.(jr < 1).or.(jr > size(b%a,2))) then
+      call errmsg('cell (col,row) = ('//ta((/gic, gir/))//') outside '//trim(dat%s))
+    end if
+    r4val = b%a(jc,jr)
     if (r4val == real(dat%r%nodata,r4b)) then
-      gir = ir + reg%bb%ir0 - 1; gic = ic + reg%bb%ic0 - 1
       call errmsg('nodata in '//trim(dat%s)//' at active cell (col,row) = ('// &
         ta((/gic, gir/))//')')
     end if
     r8val = real(r4val,r8b)
     !
     r8val = r8val *dat%r8mult + dat%r8add
-      
+
     return
   end function mf6_mod_get_val_r8
-  
-  subroutine mf6_mod_get_array_r8(this, i_dat, ilay_dat, iper_dat, ilay_tgt, isys_dat,&
-    arrflg, arr, ib_in, toponly_in)
+
+  subroutine mf6_mod_get_array_r8(this, i_dat, ilay_dat, ilay_tgt, arrflg, arr, ib_in)
 ! ******************************************************************************
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
+! Static fields only: the model's nodes of layer ilay_tgt from the loaded
+! whole-raster slice. ib 0: all cells, 1: sea only, 2: all but sea,
+! 3: internal M1 interface cells. Nodata drops the node.
 ! ------------------------------------------------------------------------------
 !
     ! -- dummy
     class(tMf6_mod) :: this
     integer(i4b), intent(in) :: i_dat
     integer(i4b), intent(in) :: ilay_dat
-    integer(i4b), intent(in) :: iper_dat
     integer(i4b), intent(in) :: ilay_tgt
     integer(i1b), dimension(:), pointer, intent(inout) :: arrflg
     real(r8b), dimension(:), pointer, intent(inout) :: arr
     integer(i4b), intent(in), optional :: ib_in
-    logical, intent(in), optional :: toponly_in
-    integer(i4b), intent(in), optional :: isys_dat
     ! -- local
     type(tReg), pointer :: reg
-    type(tData), pointer :: dat => null()
-    integer(i4b) :: n, nt, i, ireg, ir, ic, jr, jc, ib, ilay, nlay
-    integer(i4b) :: arrsiz, nodes, nact, ndrop
+    type(tData), pointer :: dat
+    type(tSlice), pointer :: b
+    integer(i4b) :: n, i, ireg, ir, ic, jr, jc, gic, gir, ib
+    integer(i4b) :: nodes, nact, ndrop
     real(r4b) :: r4val, r4nodata
-    real(r8b) :: r8val
-    logical :: toponly, found
 ! ------------------------------------------------------------------------------
     nact = 0; ndrop = 0
     !
@@ -1370,22 +1687,12 @@ module mf6_module
       ib = 0
     end if
     !
-    if (present(toponly_in)) then
-      toponly = toponly_in
-    else
-      toponly = .false.
-    end if
-    !
-    if (present(isys_dat)) then
-      i = raw%mf6_raw_get_index(keys(i_dat), ilay_dat, iper_dat, isys_dat)
-    else
-      i = raw%mf6_raw_get_index(keys(i_dat), ilay_dat, iper_dat, isys_dat)
-    end if
-    !
+    i = raw%mf6_raw_get_index(keys(i_dat), ilay_dat, 0, 0)
     if (i <= 0) then
       call errmsg('mf6_mod_get_array_r8: program error 1')
     end if
     dat => raw%raw(i)%dat
+    b => raw%slice(i, 0, 1)
     !
     nodes = sum(this%layer_nodes)
     if (.not.associated(arr)) then
@@ -1409,32 +1716,25 @@ module mf6_module
     !
     do ireg = 1, this%nreg
       reg => this%reg(ireg)
-      nlay = size(reg%nodmap,3)
-      call mf6_data_load(dat, reg%bb, iper_dat)
-      do ir = reg%bb%ir0, reg%bb%ir1
-        do ic = reg%bb%ic0, reg%bb%ic1
-          jr = ir - reg%bb%ir0 + 1; jc = ic - reg%bb%ic0 + 1
+      do ir = 1, reg%bb%nrow
+        do ic = 1, reg%bb%ncol
           select case(ib)
             case(0) ! all cells including sea cells
-              n = reg%nodmap(jc,jr,ilay_tgt)
-              n = abs(n)
-              !if (n == 116498) then
-              !  write(*,*) '@@@@'
-              !end if
+              n = abs(reg%nodmap(ic,ir,ilay_tgt))
             case(1) ! sea cells only
-              n = reg%nodmap(jc,jr,ilay_tgt)
+              n = reg%nodmap(ic,ir,ilay_tgt)
               if (n < 0) then
                 n = abs(n)
               else
                 n = 0
               end if
             case(2) ! all cells excluding sea cells
-              n = reg%nodmap(jc,jr,ilay_tgt)
+              n = reg%nodmap(ic,ir,ilay_tgt)
               if (n < 0) then
                 n = 0
               end if
             case(3) ! internal M1 interface cells only (skip sea)
-              n = reg%bndmap(jc,jr,ilay_tgt)
+              n = reg%bndmap(ic,ir,ilay_tgt)
               if (n < 0) then
                 n = 0
               end if
@@ -1442,42 +1742,25 @@ module mf6_module
               call errmsg('mf6_mod_get_array_r8: program error 1')
           end select
           !
-          ! only select active cells seen from top
-          if (toponly.and.(n /= 0)) then
-            found = .false.
-            do ilay = 1, nlay
-              nt = reg%nodmap(jc,jr,ilay)
-              if (nt /= 0) then 
-                found = .true.
-                exit
-              end if
-            end do
-            if (found .and. (nt /= n)) then
-              n = 0
-            end if
-          end if
-          !
-          if (n < 0) then 
-            call errmsg('mf6_mod_get_array_r8: program error 2')
-          end if
           if (n /= 0) then
+            gic = ic + reg%bb%ic0 - 1; gir = ir + reg%bb%ir0 - 1
+            jc = gic - dat%icoff; jr = gir - dat%iroff
+            if ((jc < 1).or.(jc > size(b%a,1)).or.(jr < 1).or.(jr > size(b%a,2))) then
+              call errmsg('cell (col,row) = ('//ta((/gic, gir/))//') outside '//trim(dat%s))
+            end if
             ! nodata in a boundary field means "no boundary here": the node
             ! leaves the package list
-            r4val = dat%blk(jc,jr)
+            r4val = b%a(jc,jr)
             nact = nact + 1
             if (r4val == r4nodata) then
               n = 0; ndrop = ndrop + 1
             end if
-            r8val = real(r4val,r8b)
             if (n /= 0) then
               if ((n < 1) .or. (n > nodes)) then
                 call errmsg('mf6_mod_get_array_r8: program error 3 '//ta((/ib/))//' '//&
                   ta((/n/))//' '//ta((/nodes/)))
               end if
-              if (isys_dat > 0) then
-                n = n + (isys_dat-1)*nodes
-              end if
-              arr(n) = r8val * dat%r8mult + dat%r8add
+              arr(n) = real(r4val,r8b) * dat%r8mult + dat%r8add
               arrflg(n) = 1
             end if
           end if
@@ -1485,14 +1768,114 @@ module mf6_module
       end do
     end do
     !
-    if ((ndrop > 0).and.(iper_dat <= 1)) then
+    if (ndrop > 0) then
       i = index(dat%s, '/', back=.true.)
-      call logmsg(trim(dat%s(i+1:))//': '//ta((/ndrop/))//' of '//ta((/nact/))// &
-        ' active cells nodata, dropped (period 1; later periods not reported)')
+      call logmsg(trim(this%modelname)//' '//trim(dat%s(i+1:))//': '//ta((/ndrop/))//' of '// &
+        ta((/nact/))//' active cells nodata, dropped')
     end if
     !
     return
   end subroutine mf6_mod_get_array_r8
+
+  subroutine mf6_mod_build_tables(this)
+! ******************************************************************************
+! Node tables per layer, in node order: (1,il) every non-sea node of layer
+! il, (2,il) those that are the uppermost active cell of their column. The
+! period packages gather through these; nodmap is not needed afterwards.
+! ------------------------------------------------------------------------------
+    ! -- dummy
+    class(tMf6_mod) :: this
+    ! -- local
+    type(tReg), pointer :: reg
+    type(tBb), pointer :: bb
+    integer(i4b) :: il, jl, ireg, ir, ic, n, nt, iact, isel
+    integer(i4b), dimension(2) :: cnt
+! ------------------------------------------------------------------------------
+    allocate(this%tab(2, gnlay))
+    do il = 1, gnlay
+      do iact = 1, 2
+        cnt = 0
+        do ireg = 1, this%nreg
+          reg => this%reg(ireg); bb => reg%bb
+          do ir = 1, bb%nrow
+            do ic = 1, bb%ncol
+              n = reg%nodmap(ic,ir,il)
+              if (n <= 0) cycle
+              nt = 0
+              do jl = 1, gnlay
+                nt = reg%nodmap(ic,ir,jl)
+                if (nt /= 0) exit
+              end do
+              cnt(1) = cnt(1) + 1
+              if (iact == 2) call put(1, cnt(1))
+              if (nt == n) then
+                cnt(2) = cnt(2) + 1
+                if (iact == 2) call put(2, cnt(2))
+              end if
+            end do
+          end do
+        end do
+        if (iact == 1) then
+          do isel = 1, 2
+            this%tab(isel,il)%n = cnt(isel)
+            allocate(this%tab(isel,il)%node(cnt(isel)))
+            allocate(this%tab(isel,il)%gic(cnt(isel)))
+            allocate(this%tab(isel,il)%gir(cnt(isel)))
+          end do
+        end if
+      end do
+    end do
+    !
+    return
+    !
+  contains
+    subroutine put(isel, k)
+      integer(i4b), intent(in) :: isel, k
+      this%tab(isel,il)%node(k) = n
+      this%tab(isel,il)%gic(k) = ic + bb%ic0 - 1
+      this%tab(isel,il)%gir(k) = ir + bb%ir0 - 1
+    end subroutine put
+  end subroutine mf6_mod_build_tables
+
+  subroutine mf6_mod_write_records(this, nsys, nodes, flg, val, p0, p1)
+! ******************************************************************************
+! Append the MODFLOW list records (node, values) of the flagged nodes to the
+! model binary, system-major, node order; p0..p1 is their byte range.
+! ------------------------------------------------------------------------------
+    ! -- dummy
+    class(tMf6_mod) :: this
+    integer(i4b), intent(in) :: nsys
+    integer(i4b), intent(in) :: nodes
+    integer(i1b), dimension(:), intent(in) :: flg
+    real(r8b), dimension(:,:), intent(in) :: val
+    integer(i8b), intent(out) :: p0, p1
+    ! -- local
+    integer(i1b), dimension(:), allocatable :: buf
+    integer(i1b), dimension(8) :: mold
+    integer(i8b) :: p, nrec
+    integer(i4b) :: nf, reclen, isys, j, m, f
+! ------------------------------------------------------------------------------
+    nf = size(val,1); reclen = 4 + 8*nf
+    nrec = count(flg == 1)
+    allocate(buf(nrec*reclen))
+    p = 0
+    do isys = 1, nsys
+      do j = 1, nodes
+        m = j + (isys-1)*nodes
+        if (flg(m) /= 1) cycle
+        buf(p+1:p+4) = transfer(j, mold(1:4))
+        do f = 1, nf
+          buf(p+5+8*(f-1):p+4+8*f) = transfer(val(f,m), mold)
+        end do
+        p = p + reclen
+      end do
+    end do
+    inquire(this%iubin, pos=p0)
+    if (nrec > 0) write(this%iubin) buf
+    inquire(this%iubin, pos=p1)
+    !
+    return
+  end subroutine mf6_mod_write_records
 !
   subroutine mf6_mod_write_post_map(this, iwrite)
 ! ******************************************************************************
@@ -1506,10 +1889,11 @@ module mf6_module
     integer(i4b), intent(in) :: iwrite
     ! -- local
     character(len=mxslen) :: d
-    type(tReg), pointer :: reg => null()
-    type(tBb), pointer :: bb => null()
+    type(tReg), pointer :: reg
+    type(tBb), pointer :: bb
     character(len=mxslen) :: f
     integer(i4b) :: ireg, nodes, n, iu, il, ir, ic, kr, kc, nlay, gic, gir, gil, i, j
+    integer(c_int) :: ierr
     real(r8b) :: xmin, ymin
 ! ------------------------------------------------------------------------------
     !
@@ -1560,10 +1944,8 @@ module mf6_module
       end if
     end do
     !
-    d = '..\..\models\post_mappings\'
-    call create_dir(d, .true.)
+    d = '../../models/post_mappings/'
     f = trim(d)//trim(this%modelname)//'.nodmap.bin'
-    call swap_slash(f)
     call open_file(f, iu, 'w', .true.)
     write(iu) this%bb%ic0, this%bb%ic1, this%bb%ir0, this%bb%ir1
     write(iu) nodes ! number of nodes
@@ -1592,11 +1974,16 @@ module mf6_module
             end do
           end do
         end do
-        f = trim(d)//trim(this%modelname)//'.nodmap.l'//ta((/il/),'(i2.2)')//'.nc'
-        call swap_slash(f)
+        f = trim(d)//trim(this%modelname)//'.nodmap.l'//ta((/il/), 2)//'.nc'
         xmin = gxmin + (this%bb%ic0-1)*gcs
         ymin = gymin + (gnrow-this%bb%ir1)*gcs
-        call raster_write(f, i4wrk2d, dble(xmin), dble(ymin), dble(gcs), 0)
+        ! netCDF is not thread-safe: it creates the file, the chunks are
+        ! deflated on the team and written through HDF5
+        !$omp critical(netcdf)
+        ierr = h5eset_auto2(0_c_int64_t, c_null_funptr, c_null_ptr)
+        call raster_create_i4(f, this%bb%ncol, this%bb%nrow, dble(xmin), dble(ymin), dble(gcs), 0)
+        !$omp end critical(netcdf)
+        call write_raster_chunks(f, 'data', i4wrk2d, 0)
       end do
     end if
     !
@@ -1647,7 +2034,7 @@ module mf6_module
     integer(i4b), dimension(gnlay) :: cnt
     ! -- local
     type(tReg), pointer :: reg
-    type(tBb), pointer :: bb => null()
+    type(tBb), pointer :: bb
     integer(i4b) :: ireg, il, ir, ic, n, m, nsys, isys, nodes
 ! ------------------------------------------------------------------------------
     nodes = sum(this%layer_nodes)
@@ -1720,10 +2107,10 @@ module mf6_module
     integer(i4b), dimension(ns) :: ihc
     !        p t n w e s b
     data ihc/0,0,1,1,1,1,0/
-    type(tBb), pointer :: bb => null()
+    type(tBb), pointer :: bb
     real(r8b), dimension(ns) :: hwva, cl12
-    type(tDisu), pointer :: disu => null()
-    type(tReg), pointer :: reg => null()
+    type(tDisu), pointer :: disu
+    type(tReg), pointer :: reg
     integer(i4b) :: ireg, n, ilay, iact, nja
     integer(i4b), dimension(ns) :: s
     integer(i4b) :: ic, ir, i, top_i_raw, bot_i_raw
@@ -1804,11 +2191,11 @@ module mf6_module
                 !  write(*,*) '@@@@@'
                 !end if
                 if (ilay == 1) then
-                  topval = this%get_val(top_i_raw, i_top, 0, 0, ireg, ic, ir)
-                  botval = this%get_val(bot_i_raw, i_bot, 1, 0, ireg, ic, ir)
+                  topval = this%get_val(top_i_raw, ireg, ic, ir)
+                  botval = this%get_val(bot_i_raw, ireg, ic, ir)
                 else if (ilay == 2) then
-                  topval = this%get_val(top_i_raw, i_bot, 1, 0, ireg, ic, ir)
-                  botval = this%get_val(bot_i_raw, i_bot, 2, 0, ireg, ic, ir)
+                  topval = this%get_val(top_i_raw, ireg, ic, ir)
+                  botval = this%get_val(bot_i_raw, ireg, ic, ir)
                 end if
                 !
                 if (ilay > 1) then !TOP
@@ -1901,7 +2288,6 @@ module mf6_module
       lbinpos = .false.
     end if
     !    
-    write(fmt,'(a,i0,a)') '(',nx,'x,a)'
     if (lbin) then
       if (.not.lbinpos) then
         f = trim(f)//'.bin'
@@ -1921,19 +2307,19 @@ module mf6_module
       end if
       !call get_rel_up(f, 2)
       if (.not.lbinpos) then
-        write(iu,fmt) 'OPEN/CLOSE '//trim(f)//' (BINARY)'
+        call wline(iu, repeat(' ',nx)//'OPEN/CLOSE '//trim(f)//' (BINARY)')
       else
-        write(iu,fmt) 'OPEN/CLOSE '//trim(f)//' (BINARY) '//ta((/p0,p1/))
+        call wline(iu, repeat(' ',nx)//'OPEN/CLOSE '//trim(f)//' (BINARY) '//ta((/p0,p1/)))
       end if
     else
       f = trim(f)//'.asc'
       call open_file(f, ju, 'w')
       do i = 1, size(arr)
-        write(ju,'(a)') ta((/arr(i)/))
+        call wline(ju, ta((/arr(i)/)))
       end do
       close(ju)
       !call get_rel_up(f, 2)
-      write(iu,fmt) 'OPEN/CLOSE '//trim(f)
+      call wline(iu, repeat(' ',nx)//'OPEN/CLOSE '//trim(f))
     end if
     !
     return
@@ -1969,7 +2355,6 @@ module mf6_module
       lbinpos = .false.
     end if
     !
-    write(fmt,'(a,i0,a)') '(',nx,'x,a)'
     if (lbin) then
       if (.not.lbinpos) then
         f = trim(f)//'.bin'
@@ -1989,452 +2374,111 @@ module mf6_module
       end if
       !call get_rel_up(f, 2)
       if (.not.lbinpos) then
-        write(iu,fmt) 'OPEN/CLOSE '//trim(f)//' (BINARY)'
+        call wline(iu, repeat(' ',nx)//'OPEN/CLOSE '//trim(f)//' (BINARY)')
       else
-        write(iu,fmt) 'OPEN/CLOSE '//trim(f)//' (BINARY) '//ta((/p0,p1/))
+        call wline(iu, repeat(' ',nx)//'OPEN/CLOSE '//trim(f)//' (BINARY) '//ta((/p0,p1/)))
       end if
     else
       f = trim(f)//'.asc'
       call open_file(f, ju, 'w')
       do i = 1, size(arr)
-        write(ju,'(a)') ta((/arr(i)/))
+        call wline(ju, ta((/arr(i)/)))
       end do
       close(ju)
       !call get_rel_up(f, 2)
-      write(iu,fmt) 'OPEN/CLOSE '//trim(f)
+      call wline(iu, repeat(' ',nx)//'OPEN/CLOSE '//trim(f))
     end if
     !
     return
   end subroutine mf6_mod_write_array_r8
   
-  subroutine mf6_mod_write_list_1(this, iu, nx, f, arrflg, arr, lbin, lbinpos, s)
+  subroutine list_pck_fields(ipack, nf, kf, isel, what, why)
 ! ******************************************************************************
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
+! The fields of a list package, its node selection (1 all non-sea nodes,
+! 2 uppermost active) and the words of its log lines.
 ! ------------------------------------------------------------------------------
-!
     ! -- dummy
-    class(tMf6_mod) :: this
-    integer(i4b), intent(in) :: iu 
-    integer(i4b), intent(in) :: nx
-    character(len=*), intent(inout) :: f
-    integer(i1b), dimension(:), intent(in) :: arrflg
-    real(r8b), dimension(:), intent(in) :: arr
-    logical, intent(in) :: lbin
-    logical, intent(in) :: lbinpos
-    character(len=*), intent(out), optional :: s
-    ! -- local
-    integer(i4b), dimension(:), allocatable :: i4w
-    real(r8b), dimension(:), allocatable :: r8w1
-    integer(i4b) :: ju, i, n
-    integer(i8b) :: p0, p1
-    character(len=mxslen) :: fmt
-    logical :: liu
+    integer(i4b), intent(in) :: ipack
+    integer(i4b), intent(out) :: nf, isel
+    integer(i4b), dimension(3), intent(out) :: kf
+    character(len=*), intent(out) :: what, why
 ! ------------------------------------------------------------------------------
-    !
-    if (present(s)) then
-      liu = .false.
-    else
-      liu = .true.
-    end if
-    !
-    write(fmt,'(a,i0,a)') '(',nx,'x,a)'
-    if (lbin) then
-      if (.not.lbinpos) then
-        f = trim(f)//'.bin'
-        call open_file(f, ju, 'w', .true.)
-      else
-        f = this%fbin
-        ju = this%iubin
-      end if
-      n = 0
-      do i = 1, size(arrflg)
-        if (arrflg(i) == 1) then
-          n = n + 1
-        end if
-      end do
-      if (lbinpos) then
-        inquire(ju,pos=p0)
-      end if
-      if (n > 0) then
-        allocate(i4w(n),r8w1(n))
-        n = 0
-        do i = 1, size(arrflg)
-          if (arrflg(i) == 1) then
-            n = n + 1
-            i4w(n) = i; r8w1(n) = arr(i)
-          end if
-        end do
-        write(ju)(i4w(i),r8w1(i),i=1,n)
-        deallocate(i4w,r8w1)
-      end if
-      if (lbinpos) then
-        inquire(ju,pos=p1)
-      else
-        close(ju)
-      end if
-      !call get_rel_up(f, 2)
-      if (liu) then
-        if (lbinpos) then
-          write(iu,fmt) 'OPEN/CLOSE '//trim(f)// ' (BINARY) '//ta((/p0,p1/))
-        else
-          write(iu,fmt) 'OPEN/CLOSE '//trim(f)// ' (BINARY)'
-        end if
-      else
-        if (lbinpos) then
-          write(s,fmt) 'OPEN/CLOSE '//trim(f)// ' (BINARY) '//ta((/p0,p1/))
-        else
-          write(s,fmt) 'OPEN/CLOSE '//trim(f)// ' (BINARY)'
-        end if
-      end if
-    else
-      f = trim(f)//'.asc'
-      call open_file(f, ju, 'w')
-      do i = 1, size(arrflg)
-        if (arrflg(i) == 1) then
-          write(ju,'(a)') ta((/i/))//' '//ta((/arr(i)/))
-        end if
-      end do
-      close(ju)
-      !call get_rel_up(f, 2)
-      if (liu) then
-        write(iu,fmt) 'OPEN/CLOSE '//trim(f)
-      else
-        write(s,fmt) 'OPEN/CLOSE '//trim(f)
-      end if
-    end if
+    kf = 0
+    select case (ipack)
+    case (idrn)
+      nf = 2; kf(1:2) = (/i_drn_elev, i_drn_cond/); isel = 1
+      what = 'drains'; why = 'conductance'
+    case (iriv)
+      nf = 3; kf(1:3) = (/i_riv_stage, i_riv_cond, i_riv_rbot/); isel = 2
+      what = 'rivers'; why = 'conductance'
+    case (ighb1)
+      nf = 2; kf(1:2) = (/i_ghb1_bhead, i_ghb1_cond/); isel = 1
+      what = 'general-head boundaries'; why = 'conductance'
+    case (ighb2)
+      nf = 2; kf(1:2) = (/i_ghb2_bhead, i_ghb2_cond/); isel = 1
+      what = 'general-head boundaries'; why = 'conductance'
+    case (irch)
+      nf = 1; kf(1) = i_recharge; isel = 2
+      what = 'recharge cells'; why = 'recharge'
+    case (iwel)
+      nf = 1; kf(1) = i_wel; isel = 1
+      what = 'wells'; why = 'flux'
+    case default
+      call errmsg('list_pck_fields: not a list package')
+    end select
     !
     return
-  end subroutine mf6_mod_write_list_1
-  
-  subroutine mf6_mod_write_list_2(this, iu, nx, f, arrflg, arr, arr2, lbin, &
-    lbinpos, s, nsys, nodes)
+  end subroutine list_pck_fields
+
+  function list_pck_ilay(ipack, il) result(ilay_dat)
 ! ******************************************************************************
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
+! The _L key layer a list package reads for target layer il: rivers take the
+! L1 fields for both layers, recharge has no layer, the rest their own.
 ! ------------------------------------------------------------------------------
-!
-    ! -- dummy
-    class(tMf6_mod) :: this
-    integer(i4b), intent(in) :: iu 
-    integer(i4b), intent(in) :: nx
-    character(len=*), intent(inout) :: f
-    integer(i1b), dimension(:), intent(in) :: arrflg
-    real(r8b), dimension(:), intent(in) :: arr
-    real(r8b), dimension(:), intent(in) :: arr2
-    logical, intent(in) :: lbin
-    logical, intent(in) :: lbinpos
-    character(len=*), intent(out), optional :: s
-    integer(i4b), intent(in), optional :: nsys
-    integer(i4b), intent(in), optional :: nodes
-    ! -- local
-    integer(i4b), dimension(:), allocatable :: i4w
-    real(r8b), dimension(:), allocatable :: r8w1, r8w2
-    integer(i4b) :: ju, i, j, n, isys
-    integer(i8b) :: p0, p1
-    character(len=mxslen) :: fmt
-    logical :: liu, lsys
+    integer(i4b), intent(in) :: ipack, il
+    integer(i4b) :: ilay_dat
 ! ------------------------------------------------------------------------------
-    !
-    if (present(nsys)) then
-      if (.not.present(nodes)) then
-        call errmsg('mf6_mod_write_list_2: nodes should be an argument.')
-       end if
-       lsys = .true.
-    else
-      lsys = .false.
-    end if
-    !
-    if (present(s)) then
-      liu = .false.
-    else
-      liu = .true.
-    end if
-    !
-    n = 0
-    if (lsys) then
-      do isys = 1, nsys
-        do j = 1, nodes
-          i = j + (isys-1)*nodes
-          if (arrflg(i) == 1) then
-            n = n + 1
-          end if
-        end do
-      end do
-    else
-      do i = 1, size(arrflg)
-        if (arrflg(i) == 1) then
-          n = n + 1
-        end if
-      end do
-    end if
-    !
-    if (n > 0) then
-      allocate(i4w(n),r8w1(n),r8w2(n))
-      n = 0
-      if (lsys) then
-        do isys = 1, nsys
-          do j = 1, nodes
-            i = j + (isys-1)*nodes
-            if (arrflg(i) == 1) then
-              n = n + 1
-              i4w(n) = j; r8w1(n) = arr(i); r8w2(n) = arr2(i)
-            end if
-          end do
-        end do
-      else
-        do i = 1, size(arrflg)
-          if (arrflg(i) == 1) then
-            n = n + 1
-            i4w(n) = i; r8w1(n) = arr(i); r8w2(n) = arr2(i)
-          end if
-        end do
-      end if
-    else
-      call logmsg('mf6_mod_write_list_2: Nothing to do!')
-      return
-    end if
-    !
-    write(fmt,'(a,i0,a)') '(',nx,'x,a)'
-    if (lbin) then
-      if (.not.lbinpos) then
-        f = trim(f)//'.bin'
-        call open_file(f, ju, 'w', .true.)
-      else
-        f = this%fbin
-        ju = this%iubin
-      end if
-      if (lbinpos) then
-        inquire(ju,pos=p0)
-        write(ju)(i4w(i),r8w1(i),r8w2(i),i=1,n)
-      end if
-      if (lbinpos) then
-        inquire(ju,pos=p1)
-      else
-        close(ju)
-      end if
-      !call get_rel_up(f, 2)
-      if (liu) then
-        if (lbinpos) then
-          write(iu,fmt) 'OPEN/CLOSE '//trim(f)// ' (BINARY) '//ta((/p0,p1/))
-        else
-          write(iu,fmt) 'OPEN/CLOSE '//trim(f)// ' (BINARY)'
-        end if
-      else
-        if (lbinpos) then
-          write(s,fmt) 'OPEN/CLOSE '//trim(f)// ' (BINARY) '//ta((/p0,p1/))
-        else
-          write(s,fmt) 'OPEN/CLOSE '//trim(f)// ' (BINARY)'
-        end if
-      end if
-    else
-      f = trim(f)//'.asc'
-      call open_file(f, ju, 'w')
-      do i = 1, n
-        write(ju,'(a)') ta((/i/))//' '//ta((/r8w1(i)/))//' '//ta((/r8w2(i)/))
-      end do
-      close(ju)
-      !call get_rel_up(f, 2)
-      if (liu) then
-        write(iu,fmt) 'OPEN/CLOSE '//trim(f)
-      else
-        write(s,fmt) 'OPEN/CLOSE '//trim(f)
-      end if
-    end if
-    !
-    deallocate(i4w,r8w1,r8w2)
+    select case (ipack)
+    case (iriv)
+      ilay_dat = 1
+    case (irch)
+      ilay_dat = 0
+    case default
+      ilay_dat = il
+    end select
     !
     return
-  end subroutine mf6_mod_write_list_2
-  
-  subroutine mf6_mod_write_list_3(this, iu, nx, f, arrflg, arr, arr2, arr3, &
-    lbin, lbinpos, s, nsys, nodes)
+  end function list_pck_ilay
+
+  subroutine mf6_mod_write_static(this)
 ! ******************************************************************************
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
+! Open the model binary and write everything that does not depend on the
+! stress period: disu, ic, oc, npf, sto, chd. The list packages follow in
+! write_period_list, one stage at a time, and write_finish closes the model.
 ! ------------------------------------------------------------------------------
-!
-    ! -- dummy
-    class(tMf6_mod) :: this
-    integer(i4b), intent(in) :: iu 
-    integer(i4b), intent(in) :: nx
-    character(len=*), intent(inout) :: f
-    integer(i1b), dimension(:), intent(in) :: arrflg
-    real(r8b), dimension(:), intent(in) :: arr
-    real(r8b), dimension(:), intent(in) :: arr2
-    real(r8b), dimension(:), intent(in) :: arr3
-    logical, intent(in) :: lbin
-    logical, intent(in) :: lbinpos
-    character(len=*), intent(out), optional :: s
-    integer(i4b), intent(in), optional :: nsys
-    integer(i4b), intent(in), optional :: nodes
-    ! -- local
-    integer(i4b), dimension(:), allocatable :: i4w
-    real(r8b), dimension(:), allocatable :: r8w1, r8w2, r8w3
-    integer(i4b) :: ju, i, j, n, isys
-    integer(i8b) :: p0, p1
-    character(len=mxslen) :: fmt
-    logical :: liu, lsys
-! ------------------------------------------------------------------------------
-    if (present(nsys)) then
-      if (.not.present(nodes)) then
-        call errmsg('mf6_mod_write_list_2: nodes should be an argument.')
-       end if
-       lsys = .true.
-    else
-      lsys = .false.
-    end if
-    !
-    if (present(s)) then
-      liu = .false.
-    else
-      liu = .true.
-    end if
-    !
-    n = 0
-    if (lsys) then
-      do isys = 1, nsys
-        do j = 1, nodes
-          i = j + (isys-1)*nodes
-          if (arrflg(i) == 1) then
-            n = n + 1
-          end if
-        end do
-      end do
-    else
-      do i = 1, size(arrflg)
-        if (arrflg(i) == 1) then
-          n = n + 1
-        end if
-      end do
-    end if
-    !
-    if (n > 0) then
-      allocate(i4w(n),r8w1(n),r8w2(n),r8w3(n))
-      n = 0
-      if (lsys) then
-        do isys = 1, nsys
-          do j = 1, nodes
-            i = j + (isys-1)*nodes
-            if (arrflg(i) == 1) then
-              n = n + 1
-              i4w(n) = j; r8w1(n) = arr(i); r8w2(n) = arr2(i); r8w3(n) = arr3(i)
-            end if
-          end do
-        end do
-      else
-        do i = 1, size(arrflg)
-          if (arrflg(i) == 1) then
-            n = n + 1
-            i4w(n) = i; r8w1(n) = arr(i); r8w2(n) = arr2(i); r8w3(n) = arr3(i)
-          end if
-        end do
-      end if
-    else
-      call logmsg('mf6_mod_write_list_3: Nothing to do!')
-      return
-    end if
-    !
-    write(fmt,'(a,i0,a)') '(',nx,'x,a)'
-    if (lbin) then
-      if (.not.lbinpos) then
-        f = trim(f)//'.bin'
-        call open_file(f, ju, 'w', .true.)
-      else
-        f = this%fbin
-        ju = this%iubin
-      end if
-      if (lbinpos) then
-        inquire(ju,pos=p0)
-      end if
-      if (n > 0) then
-        write(ju)(i4w(i),r8w1(i),r8w2(i),r8w3(i),i=1,n)
-      end if
-      if (lbinpos) then
-        inquire(ju,pos=p1)
-      else
-        close(ju)
-      end if
-      !call get_rel_up(f, 2)
-      if (liu) then
-        if (lbinpos) then
-          write(iu,fmt) 'OPEN/CLOSE '//trim(f)// ' (BINARY) '//ta((/p0,p1/))
-        else
-          write(iu,fmt) 'OPEN/CLOSE '//trim(f)// ' (BINARY)'
-        end if
-      else
-        if (lbinpos) then
-          write(s,fmt) 'OPEN/CLOSE '//trim(f)// ' (BINARY) '//ta((/p0,p1/))
-        else
-          write(s,fmt) 'OPEN/CLOSE '//trim(f)// ' (BINARY)'
-        end if
-      end if
-    else
-      f = trim(f)//'.asc'
-      call open_file(f, ju, 'w')
-      do i = 1, n
-        write(ju,'(a)') ta((/i4w(i)/))//' '// &
-          ta((/r8w1(i)/))//' '//ta((/r8w2(i)/))//' '//ta((/r8w3(i)/))
-      end do
-      close(ju)
-      !call get_rel_up(f, 2)
-      if (liu) then
-        write(iu,fmt) 'OPEN/CLOSE '//trim(f)
-      else
-        write(s,fmt) 'OPEN/CLOSE '//trim(f)
-      end if
-    end if
-    !
-    deallocate(i4w,r8w1,r8w2,r8w3)
-    !
-    return
-  end subroutine mf6_mod_write_list_3
-  
-  subroutine mf6_mod_write(this)
-! ******************************************************************************
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
-!
     ! -- dummy
     class(tMf6_mod) :: this
     ! -- local
     logical, parameter :: lbin    = .true.
     logical, parameter :: lbinpos = .true.
-    character(len=mxslen) :: f, pack
-    integer(i4b) :: iu
+    character(len=mxslen) :: s
+    integer(i4b) :: ipack, nper
 ! ------------------------------------------------------------------------------
-    call logmsg('**************************************************************')
-    if (raw%nper == 1) then 
-      call logmsg('***** Writing for steady-state model '//trim(this%modelname)//'...')
-    else
-      call logmsg('***** Writing for transient model '//trim(this%modelname)//'...')
-    end if
-    call logmsg('**************************************************************')
+    call logmsg('***** Writing static input for model '//trim(this%modelname)//'...')
     !
-    ! open the binary file
-    if (lbinpos) then
-      allocate(this%fbin, this%iubin)
-      this%fbin = trim(this%bindir)//trim(this%modelname)//'.bin'
-      call open_file(this%fbin, this%iubin, 'w', .true.)
-    end if
+    allocate(this%fbin, this%iubin)
+    this%fbin = trim(this%bindir)//trim(this%modelname)//'.bin'
+    call open_file(this%fbin, this%iubin, 'w', .true., unit_in=10000+this%imod)
     !
     ! set the defaults
-    pckact = 1
-    pckact(isto) = raw%geti('act_sto',idef=1)
-    pckact(iriv) = raw%geti('act_riv',idef=1)
-    pckact(iwel) = raw%geti('act_wel',idef=1)
-    pckact(ighb1) = raw%geti('act_ghb',idef=0)
-    pckact(ighb2) = raw%geti('act_ghb2',idef=0)
-    pckact(ichd1) = raw%geti('act_chd',idef=1)
-    pckact(ichd2) = raw%geti('act_chd2',idef=1)
-    !
-    !call this%write_drn(lbin, lbinpos) !DEBUG
-    !call this%write_riv(lbin, lbinpos); stop !DEBUG
+    this%pckact = 1
+    this%pckact(isto) = raw%geti('act_sto',idef=1)
+    this%pckact(iriv) = raw%geti('act_riv',idef=1)
+    this%pckact(iwel) = raw%geti('act_wel',idef=1)
+    this%pckact(ighb1) = raw%geti('act_ghb',idef=0)
+    this%pckact(ighb2) = raw%geti('act_ghb2',idef=0)
+    this%pckact(ichd1) = raw%geti('act_chd',idef=1)
+    this%pckact(ichd2) = raw%geti('act_chd2',idef=1)
     !
     call this%write_disu(lbin, lbinpos)
     call this%write_ic(lbin, lbinpos)
@@ -2443,26 +2487,448 @@ module mf6_module
     call this%write_sto(lbin, lbinpos)
     call this%write_chd(lbin, lbinpos, ichd1)
     call this%write_chd(lbin, lbinpos, ichd2)
-    call this%write_drn(lbin, lbinpos)
-    call this%write_riv(lbin, lbinpos)
-    call this%write_ghb(lbin, lbinpos, ighb1)
-    call this%write_ghb(lbin, lbinpos, ighb2)
-    call this%write_rch(lbin, lbinpos)
-    call this%write_wel(lbin, lbinpos)
-    call this%write_nam()
     !
-    ! close the binary file
-    if (lbinpos) then
-      close(this%iubin)
+    nper = raw%nper
+    do ipack = idrn, npck
+      allocate(this%lp(ipack)%lact(nper), this%lp(ipack)%p0(nper), this%lp(ipack)%p1(nper))
+      this%lp(ipack)%lact = .false.; this%lp(ipack)%p0 = 0; this%lp(ipack)%p1 = 0
+    end do
+    s = raw%getc(keys(i_ndrnsys),cdef='')
+    if (len_trim(s) > 0) this%lp(idrn)%nsys = atoi(s)
+    s = raw%getc(keys(i_nrivsys),cdef='')
+    if (len_trim(s) > 0) this%lp(iriv)%nsys = atoi(s)
+    this%lp(idrn)%nx = 4; this%lp(ighb1)%nx = 4; this%lp(ighb2)%nx = 4
+    !
+    return
+  end subroutine mf6_mod_write_static
+
+  subroutine mf6_mod_write_period_list(this, ipack, iper, ibuf)
+! ******************************************************************************
+! One list package for one stress period: gather the fields through the node
+! tables, apply the package's filters, append the records to the model binary.
+! ------------------------------------------------------------------------------
+    ! -- dummy
+    class(tMf6_mod), target :: this
+    integer(i4b), intent(in) :: ipack, iper, ibuf
+    ! -- local
+    type(tListPck), pointer :: lp
+    type(tNodTab), pointer :: t
+    type(tData), pointer :: dat
+    type(tSlice), pointer :: b
+    integer(i1b), dimension(:), allocatable :: flg
+    real(r8b), dimension(:,:), allocatable :: val
+    integer(i4b), dimension(3) :: kf
+    integer(i4b), dimension(gnlay) :: cnt, ncum
+    integer(i4b) :: nf, isel, nsys, jsys, nodes, isys, il, f, k, m, n, i_raw, jc, jr
+    integer(i4b) :: nact, ndrop, nrem, nneg, nbound
+    real(r4b) :: r4val, r4nodata
+    character(len=mxslen) :: what, why
+! ------------------------------------------------------------------------------
+    lp => this%lp(ipack)
+    call list_pck_fields(ipack, nf, kf, isel, what, why)
+    nsys = lp%nsys
+    nodes = sum(this%layer_nodes)
+    allocate(flg(nodes*nsys), val(nf, nodes*nsys))
+    flg = 0; val = DZERO
+    !
+    do isys = 1, nsys
+      jsys = 0
+      if (nsys > 1) jsys = isys
+      do il = 1, gnlay
+        t => this%tab(isel, il)
+        do f = 1, nf
+          i_raw = raw%mf6_raw_get_index(keys(kf(f)), list_pck_ilay(ipack, il), iper, jsys)
+          if (i_raw <= 0) then
+            call errmsg('no '//trim(keys(kf(f)))//' for layer '//ta((/il/))//', period '//ta((/iper/)))
+          end if
+          dat => raw%raw(i_raw)%dat
+          b => raw%slice(i_raw, iper, ibuf)
+          r4nodata = real(dat%r%nodata, r4b)
+          nact = 0; ndrop = 0
+          do k = 1, t%n
+            jc = t%gic(k) - dat%icoff; jr = t%gir(k) - dat%iroff
+            if ((jc < 1).or.(jc > size(b%a,1)).or.(jr < 1).or.(jr > size(b%a,2))) then
+              call errmsg('cell (col,row) = ('//ta((/t%gic(k), t%gir(k)/))//') outside '//trim(dat%s))
+            end if
+            r4val = b%a(jc,jr)
+            nact = nact + 1
+            m = t%node(k) + (isys-1)*nodes
+            ! nodata in a boundary field means "no boundary here": the node
+            ! leaves the package list
+            if (r4val == r4nodata) then
+              ndrop = ndrop + 1
+            else
+              val(f,m) = real(r4val,r8b) * dat%r8mult + dat%r8add
+              flg(m) = 1
+            end if
+          end do
+          if ((ndrop > 0).and.(iper <= 1)) then
+            k = index(dat%s, '/', back=.true.)
+            call logmsg(trim(this%modelname)//' '//trim(dat%s(k+1:))//': '//ta((/ndrop/))//' of '// &
+              ta((/nact/))//' active cells nodata, dropped (period 1; later periods not reported)')
+          end if
+        end do
+      end do
+    end do
+    !
+    ! checks and filters
+    nrem = 0; nneg = 0
+    select case (ipack)
+    case (idrn)
+      do m = 1, size(flg)
+        if (val(1,m) < -1000D0) then
+          call errmsg("Invalid range for drain.")
+        end if
+      end do
+      do m = 1, size(flg)
+        if (val(2,m) == DZERO) then
+          if (flg(m) == 1) nrem = nrem + 1
+          flg(m) = 0
+        end if
+        if (val(2,m) < DZERO) then
+          call errmsg("Negative drain conductance.")
+        end if
+      end do
+    case (iriv)
+      do m = 1, size(flg)
+        if (flg(m) == 1) then
+          if (val(1,m) < val(3,m)) then
+            call errmsg('Inconsistent river stage/rbot.')
+          end if
+          if (val(2,m) < DZERO) then
+            call errmsg('Negative river conductance.')
+          end if
+        end if
+        if (val(2,m) == DZERO) then
+          if (flg(m) == 1) nrem = nrem + 1
+          flg(m) = 0
+        end if
+      end do
+    case (ighb1, ighb2)
+      do m = 1, size(flg)
+        if (val(2,m) == DZERO) then
+          if (flg(m) == 1) nrem = nrem + 1
+          flg(m) = 0
+        end if
+        if (val(2,m) < DZERO) then
+          call errmsg("Negative general-head boundary conductance.")
+        end if
+      end do
+    case (irch)
+      do m = 1, size(flg)
+        if (val(1,m) == DZERO) then
+          if (flg(m) == 1) nrem = nrem + 1
+          flg(m) = 0
+        end if
+        if (val(1,m) < DZERO) nneg = nneg + 1
+      end do
+      if (nneg > 0) then
+        call logmsg(trim(this%modelname)//' period '//ta((/iper/))//': negative recharge in '// &
+          ta((/nneg/))//' cells.')
+      end if
+    case (iwel)
+      do m = 1, size(flg)
+        if (val(1,m) == DZERO) then
+          if (flg(m) == 1) nrem = nrem + 1
+          flg(m) = 0
+        end if
+      end do
+    end select
+    if ((nrem > 0).and.(iper <= 1)) then
+      call logmsg(trim(this%modelname)//': removed '//ta((/nrem/))//' '//trim(what)//' with zero '// &
+        trim(why)//' (period 1; later periods not reported)')
     end if
     !
-    f = '..\..\log\done_'//trim(this%modelname)
+    ! count per layer
+    ncum(1) = this%layer_nodes(1)
+    do il = 2, gnlay
+      ncum(il) = ncum(il-1) + this%layer_nodes(il)
+    end do
+    cnt = 0
+    do m = 1, size(flg)
+      if (flg(m) /= 1) cycle
+      n = mod(m-1, nodes) + 1
+      il = 1
+      do while (n > ncum(il))
+        il = il + 1
+      end do
+      cnt(il) = cnt(il) + 1
+    end do
+    if (iper <= 1) then
+      call logmsg(trim(this%modelname)//' '//trim(what)//' per layer: '//ta(cnt))
+    end if
+    nbound = sum(cnt)
+    lp%maxbound = max(lp%maxbound, nbound)
+    if (nbound == 0) then
+      lp%lact(iper) = .false.
+      if (iper <= 1) call logmsg(trim(this%modelname)//': no '//trim(what)//' found.')
+    else
+      lp%lact(iper) = .true.
+      call this%write_records(nsys, nodes, flg, val, lp%p0(iper), lp%p1(iper))
+    end if
+    !
+    return
+  end subroutine mf6_mod_write_period_list
+
+  subroutine mf6_mod_write_finish(this)
+! ******************************************************************************
+! The list package files (period blocks pointing into the model binary), the
+! nam files, close the binary, the done sentinel.
+! ------------------------------------------------------------------------------
+    ! -- dummy
+    class(tMf6_mod), target :: this
+    ! -- local
+    integer(i4b), dimension(6), parameter :: packs = (/idrn, iriv, ighb1, ighb2, irch, iwel/)
+    type(tListPck), pointer :: lp
+    character(len=mxslen) :: p, f, packstr
+    integer(i4b), dimension(:), allocatable :: map
+    integer(i4b) :: i, ipack, iu, iper, jper, nper, nperspu
+! ------------------------------------------------------------------------------
+    p = trim(this%rootdir)//trim(this%modelname)
+    nper = raw%nper
+    allocate(map(nper))
+    !
+    do i = 1, size(packs)
+      ipack = packs(i)
+      if (this%pckact(ipack) == 0) cycle
+      lp => this%lp(ipack)
+      if (lp%maxbound == 0) then
+        call logmsg(trim(this%modelname)//': no '//trim(pck(ipack))//' cells in any period; package dropped')
+        this%pckact(ipack) = 0
+        cycle
+      end if
+      select case (ipack)
+      case (ighb1, ighb2)
+        packstr = trim(pr(ipack,irun0ss))//'.ghb'
+      case default
+        packstr = '.'//trim(pck(ipack))
+      end select
+      !
+      do iper = 1, nper
+        map(iper) = iper
+      end do
+      f = trim(p)//trim(packstr)
+      call write_periods(f)
+      !
+      ! the spin-up run cycles through the first year(s)
+      if (ltransient) then
+        nperspu = raw%geti('nmonth_spinup')
+        do iper = 1, nper
+          select case (ipack)
+          case (idrn, ighb1, ighb2)
+            jper = mod(iper, nperspu)
+            if (jper == 0) jper = nperspu
+          case default
+            jper = mod(iper, 12)
+            if (jper == 0) jper = 1
+          end select
+          map(iper) = jper
+        end do
+        f = trim(p)//trim(pr(ipack,irun0tr))//trim(packstr)
+        call write_periods(f)
+      end if
+    end do
+    !
+    call this%write_nam()
+    close(this%iubin)
+    !
+    f = '../../log/done_'//trim(this%modelname)
     call open_file(f, iu, 'w')
     close(iu)
     !
     return
-  end subroutine mf6_mod_write
-  
+    !
+  contains
+    subroutine write_periods(f)
+      character(len=mxslen), intent(inout) :: f
+      call open_file(f, iu, 'w')
+      call write_block_begin(iu, 'OPTIONS')
+      call write_block_end(iu, 'OPTIONS')
+      call wline(iu, '')
+      call write_block_begin(iu, 'DIMENSIONS')
+      call wline(iu, repeat(' ',2)//'MAXBOUND '//ta((/lp%maxbound/)))
+      call write_block_end(iu, 'DIMENSIONS')
+      call wline(iu, '')
+      do iper = 1, nper
+        call write_block_begin(iu, 'PERIOD '//ta((/iper/)))
+        jper = map(iper)
+        if (lp%lact(jper)) then
+          call wline(iu, repeat(' ',lp%nx)//'OPEN/CLOSE '//trim(this%fbin)//' (BINARY) '// &
+            ta((/lp%p0(jper), lp%p1(jper)/)))
+        end if
+        call write_block_end(iu, 'PERIOD')
+      end do
+      close(iu)
+    end subroutine write_periods
+  end subroutine mf6_mod_write_finish
+
+  subroutine mf6_write_models(smod, idx, iwrite)
+! ******************************************************************************
+! Write the models idx: the static input of every model in parallel, then
+! every (period, list package) stage over all models in parallel while one
+! task loads the next stage's rasters into the other buffer, then the package
+! and nam files. A model's binary receives its static arrays and then the
+! list records period by period, so its OPEN/CLOSE offsets are period-major.
+! ------------------------------------------------------------------------------
+    ! -- dummy
+    type(tMf6_mod), dimension(:), intent(inout) :: smod
+    integer(i4b), dimension(:), intent(in) :: idx
+    integer(i4b), dimension(:), intent(in) :: iwrite
+    ! -- local
+    integer(i4b), parameter :: npk = 6
+    integer(i4b), dimension(npk), parameter :: packs = (/idrn, iriv, ighb1, ighb2, irch, iwel/)
+    integer(i4b), dimension(:), allocatable :: spack, sper, lst
+    logical, dimension(:), allocatable :: lused
+    integer(i4b) :: i, k, s, ns, ib, nper, nw, ipk
+    real(r8b) :: t0, t1
+    character(len=mxslen) :: d
+! ------------------------------------------------------------------------------
+    nw = size(idx)
+    area_str = ta_u((/gcs*gcs/))
+    !
+    ! every static raster, once, for all models
+    t0 = omp_get_wtime()
+    !$omp parallel default(shared) private(i)
+    !$omp single
+    do i = 1, raw%nraw
+      if (.not.raw%raw(i)%dat%lraster) cycle
+      if (raw%raw(i)%dat%r%nt == 0) call raw%load(i, 0, 1)
+    end do
+    !$omp end single
+    !$omp end parallel
+    call logmsg('static rasters loaded: '//secs(omp_get_wtime()-t0))
+    d = '../../models/post_mappings/'
+    call create_dir(d, .true.)
+    !
+    t0 = omp_get_wtime()
+    !$omp parallel do schedule(dynamic,1) default(shared) private(k, t1)
+    do k = 1, nw
+      t1 = omp_get_wtime()
+      call smod(idx(k))%write_static()
+      call smod(idx(k))%write_post_map(iwrite(k))
+      call smod(idx(k))%build_tables()
+      call smod(idx(k))%clean_regions()
+      call logmsg(trim(smod(idx(k))%modelname)//' static: '//secs(omp_get_wtime()-t1))
+    end do
+    !$omp end parallel do
+    call logmsg('static input of '//ta((/nw/))//' models: '//secs(omp_get_wtime()-t0))
+    !
+    ! the stages: every active list package of every period, in binary order
+    nper = raw%nper
+    allocate(spack(nper*npk), sper(nper*npk))
+    ns = 0
+    do i = 1, nper
+      do ipk = 1, npk
+        if (smod(idx(1))%pckact(packs(ipk)) == 0) cycle
+        ns = ns + 1; spack(ns) = packs(ipk); sper(ns) = i
+      end do
+    end do
+    !
+    ! keep only the static rasters a stage reads; this also resolves every
+    ! (field, layer, period) key before anything is written
+    allocate(lused(raw%nraw)); lused = .false.
+    do s = 1, ns
+      call stage_rasters(s, lst)
+      do i = 1, size(lst)
+        lused(lst(i)) = .true.
+      end do
+    end do
+    do i = 1, raw%nraw
+      if (.not.raw%raw(i)%dat%lraster) cycle
+      if ((raw%raw(i)%dat%r%nt == 0).and.(.not.lused(i))) call raw%free(i, 1)
+    end do
+    !
+    !$omp parallel default(shared) private(s, k, ib, t1)
+    !$omp single
+    if (ns > 0) call load_stage(1, 1)
+    do s = 1, ns
+      ib = mod(s-1, 2) + 1
+      t1 = omp_get_wtime()
+      if (s < ns) then
+        !$omp task firstprivate(s, ib)
+        call load_stage(s+1, 3-ib)
+        !$omp end task
+      end if
+      do k = 1, nw
+        !$omp task firstprivate(k, s, ib)
+        call smod(idx(k))%write_period_list(spack(s), sper(s), ib)
+        !$omp end task
+      end do
+      !$omp taskwait
+      call free_stage(s, ib)
+      call logmsg('period '//ta((/sper(s)/))//' '//trim(pck(spack(s)))//': '// &
+        secs(omp_get_wtime()-t1))
+    end do
+    !$omp end single
+    !$omp end parallel
+    !
+    t0 = omp_get_wtime()
+    !$omp parallel do schedule(dynamic,1) default(shared) private(k)
+    do k = 1, nw
+      call smod(idx(k))%write_finish()
+    end do
+    !$omp end parallel do
+    call logmsg('package and nam files of '//ta((/nw/))//' models: '//secs(omp_get_wtime()-t0))
+    !
+    return
+    !
+  contains
+    subroutine stage_rasters(s, lst)
+      ! the raw entries stage s reads
+      integer(i4b), intent(in) :: s
+      integer(i4b), dimension(:), allocatable, intent(out) :: lst
+      integer(i4b), dimension(:), allocatable :: sraw
+      integer(i4b), dimension(3) :: kf
+      integer(i4b) :: n, nf, isel, nsys, isys, jsys, il, f, i_raw, j
+      character(len=mxslen) :: what, why
+      logical :: lnew
+      call list_pck_fields(spack(s), nf, kf, isel, what, why)
+      nsys = smod(idx(1))%lp(spack(s))%nsys
+      allocate(sraw(3*gnlay*nsys))
+      n = 0
+      do isys = 1, nsys
+        jsys = 0
+        if (nsys > 1) jsys = isys
+        do il = 1, gnlay
+          do f = 1, nf
+            i_raw = raw%mf6_raw_get_index(keys(kf(f)), list_pck_ilay(spack(s), il), sper(s), jsys)
+            if (i_raw <= 0) then
+              call errmsg('no '//trim(keys(kf(f)))//' for layer '//ta((/il/))//', period '//ta((/sper(s)/)))
+            end if
+            lnew = .true.
+            do j = 1, n
+              if (sraw(j) == i_raw) lnew = .false.
+            end do
+            if (lnew) then
+              n = n + 1; sraw(n) = i_raw
+            end if
+          end do
+        end do
+      end do
+      lst = sraw(1:n)
+    end subroutine stage_rasters
+
+    subroutine load_stage(s, ib)
+      integer(i4b), intent(in) :: s, ib
+      integer(i4b), dimension(:), allocatable :: lst
+      integer(i4b) :: i
+      call stage_rasters(s, lst)
+      do i = 1, size(lst)
+        call raw%load(lst(i), sper(s), ib)
+      end do
+    end subroutine load_stage
+
+    subroutine free_stage(s, ib)
+      integer(i4b), intent(in) :: s, ib
+      integer(i4b), dimension(:), allocatable :: lst
+      integer(i4b) :: i
+      call stage_rasters(s, lst)
+      do i = 1, size(lst)
+        if (raw%raw(lst(i))%dat%r%nt > 0) call raw%free(lst(i), ib)
+      end do
+    end subroutine free_stage
+  end subroutine mf6_write_models
+
   subroutine mf6_mod_write_nam(this)
 ! ******************************************************************************
 ! ******************************************************************************
@@ -2490,24 +2956,22 @@ module mf6_module
       mn = this%modelname
       f = trim(this%rootdir)//trim(mn)//trim(pr(inam,irun))//'.nam'
       call open_file(f, iu, 'w')
-      write(iu,'(   a)') 'BEGIN OPTIONS'
-      f = trim(resultslstdir)//'\'//trim(this%modelname)//'.'//trim(ctim)//trim(pr(inam,irun))//'.lst'
-      call swap_slash(f)
-      write(iu,'(2x,a)') 'LIST '//trim(f)
+      call write_block_begin(iu, 'OPTIONS')
+      f = trim(resultslstdir)//'/'//trim(this%modelname)//'.'//trim(ctim)//trim(pr(inam,irun))//'.lst'
+      call wline(iu, repeat(' ',2)//'LIST '//trim(f))
       if (raw%geti('newton',idef=0) == 1) then
-        write(iu,'(2x,a)') 'NEWTON UNDER_RELAXATION'
+        call wline(iu, repeat(' ',2)//'NEWTON UNDER_RELAXATION')
       end if
-      write(iu,'(   a)') 'END OPTIONS'
-      write(iu,'(a)')
-      write(iu,'(   a)') 'BEGIN PACKAGES'
+      call write_block_end(iu, 'OPTIONS')
+      call wline(iu, '')
+      call write_block_begin(iu, 'PACKAGES')
       do ipck = 3, npck
-        if (pckact(ipck) == 0) cycle
+        if (this%pckact(ipck) == 0) cycle
         if (trim(pr(ipck,irun)) == '-') cycle
         f = trim(this%rootdir)//trim(mn)//trim(pr(ipck,irun))//'.'//trim(pck(ipck))
-        call swap_slash(f)
-        write(iu,'(2x,a)') trim(change_case(pck(ipck),'u'))//'6 '//trim(f)
+        call wline(iu, repeat(' ',2)//trim(change_case(pck(ipck),'u'))//'6 '//trim(f))
       end do
-      write(iu,'(   a)') 'END PACKAGES'
+      call write_block_end(iu, 'PACKAGES')
       close(iu)
     end do
     !
@@ -2531,7 +2995,7 @@ module mf6_module
     real(r8b) :: tn, bn, tm, bm, d
     type(tDisu), pointer :: disu
 ! ------------------------------------------------------------------------------
-    if (pckact(idisu) == 0) return
+    if (this%pckact(idisu) == 0) return
     !
     call clear_wrk()
     !
@@ -2549,21 +3013,21 @@ module mf6_module
     f = trim(p)//'.disu'
     call open_file(f, iu, 'w')
     !
-    write(iu,'(   a)') 'BEGIN OPTIONS'
-    write(iu,'(2x,a)') 'LENGTH_UNITS METERS'
-    write(iu,'(2x,a)') 'NOGRB'
-    write(iu,'(   a)') 'END OPTIONS'
-    write(iu,'(a)')
-    write(iu,'(   a)') 'BEGIN DIMENSIONS'
-    write(iu,'(2x,a)') 'NODES '//ta((/disu%nodes/))
-    write(iu,'(2x,a)') 'NJA '//ta((/disu%nja/))
-    write(iu,'(   a)') 'END DIMENSIONS'
-    write(iu,'(a)')
-    write(iu,'(   a)') 'BEGIN GRIDDATA'
-    call this%get_array(i_top, 0, 0, 1, 0, i1wrk, r8wrk)
-    if (gnlay == 2) call this%get_array(i_bot, 1, 0, 2, 0, i1wrk, r8wrk) !i_bot_l1
-    call this%get_array(i_bot, 1, 0, 1, 0, i1wrk2, r8wrk2) !i_bot_l1
-    if (gnlay == 2) call this%get_array(i_bot, 2, 0, 2, 0, i1wrk2, r8wrk2) !i_bot_l2
+    call write_block_begin(iu, 'OPTIONS')
+    call wline(iu, repeat(' ',2)//'LENGTH_UNITS METERS')
+    call wline(iu, repeat(' ',2)//'NOGRB')
+    call write_block_end(iu, 'OPTIONS')
+    call wline(iu, '')
+    call write_block_begin(iu, 'DIMENSIONS')
+    call wline(iu, repeat(' ',2)//'NODES '//ta((/disu%nodes/)))
+    call wline(iu, repeat(' ',2)//'NJA '//ta((/disu%nja/)))
+    call write_block_end(iu, 'DIMENSIONS')
+    call wline(iu, '')
+    call write_block_begin(iu, 'GRIDDATA')
+    call this%get_array(i_top, 0, 1, i1wrk, r8wrk)
+    if (gnlay == 2) call this%get_array(i_bot, 1, 2, i1wrk, r8wrk) !i_bot_l1
+    call this%get_array(i_bot, 1, 1, i1wrk2, r8wrk2) !i_bot_l1
+    if (gnlay == 2) call this%get_array(i_bot, 2, 2, i1wrk2, r8wrk2) !i_bot_l2
     !
     ! do a check
     allocate(i4wrk1d(disu%nodes+1)); i4wrk1d(1) = 1
@@ -2607,27 +3071,27 @@ module mf6_module
       end do
     end do
     !
-    write(iu,'(2x,a)') 'TOP'
+    call wline(iu, repeat(' ',2)//'TOP')
     f = trim(pb)//'.disu.top'; call this%write_array(iu, 4, f, r8wrk, lbin, lbinpos)
-    write(iu,'(2x,a)') 'BOT'
+    call wline(iu, repeat(' ',2)//'BOT')
     f = trim(pb)//'.disu.bot'; call this%write_array(iu, 4, f, r8wrk2, lbin, lbinpos)
     call clear_wrk()
-    write(iu,'(2x,a)') 'AREA'
-    write(iu,'(4x,a)') 'CONSTANT '//ta((/gcs*gcs/))
-    write(iu,'(   a)') 'END GRIDDATA'
-    write(iu,'(a)')
-    write(iu,'(   a)') 'BEGIN CONNECTIONDATA'
-    write(iu,'(2x,a)') 'IAC'
+    call wline(iu, repeat(' ',2)//'AREA')
+    call wline(iu, repeat(' ',4)//'CONSTANT '//trim(area_str))
+    call write_block_end(iu, 'GRIDDATA')
+    call wline(iu, '')
+    call write_block_begin(iu, 'CONNECTIONDATA')
+    call wline(iu, repeat(' ',2)//'IAC')
     f = trim(pb)//'.disu.iac'; call this%write_array(iu, 4, f, disu%iac, lbin, lbinpos)
-    write(iu,'(2x,a)') 'JA'
+    call wline(iu, repeat(' ',2)//'JA')
     f = trim(pb)//'.disu.ja'; call this%write_array(iu, 4, f, disu%ja, lbin, lbinpos)
-    write(iu,'(2x,a)') 'IHC'
+    call wline(iu, repeat(' ',2)//'IHC')
     f = trim(pb)//'.disu.ihc'; call this%write_array(iu, 4, f, disu%ihc, lbin, lbinpos)
-    write(iu,'(2x,a)') 'CL12'
+    call wline(iu, repeat(' ',2)//'CL12')
     f = trim(pb)//'.disu.cl12'; call this%write_array(iu, 4, f, disu%cl12, lbin, lbinpos)
-    write(iu,'(2x,a)') 'HWVA'
+    call wline(iu, repeat(' ',2)//'HWVA')
     f = trim(pb)//'.disu.hwva'; call this%write_array(iu, 4, f, disu%hwva, lbin, lbinpos)
-    write(iu,'(   a)') 'END CONNECTIONDATA'
+    call write_block_end(iu, 'CONNECTIONDATA')
     close(iu)
     !
     ! clean up memory
@@ -2655,7 +3119,7 @@ module mf6_module
     character(len=mxslen) :: p, pb, f, d
     integer(i4b) :: iu, irun0
 ! ------------------------------------------------------------------------------
-    if (pckact(iic) == 0) return
+    if (this%pckact(iic) == 0) return
     !
     if (ltransient) then
       irun0 = irun0tr
@@ -2675,59 +3139,53 @@ module mf6_module
     if (.not.ltransient) then !SS
       f = trim(p)//'.ic'
       call open_file(f, iu, 'w')
-      write(iu,'(   a)') 'BEGIN OPTIONS'
-      write(iu,'(   a)') 'END OPTIONS'
-      write(iu,'(a)')
-      write(iu,'(   a)') 'BEGIN GRIDDATA'
-      write(iu,'(2x,a)') 'STRT'
-      call this%get_array(i_strt, 1, 0, 1, 0, i1wrk, r8wrk) !i_strt_l1
-      if (gnlay == 2) call this%get_array(i_strt, 2, 0, 2, 0, i1wrk, r8wrk) !i_strt_l2
+      call write_block_begin(iu, 'OPTIONS')
+      call write_block_end(iu, 'OPTIONS')
+      call wline(iu, '')
+      call write_block_begin(iu, 'GRIDDATA')
+      call wline(iu, repeat(' ',2)//'STRT')
+      call this%get_array(i_strt, 1, 1, i1wrk, r8wrk) !i_strt_l1
+      if (gnlay == 2) call this%get_array(i_strt, 2, 2, i1wrk, r8wrk) !i_strt_l2
       f = trim(pb)//'.ic'; call this%write_array(iu, 4, f, r8wrk, lbin, lbinpos)
-      write(iu,'(   a)') 'END GRIDDATA'
+      call write_block_end(iu, 'GRIDDATA')
       close(iu)
       !
       f = trim(p)//trim(pr(iic,irun0+1))//'.ic'
       call open_file(f, iu, 'w')
-      write(iu,'(   a)') 'BEGIN OPTIONS'
-      write(iu,'(   a)') 'END OPTIONS'
-      write(iu,'(a)')
-      write(iu,'(   a)') 'BEGIN GRIDDATA'
-      write(iu,'(2x,a)') 'STRT'
-      !f = '.\'//trim(resultsdir)//'\'//trim(this%modelname)//'.ss.smhead.hds'
-      f = trim(resultsbindir)//'\'//trim(this%modelname)//'.ss'//trim(pr(iic,irun0+1))//'.hds'
-      call swap_slash(f)
-      write(iu,'(2x,a)') 'OPEN/CLOSE '//trim(f)//' (BINARY)'
-      write(iu,'(   a)') 'END GRIDDATA'
+      call write_block_begin(iu, 'OPTIONS')
+      call write_block_end(iu, 'OPTIONS')
+      call wline(iu, '')
+      call write_block_begin(iu, 'GRIDDATA')
+      call wline(iu, repeat(' ',2)//'STRT')
+      f = trim(resultsbindir)//'/'//trim(this%modelname)//'.ss'//trim(pr(iic,irun0+1))//'.hds'
+      call wline(iu, repeat(' ',2)//'OPEN/CLOSE '//trim(f)//' (BINARY)')
+      call write_block_end(iu, 'GRIDDATA')
       close(iu)
     else !TR
       f = trim(p)//trim(pr(iic,irun0))//'.ic'
       call open_file(f, iu, 'w')
-      write(iu,'(   a)') 'BEGIN OPTIONS'
-      write(iu,'(   a)') 'END OPTIONS'
-      write(iu,'(a)')
-      write(iu,'(   a)') 'BEGIN GRIDDATA'
-      write(iu,'(2x,a)') 'STRT'
-      !f = '.\'//trim(resultsdir)//'\'//trim(this%modelname)//'.ss.hds'
+      call write_block_begin(iu, 'OPTIONS')
+      call write_block_end(iu, 'OPTIONS')
+      call wline(iu, '')
+      call write_block_begin(iu, 'GRIDDATA')
+      call wline(iu, repeat(' ',2)//'STRT')
       d = raw%getc('ss_strt_dir')
       f = trim(d)//trim(this%modelname)//'.ss.hds'
-      call swap_slash(f)
-      write(iu,'(2x,a)') 'OPEN/CLOSE '//trim(f)//' (BINARY)'
-      write(iu,'(   a)') 'END GRIDDATA'
+      call wline(iu, repeat(' ',2)//'OPEN/CLOSE '//trim(f)//' (BINARY)')
+      call write_block_end(iu, 'GRIDDATA')
       close(iu)
       !
       f = trim(p)//trim(pr(iic,irun0+1))//'.ic'
       call open_file(f, iu, 'w')
-      write(iu,'(   a)') 'BEGIN OPTIONS'
-      write(iu,'(   a)') 'END OPTIONS'
-      write(iu,'(a)')
-      write(iu,'(   a)') 'BEGIN GRIDDATA'
-      write(iu,'(2x,a)') 'STRT'
-      !f = '.\'//trim(resultsdir)//'\'//trim(this%modelname)//'.tr.spuhead.hds'
-      d = raw%getc('spu_strt_dir', cdef='.\'//trim(resultsbindir)//'\')
+      call write_block_begin(iu, 'OPTIONS')
+      call write_block_end(iu, 'OPTIONS')
+      call wline(iu, '')
+      call write_block_begin(iu, 'GRIDDATA')
+      call wline(iu, repeat(' ',2)//'STRT')
+      d = raw%getc('spu_strt_dir', cdef='./'//trim(resultsbindir)//'/')
       f = trim(d)//trim(this%modelname)//'.tr'//trim(pr(iic,irun0+1))//'.hds'
-      call swap_slash(f)
-      write(iu,'(2x,a)') 'OPEN/CLOSE '//trim(f)//' (BINARY)'
-      write(iu,'(   a)') 'END GRIDDATA'
+      call wline(iu, repeat(' ',2)//'OPEN/CLOSE '//trim(f)//' (BINARY)')
+      call write_block_end(iu, 'GRIDDATA')
       close(iu)
     end if
     !
@@ -2747,7 +3205,7 @@ module mf6_module
     character(len=mxslen) :: p, f
     integer(i4b) :: iu, iper, nperspu, irun0, irun
 ! ------------------------------------------------------------------------------
-    if (pckact(ioc) == 0) return
+    if (this%pckact(ioc) == 0) return
     !
     if (ltransient) then
       irun0 = irun0tr
@@ -2761,44 +3219,41 @@ module mf6_module
       do irun = irun0, irun0 + 1
         f = trim(p)//trim(pr(ioc,irun))//'.oc'
         call open_file(f, iu, 'w')
-        write(iu,'(   a)') 'BEGIN OPTIONS'
-        f = trim(resultsbindir)//'\'//trim(this%modelname)//'.ss'//trim(pr(ioc,irun))//'.hds'
-        call swap_slash(f)
-        write(iu,'(2x,a)') 'HEAD FILEOUT '//trim(f)
-        write(iu,'(   a)') 'END OPTIONS'
-        write(iu,'(a)')
-        write(iu,'(   a)') 'BEGIN PERIOD 1'
-        write(iu,'(2x,a)') 'SAVE HEAD LAST'
-        write(iu,'(   a)') 'END PERIOD'
+        call write_block_begin(iu, 'OPTIONS')
+        f = trim(resultsbindir)//'/'//trim(this%modelname)//'.ss'//trim(pr(ioc,irun))//'.hds'
+        call wline(iu, repeat(' ',2)//'HEAD FILEOUT '//trim(f))
+        call write_block_end(iu, 'OPTIONS')
+        call wline(iu, '')
+        call write_block_begin(iu, 'PERIOD 1')
+        call wline(iu, repeat(' ',2)//'SAVE HEAD LAST')
+        call write_block_end(iu, 'PERIOD')
         close(iu)
       end do
     else !TR
       f = trim(p)//trim(pr(ioc,irun0))//'.oc'
       call open_file(f, iu, 'w')
-      write(iu,'(   a)') 'BEGIN OPTIONS'
-      f = trim(resultsbindir)//'\'//trim(this%modelname)//'.tr'//trim(pr(ioc,irun0))//'.hds'
-      call swap_slash(f)
-      write(iu,'(2x,a)') 'HEAD FILEOUT '//trim(f)
-      write(iu,'(   a)') 'END OPTIONS'
-      write(iu,'(a)')
-      nperspu = raw%geti('nyear_spinup')*12
-      write(iu,'(   a)') 'BEGIN PERIOD '//ta((/nperspu/))
-      write(iu,'(2x,a)') 'SAVE HEAD LAST'
-      write(iu,'(   a)') 'END PERIOD'
+      call write_block_begin(iu, 'OPTIONS')
+      f = trim(resultsbindir)//'/'//trim(this%modelname)//'.tr'//trim(pr(ioc,irun0))//'.hds'
+      call wline(iu, repeat(' ',2)//'HEAD FILEOUT '//trim(f))
+      call write_block_end(iu, 'OPTIONS')
+      call wline(iu, '')
+      nperspu = raw%geti('nmonth_spinup')
+      call write_block_begin(iu, 'PERIOD '//ta((/nperspu/)))
+      call wline(iu, repeat(' ',2)//'SAVE HEAD LAST')
+      call write_block_end(iu, 'PERIOD')
       close(iu)
       !
       f = trim(p)//'.oc'
       call open_file(f, iu, 'w')
-      write(iu,'(   a)') 'BEGIN OPTIONS'
-      f = trim(resultsbindir)//'\'//trim(this%modelname)//'.tr.hds'
-      call swap_slash(f)
-      write(iu,'(2x,a)') 'HEAD FILEOUT '//trim(f)
-      write(iu,'(   a)') 'END OPTIONS'
-      write(iu,'(a)')
+      call write_block_begin(iu, 'OPTIONS')
+      f = trim(resultsbindir)//'/'//trim(this%modelname)//'.tr.hds'
+      call wline(iu, repeat(' ',2)//'HEAD FILEOUT '//trim(f))
+      call write_block_end(iu, 'OPTIONS')
+      call wline(iu, '')
       do iper = 1, raw%nper
-        write(iu,'(   a)') 'BEGIN PERIOD '//ta((/iper/))
-        write(iu,'(2x,a)') 'SAVE HEAD LAST'
-        write(iu,'(   a)') 'END PERIOD'
+        call write_block_begin(iu, 'PERIOD '//ta((/iper/)))
+        call wline(iu, repeat(' ',2)//'SAVE HEAD LAST')
+        call write_block_end(iu, 'PERIOD')
       end do
       close(iu)
     end if
@@ -2821,7 +3276,7 @@ module mf6_module
     character(len=mxslen) :: p, pb, f
     integer(i4b) :: iu, icelltype
 ! ------------------------------------------------------------------------------
-    if (pckact(inpf) == 0) return
+    if (this%pckact(inpf) == 0) return
     !
     call clear_wrk()
     !
@@ -2835,28 +3290,28 @@ module mf6_module
     f = trim(p)//'.npf'
     call open_file(f, iu, 'w')
     !
-    write(iu,'(   a)') 'BEGIN OPTIONS'
-    write(iu,'(   a)') 'END OPTIONS'
-    write(iu,'(a)')
-    write(iu,'(   a)') 'BEGIN GRIDDATA'
-    write(iu,'(2x,a)') 'ICELLTYPE'
+    call write_block_begin(iu, 'OPTIONS')
+    call write_block_end(iu, 'OPTIONS')
+    call wline(iu, '')
+    call write_block_begin(iu, 'GRIDDATA')
+    call wline(iu, repeat(' ',2)//'ICELLTYPE')
     icelltype = raw%geti('icelltype',idef=0)
-    write(iu,'(4x,a)') 'CONSTANT '//ta((/icelltype/))
-    write(iu,'(2x,a)') 'K'
-    call this%get_array(i_k, 1, 0, 1, 0, i1wrk, r8wrk) !i_k_l1
-    if (gnlay == 2) call this%get_array(i_k, 2, 0, 2, 0, i1wrk, r8wrk) !i_k_l2
+    call wline(iu, repeat(' ',4)//'CONSTANT '//ta((/icelltype/)))
+    call wline(iu, repeat(' ',2)//'K')
+    call this%get_array(i_k, 1, 1, i1wrk, r8wrk) !i_k_l1
+    if (gnlay == 2) call this%get_array(i_k, 2, 2, i1wrk, r8wrk) !i_k_l2
     f = trim(pb)//'.npf.k'; call this%write_array(iu, 4, f, r8wrk, lbin, lbinpos)
     call clear_wrk()
-    write(iu,'(2x,a)') 'K33'
+    call wline(iu, repeat(' ',2)//'K33')
     if (gnlay == 2) then
-      call this%get_array(i_k33, 1, 0, 1, 0, i1wrk, r8wrk) !i_k33_l1
-      call this%get_array(i_k33, 2, 0, 2, 0, i1wrk, r8wrk) !i_k33_l2
+      call this%get_array(i_k33, 1, 1, i1wrk, r8wrk) !i_k33_l1
+      call this%get_array(i_k33, 2, 2, i1wrk, r8wrk) !i_k33_l2
       f = trim(pb)//'.npf.k33'; call this%write_array(iu, 4, f, r8wrk, lbin, lbinpos)
     else
-      write(iu,'(4x,a)') 'CONSTANT 0.1'
+      call wline(iu, repeat(' ',4)//'CONSTANT 0.1')
     end if
     call clear_wrk()
-    write(iu,'(   a)') 'END GRIDDATA'
+    call write_block_end(iu, 'GRIDDATA')
     close(iu)
     !
     return
@@ -2877,7 +3332,7 @@ module mf6_module
     character(len=mxslen) :: p, pb, f
     integer(i4b) :: iu
 ! ------------------------------------------------------------------------------
-    if (pckact(isto) == 0) return
+    if (this%pckact(isto) == 0) return
     !
     call clear_wrk()
     !
@@ -2891,30 +3346,30 @@ module mf6_module
     f = trim(p)//'.sto'
     call open_file(f, iu, 'w')
     !
-    write(iu,'(   a)') 'BEGIN OPTIONS'
-    write(iu,'(2x,a)') 'STORAGECOEFFICIENT'
-    write(iu,'(   a)') 'END OPTIONS'
-    write(iu,'(a)')
-    write(iu,'(   a)') 'BEGIN GRIDDATA'
-    write(iu,'(2x,a)') 'ICONVERT'
-    write(iu,'(4x,a)') 'CONSTANT 0'
-    write(iu,'(2x,a)') 'SS'
-    call this%get_array(i_prim_sto, 1, 0, 1, 0, i1wrk, r8wrk)
-    call this%get_array(i_prim_sto, 2, 0, 2, 0, i1wrk, r8wrk)
+    call write_block_begin(iu, 'OPTIONS')
+    call wline(iu, repeat(' ',2)//'STORAGECOEFFICIENT')
+    call write_block_end(iu, 'OPTIONS')
+    call wline(iu, '')
+    call write_block_begin(iu, 'GRIDDATA')
+    call wline(iu, repeat(' ',2)//'ICONVERT')
+    call wline(iu, repeat(' ',4)//'CONSTANT 0')
+    call wline(iu, repeat(' ',2)//'SS')
+    call this%get_array(i_prim_sto, 1, 1, i1wrk, r8wrk)
+    call this%get_array(i_prim_sto, 2, 2, i1wrk, r8wrk)
     f = trim(pb)//'.sto.ps'; call this%write_array(iu, 4, f, r8wrk, lbin, lbinpos)
     call clear_wrk()
-    write(iu,'(2x,a)') 'SY'
-    write(iu,'(4x,a)') 'CONSTANT 0'
-    write(iu,'(   a)') 'END GRIDDATA'
+    call wline(iu, repeat(' ',2)//'SY')
+    call wline(iu, repeat(' ',4)//'CONSTANT 0')
+    call write_block_end(iu, 'GRIDDATA')
     !
-    write(iu,'(a)')
-    write(iu,'(   a)') 'BEGIN PERIOD 1'
+    call wline(iu, '')
+    call write_block_begin(iu, 'PERIOD 1')
     if (ltransient) then
-      write(iu,'(2x,a)') 'TRANSIENT'
+      call wline(iu, repeat(' ',2)//'TRANSIENT')
     else
-      write(iu,'(2x,a)') 'STEADY-STATE'
+      call wline(iu, repeat(' ',2)//'STEADY-STATE')
     end if
-    write(iu,'(   a)') 'END PERIOD'
+    call write_block_end(iu, 'PERIOD')
     close(iu)
     !
     return
@@ -2935,9 +3390,10 @@ module mf6_module
     ! -- local
     character(len=mxslen) :: p, pb, f, chd_type, packstr
     integer(i4b) :: iu, maxbound, i, pack_ib_in
+    integer(i8b) :: p0, p1
     integer(i4b), dimension(gnlay) :: nbound_lay
 ! ------------------------------------------------------------------------------
-    if (pckact(ipack) == 0) return
+    if (this%pckact(ipack) == 0) return
     if (ltransient.and.(ipack == ichd2)) return
     !
     packstr = trim(pr(ipack,irun0ss))//'.chd' !.sea .intf
@@ -2956,709 +3412,43 @@ module mf6_module
       pb = p
     end if
     !
-    call this%get_array(i_strt, 1, 0, 1, 0, i1wrk, r8wrk, ib_in=pack_ib_in) !i_strt_l1
-    if (gnlay == 2) call this%get_array(i_strt, 2, 0, 2, 0, i1wrk, r8wrk, ib_in=pack_ib_in) !i_strt_l2
+    call this%get_array(i_strt, 1, 1, i1wrk, r8wrk, ib_in=pack_ib_in) !i_strt_l1
+    if (gnlay == 2) call this%get_array(i_strt, 2, 2, i1wrk, r8wrk, ib_in=pack_ib_in) !i_strt_l2
     nbound_lay = this%count_i1a(i1wrk); maxbound = sum(nbound_lay)
     !
     if (maxbound > 0) then
       f = trim(p)//trim(packstr)
       call open_file(f, iu, 'w')
       !
-      write(iu,'(   a)') 'BEGIN OPTIONS'
-      write(iu,'(   a)') 'END OPTIONS'
-      write(iu,'(a)')
-      write(iu,'(   a)') 'BEGIN DIMENSIONS'
-      write(iu,'(2x,a)') 'MAXBOUND '//ta((/maxbound/))
-      write(iu,'(   a)') 'END DIMENSIONS'
-      write(iu,'(a)')
-      write(iu,'(   a)') 'BEGIN PERIOD 1'
+      call write_block_begin(iu, 'OPTIONS')
+      call write_block_end(iu, 'OPTIONS')
+      call wline(iu, '')
+      call write_block_begin(iu, 'DIMENSIONS')
+      call wline(iu, repeat(' ',2)//'MAXBOUND '//ta((/maxbound/)))
+      call write_block_end(iu, 'DIMENSIONS')
+      call wline(iu, '')
+      call write_block_begin(iu, 'PERIOD 1')
       if ((ipack == ichd1).and.(raw%geti('force_sea',idef=0) == 1)) then
         call logmsg('***** Forcing zero head sea-level! *****')
         do i = 1, size(r8wrk)
           r8wrk(i) = DZERO
         end do
       end if
-      f = trim(pb)//trim(packstr)
-      call this%write_list(iu, 2, f, i1wrk, r8wrk, lbin, lbinpos)
-      write(iu,'(   a)') 'END PERIOD'
+      call this%write_records(1, sum(this%layer_nodes), i1wrk, reshape(r8wrk, (/1, size(r8wrk)/)), p0, p1)
+      call wline(iu, '  OPEN/CLOSE '//trim(this%fbin)//' (BINARY) '//ta((/p0,p1/)))
+      call write_block_end(iu, 'PERIOD')
       close(iu)
     end if
     call clear_wrk()
     !
     if (maxbound == 0) then
       call logmsg('No constant-head boundaries found: '//trim(pr(ipack,irun0ss)))
-      pckact(ipack) = 0
+      this%pckact(ipack) = 0
       return
     end if
     !
     return
   end subroutine mf6_mod_write_chd
-  
-  subroutine mf6_mod_write_drn(this, lbin, lbinpos)
-! ******************************************************************************
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
-!
-    ! -- dummy
-    class(tMf6_mod) :: this
-    logical, intent(in) :: lbin
-    logical, intent(in) :: lbinpos
-    ! -- local
-    type(tData), pointer :: dat => null()
-    character(len=mxslen), dimension(:), allocatable :: cwk
-    character(len=mxslen) :: p, pb, f, s
-    integer(i4b) :: i, n, iu, nbound, maxbound, iper, jper, nper, nperspu, nodes
-    integer(i4b) :: nsys, isys
-    integer(i4b), dimension(gnlay) :: nbound_lay
-    logical, dimension(:), allocatable :: lact
-! ------------------------------------------------------------------------------
-    if (pckact(idrn) == 0) return
-    !
-    call clear_wrk()
-    !
-    p = trim(this%rootdir)//trim(this%modelname)
-    if (lbin) then
-      pb =  trim(this%bindir)//trim(this%modelname)
-    else
-      pb = p
-    end if
-    !
-    ! check the presence of multiple drainage systems
-    s = raw%getc(keys(i_ndrnsys),cdef='')
-    if (len_trim(s) > 0) then
-      read(s,*) nsys
-    else
-      nsys = 1
-    end if
-    !
-    ! write all binary files and store the file strings
-    nper = raw%nper
-    allocate(cwk(nper), lact(nper))
-    maxbound = 0
-    do iper = 1, nper
-      if (nsys > 1) then
-        call clear_wrk()
-        nodes = sum(this%layer_nodes)
-        allocate(i1wrk(nodes*nsys), r8wrk(nodes*nsys), r8wrk2(nodes*nsys))
-        i1wrk = 0; r8wrk = DZERO; r8wrk2 = DZERO
-        do isys = 1, nsys
-          call logmsg('---> Processing drain system '//ta([isys])//'/'//ta([nsys])//'...')
-          call this%get_array(i_drn_elev, 1, iper, 1, isys, i1wrk, r8wrk, ib_in=2) !i_drn_elev_l1
-          if (gnlay == 2) call this%get_array(i_drn_elev, 2, iper, 2, isys, i1wrk, r8wrk, ib_in=2) !i_drn_elev_l2
-          call this%get_array(i_drn_cond, 1, iper, 1, isys, i1wrk, r8wrk2, ib_in=2)
-          if (gnlay == 2) call this%get_array(i_drn_cond, 2, iper, 2, isys, i1wrk, r8wrk2, ib_in=2)
-        end do
-      else
-        call this%get_array(i_drn_elev, 1, iper, 1, 0, i1wrk, r8wrk, ib_in=2) !i_drn_elev_l1
-        if (gnlay == 2) call this%get_array(i_drn_elev, 2, iper, 2, 0, i1wrk, r8wrk, ib_in=2) !i_drn_elev_l2
-        call this%get_array(i_drn_cond, 1, iper, 1, 0, i1wrk, r8wrk2, ib_in=2)
-        if (gnlay == 2) call this%get_array(i_drn_cond, 2, iper, 2, 0, i1wrk, r8wrk2, ib_in=2)
-      end if
-      !
-      ! check
-      do i = 1, size(i1wrk)
-        if (r8wrk(i) < -1000D0) then
-          call errmsg("Invalid range for drain.")
-        end if
-      end do
-      !
-      ! filter for zero conductance
-      n = 0
-      do i = 1, size(i1wrk)
-        if (r8wrk2(i) == DZERO) then
-          if (i1wrk(i) == 1) n = n + 1
-          i1wrk(i) = 0
-        end if
-        if (r8wrk2(i) < DZERO) then
-          call errmsg("Negative drain conductance.")
-        end if
-      end do
-      if (n > 0) then
-        call logmsg('Removed '//ta((/n/))//' drains with zero conductance.')
-      end if
-      !
-      nbound_lay = this%count_i1a(i1wrk, nsys); nbound = sum(nbound_lay)
-      maxbound = max(nbound,maxbound)
-      if (nbound == 0) then
-        lact(iper) = .false.
-        call logmsg('No drains found.')
-      else
-        lact(iper) = .true.
-        f = trim(pb)//'.drn.sp'//ta((/iper/),'(i3.3)')
-        if (nsys > 1) then
-          call this%write_list(iu, 4, f, i1wrk, r8wrk, r8wrk2, lbin, lbinpos, s=cwk(iper), &
-            nsys=nsys, nodes=nodes)
-        else
-          call this%write_list(iu, 4, f, i1wrk, r8wrk, r8wrk2, lbin, lbinpos, s=cwk(iper))
-        end if
-      end if
-      call clear_wrk()
-    end do
-    !
-    if (maxbound == 0) then
-      call logmsg('No drains found.')
-      pckact(idrn) = 0
-      return
-    end if
-    
-    f = trim(p)//'.drn'
-    call open_file(f, iu, 'w')
-    write(iu,'(   a)') 'BEGIN OPTIONS'
-    write(iu,'(   a)') 'END OPTIONS'
-    write(iu,'(a)')
-    write(iu,'(   a)') 'BEGIN DIMENSIONS'
-    write(iu,'(2x,a)') 'MAXBOUND '//ta((/maxbound/))
-    write(iu,'(   a)') 'END DIMENSIONS'
-    write(iu,'(a)')
-    do iper = 1, nper
-      write(iu,'(   a)') 'BEGIN PERIOD '//ta((/iper/))
-      if (lact(iper)) write(iu,'(a)') trim(cwk(iper))
-      write(iu,'(   a)') 'END PERIOD'
-    end do
-    close(iu)
-    !
-    if (ltransient) then
-      f = trim(p)//trim(pr(idrn,irun0tr))//'.drn'
-      call open_file(f, iu, 'w')
-      write(iu,'(   a)') 'BEGIN OPTIONS'
-      write(iu,'(   a)') 'END OPTIONS'
-      write(iu,'(a)')
-      write(iu,'(   a)') 'BEGIN DIMENSIONS'
-      write(iu,'(2x,a)') 'MAXBOUND '//ta((/maxbound/))
-      write(iu,'(   a)') 'END DIMENSIONS'
-      write(iu,'(a)')
-      nperspu = raw%geti('nyear_spinup')*12
-      do iper = 1, nper
-        write(iu,'(   a)') 'BEGIN PERIOD '//ta((/iper/))
-        jper = mod(iper, nperspu)
-        if (jper == 0) jper = nperspu
-        if (lact(jper)) write(iu,'(a)') trim(cwk(jper))
-        write(iu,'(   a)') 'END PERIOD'
-      end do
-      close(iu)
-    end if
-    !
-    deallocate(cwk, lact)
-    call clear_wrk()
-    !
-    return
-  end subroutine mf6_mod_write_drn
-  
-  subroutine mf6_mod_write_ghb(this, lbin, lbinpos, ipack)
-! ******************************************************************************
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
-!
-    ! -- dummy
-    class(tMf6_mod) :: this
-    logical, intent(in) :: lbin
-    logical, intent(in) :: lbinpos
-    integer(i4b), intent(in) :: ipack
-    ! -- local
-    character(len=mxslen), dimension(:), allocatable :: cwk
-    character(len=mxslen) :: p, pb, f, packstr
-    integer(i4b) :: i, n, iu, nbound, maxbound, iper, jper, nper, nperspu
-    integer(i4b) :: j_ghb_bhead, j_ghb_cond
-    integer(i4b), dimension(gnlay) :: nbound_lay
-    logical, dimension(:), allocatable :: lact
-! ------------------------------------------------------------------------------
-    if (pckact(ipack) == 0) return
-    !
-    packstr = trim(pr(ipack,irun0ss))//'.ghb' 
-    if (ipack == ighb1) then
-      j_ghb_bhead = i_ghb1_bhead
-      j_ghb_cond  = i_ghb1_cond
-    elseif(ipack == ighb2) then
-      j_ghb_bhead = i_ghb2_bhead
-      j_ghb_cond  = i_ghb2_cond
-    end if
-    !
-    call clear_wrk()
-    !
-    p = trim(this%rootdir)//trim(this%modelname)
-    if (lbin) then
-      pb =  trim(this%bindir)//trim(this%modelname)
-    else
-      pb = p
-    end if
-    !
-    ! write all binary files and store the file strings
-    nper = raw%nper
-    allocate(cwk(nper), lact(nper))
-    maxbound = 0
-    do iper = 1, nper
-      call this%get_array(j_ghb_bhead, 1, iper, 1, 0, i1wrk, r8wrk, ib_in=2) !j_ghb_bhead_l1
-      if (gnlay == 2) call this%get_array(j_ghb_bhead, 2, iper, 2, 0, i1wrk, r8wrk, ib_in=2) !j_ghb_bhead_l1
-      call this%get_array(j_ghb_cond, 1, iper, 1, 0, i1wrk, r8wrk2, ib_in=2)
-      if (gnlay == 2) call this%get_array(j_ghb_cond, 2, iper, 2, 0, i1wrk, r8wrk2, ib_in=2)
-      !
-      ! filter for zero conductance
-      n = 0
-      do i = 1, size(i1wrk)
-        if (r8wrk2(i) == DZERO) then
-          if (i1wrk(i) == 1) n = n + 1
-          i1wrk(i) = 0
-        end if
-        if (r8wrk2(i) < DZERO) then
-          call errmsg("Negative general-head boundary conductance.")
-        end if
-      end do
-      if (n > 0) then
-        call logmsg('Removed '//ta((/n/))//' general-head boundaries with zero conductance.')
-      end if
-      !
-      nbound_lay = this%count_i1a(i1wrk); nbound = sum(nbound_lay)
-      maxbound = max(nbound,maxbound)
-      if (nbound == 0) then
-        lact(iper) = .false.
-        call logmsg('No general-head boundaries found.')
-      else
-        lact(iper) = .true.
-        f = trim(pb)//trim(packstr)//'.sp'//ta((/iper/),'(i3.3)')
-        call this%write_list(iu, 4, f, i1wrk, r8wrk, r8wrk2, lbin, lbinpos, cwk(iper))
-      end if
-      call clear_wrk()
-    end do
-    !
-    if (maxbound == 0) then
-      call logmsg('No general-head boundaries found: '//trim(pr(ipack,irun0ss)))
-      pckact(ipack) = 0
-      return
-    end if
-    !
-    f = trim(p)//trim(packstr)
-    call open_file(f, iu, 'w')
-    write(iu,'(   a)') 'BEGIN OPTIONS'
-    write(iu,'(   a)') 'END OPTIONS'
-    write(iu,'(a)')
-    write(iu,'(   a)') 'BEGIN DIMENSIONS'
-    write(iu,'(2x,a)') 'MAXBOUND '//ta((/maxbound/))
-    write(iu,'(   a)') 'END DIMENSIONS'
-    write(iu,'(a)')
-    do iper = 1, nper
-      write(iu,'(   a)') 'BEGIN PERIOD '//ta((/iper/))
-      if (lact(iper)) write(iu,'(a)') trim(cwk(iper))
-      write(iu,'(   a)') 'END PERIOD'
-    end do
-    close(iu)
-    !
-    if (ltransient) then
-      f = trim(p)//trim(pr(ipack,irun0tr))//trim(packstr)
-      call open_file(f, iu, 'w')
-      write(iu,'(   a)') 'BEGIN OPTIONS'
-      write(iu,'(   a)') 'END OPTIONS'
-      write(iu,'(a)')
-      write(iu,'(   a)') 'BEGIN DIMENSIONS'
-      write(iu,'(2x,a)') 'MAXBOUND '//ta((/maxbound/))
-      write(iu,'(   a)') 'END DIMENSIONS'
-      write(iu,'(a)')
-      nperspu = raw%geti('nyear_spinup')*12
-      do iper = 1, nper
-        write(iu,'(   a)') 'BEGIN PERIOD '//ta((/iper/))
-        jper = mod(iper, nperspu)
-        if (jper == 0) jper = nperspu
-        if (lact(jper)) write(iu,'(a)') trim(cwk(jper))
-        write(iu,'(   a)') 'END PERIOD'
-      end do
-      close(iu)
-    end if
-    !
-    deallocate(cwk, lact)
-    call clear_wrk()
-    !
-    return
-  end subroutine mf6_mod_write_ghb
-  
-  subroutine mf6_mod_write_riv(this, lbin, lbinpos)
-! ******************************************************************************
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
-!
-    ! -- dummy
-    class(tMf6_mod) :: this
-    logical, intent(in) :: lbin
-    logical, intent(in) :: lbinpos
-    ! -- local
-    character(len=mxslen), dimension(:), allocatable :: cwk
-    character(len=mxslen) :: p, pb, f, s
-    integer(i4b) :: iu, nbound, maxbound, i, n, iper, jper, nper, nperspu
-    integer(i4b) :: nodes, nsys, isys
-    integer(i4b), dimension(gnlay) :: nbound_lay
-    real(r8b) :: stage, rbot, cond
-    logical, dimension(:), allocatable :: lact
-! ------------------------------------------------------------------------------
-    if (pckact(iriv) == 0) return
-    !
-    call clear_wrk()
-    !
-    p = trim(this%rootdir)//trim(this%modelname)
-    if (lbin) then
-      pb =  trim(this%bindir)//trim(this%modelname)
-    else
-      pb = p
-    end if
-    !
-    ! check the presence of multiple drainage systems
-    s = raw%getc(keys(i_nrivsys),cdef='')
-    if (len_trim(s) > 0) then
-      read(s,*) nsys
-    else
-      nsys = 1
-    end if
-    !
-    ! write all binary files and store the file strings
-    nper = raw%nper
-    allocate(cwk(nper), lact(nper))
-    maxbound = 0
-    !
-    do iper = 1, nper
-      if (nsys > 1) then
-        call clear_wrk()
-        nodes = sum(this%layer_nodes)
-        allocate(i1wrk(nodes*nsys), r8wrk(nodes*nsys), r8wrk2(nodes*nsys), r8wrk3(nodes*nsys))
-        i1wrk = 0; r8wrk = DZERO; r8wrk2 = DZERO; r8wrk3 = DZERO
-        do isys = 1, nsys
-          call logmsg('---> Processing river system '//ta([isys])//'/'//ta([nsys])//'...')
-          call this%get_array(i_riv_stage, 1, iper, 1, isys, i1wrk, r8wrk,  ib_in=2, toponly_in=.true.) !i_riv_stage_l1
-          call this%get_array(i_riv_stage, 1, iper, 2, isys, i1wrk, r8wrk,  ib_in=2, toponly_in=.true.) !i_riv_stage_l2
-          call this%get_array(i_riv_cond,  1, iper, 1, isys, i1wrk, r8wrk2, ib_in=2, toponly_in=.true.) !i_riv_cond_l1
-          call this%get_array(i_riv_cond,  1, iper, 2, isys, i1wrk, r8wrk2, ib_in=2, toponly_in=.true.) !i_riv_cond_l2
-          call this%get_array(i_riv_rbot,  1, iper, 1, isys, i1wrk, r8wrk3, ib_in=2, toponly_in=.true.) !i_riv_rbot_l1
-          call this%get_array(i_riv_rbot,  1, iper, 2, isys, i1wrk, r8wrk3, ib_in=2, toponly_in=.true.) !i_riv_rbot_l2
-        end do
-      else
-        call this%get_array(i_riv_stage, 1, iper, 1, 0, i1wrk, r8wrk,  ib_in=2, toponly_in=.true.) !i_riv_stage_l1
-        call this%get_array(i_riv_stage, 1, iper, 2, 0, i1wrk, r8wrk,  ib_in=2, toponly_in=.true.) !i_riv_stage_l2
-        call this%get_array(i_riv_cond,  1, iper, 1, 0, i1wrk, r8wrk2, ib_in=2, toponly_in=.true.) !i_riv_cond_l1
-        call this%get_array(i_riv_cond,  1, iper, 2, 0, i1wrk, r8wrk2, ib_in=2, toponly_in=.true.) !i_riv_cond_l2
-        call this%get_array(i_riv_rbot,  1, iper, 1, 0, i1wrk, r8wrk3, ib_in=2, toponly_in=.true.) !i_riv_rbot_l1
-        call this%get_array(i_riv_rbot,  1, iper, 2, 0, i1wrk, r8wrk3, ib_in=2, toponly_in=.true.) !i_riv_rbot_l2
-      end if
-      !
-      ! checks and filter for zero conductance
-      n = 0
-      do i = 1, size(i1wrk)
-        stage = r8wrk(i); cond = r8wrk2(i); rbot = r8wrk3(i)
-        if (i1wrk(i) == 1) then
-          if (stage < rbot) then
-            call errmsg('Inconsistent river stage/rbot.')
-          end if
-          if (cond < 0) then
-            call errmsg('Negative river conductance.')
-          end if
-        end if
-        if (cond == DZERO) then
-          if (i1wrk(i) == 1) n = n + 1
-          i1wrk(i) = 0
-        end if
-      end do
-      if (n > 0) then
-        call logmsg('Removed '//ta((/n/))//' rivers with zero conductance.')
-      end if
-      !
-      nbound_lay = this%count_i1a(i1wrk, nsys); nbound = sum(nbound_lay)
-      maxbound = max(nbound,maxbound)
-      if (nbound == 0) then
-        lact(iper) = .false.
-        call logmsg('No rivers found.')
-      else
-        lact(iper) = .true.
-        f = trim(pb)//'.riv.sp'//ta((/iper/),'(i3.3)')
-        if (nsys > 1) then
-          call this%write_list(iu, 2, f, i1wrk, r8wrk, r8wrk2, r8wrk3, lbin, lbinpos, cwk(iper), &
-            nsys=nsys, nodes=nodes)
-        else
-          call this%write_list(iu, 2, f, i1wrk, r8wrk, r8wrk2, r8wrk3, lbin, lbinpos, cwk(iper))
-        end if
-      end if
-      call clear_wrk()
-    end do 
-    !
-    if (maxbound == 0) then
-      call logmsg('No rivers found.')
-      pckact(iriv) = 0
-      return
-    end if
-    !
-    f = trim(p)//'.riv'
-    call open_file(f, iu, 'w')
-    write(iu,'(   a)') 'BEGIN OPTIONS'
-    write(iu,'(   a)') 'END OPTIONS'
-    write(iu,'(a)')
-    write(iu,'(   a)') 'BEGIN DIMENSIONS'
-    write(iu,'(2x,a)') 'MAXBOUND '//ta((/maxbound/))
-    write(iu,'(   a)') 'END DIMENSIONS'
-    write(iu,'(a)')
-    do iper = 1, nper
-      write(iu,'(   a)') 'BEGIN PERIOD '//ta((/iper/))
-       if (lact(iper)) write(iu,'(a)') trim(cwk(iper))
-      write(iu,'(   a)') 'END PERIOD'
-    end do
-    close(iu)
-    !
-    if (ltransient) then
-      f = trim(p)//trim(pr(idrn,irun0tr))//'.riv'
-      call open_file(f, iu, 'w')
-      write(iu,'(   a)') 'BEGIN OPTIONS'
-      write(iu,'(   a)') 'END OPTIONS'
-      write(iu,'(a)')
-      write(iu,'(   a)') 'BEGIN DIMENSIONS'
-      write(iu,'(2x,a)') 'MAXBOUND '//ta((/maxbound/))
-      write(iu,'(   a)') 'END DIMENSIONS'
-      write(iu,'(a)')
-      nperspu = raw%geti('nyear_spinup')*12
-      do iper = 1, nper
-        write(iu,'(   a)') 'BEGIN PERIOD '//ta((/iper/))
-        !jper = mod(iper,nperspu)
-        !if (jper == 0) jper = nperspu
-        jper = mod(iper,12)
-        if (jper == 0) jper = 1
-         if (lact(jper)) write(iu,'(a)') trim(cwk(jper))
-        write(iu,'(   a)') 'END PERIOD'
-      end do
-      close(iu)
-    end if
-    !
-    deallocate(cwk, lact)
-    call clear_wrk()
-    !
-    return
-  end subroutine mf6_mod_write_riv
-  
-  subroutine mf6_mod_write_rch(this, lbin, lbinpos)
-! ******************************************************************************
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
-!
-    ! -- dummy
-    class(tMf6_mod) :: this
-    logical, intent(in) :: lbin
-    logical, intent(in) :: lbinpos
-    ! -- local
-    character(len=mxslen), dimension(:), allocatable :: cwk
-    character(len=mxslen) :: p, pb, f
-    integer(i4b) :: iu, i, n, nbound, maxbound, iper, jper, nper, nperspu
-    integer(i4b), dimension(gnlay) :: nbound_lay
-    logical, dimension(:), allocatable :: lact
-! ------------------------------------------------------------------------------
-    if (pckact(irch) == 0) return
-    !
-    call clear_wrk()
-    !
-    p = trim(this%rootdir)//trim(this%modelname)
-    if (lbin) then
-      pb =  trim(this%bindir)//trim(this%modelname)
-    else
-      pb = p
-    end if
-    !
-    ! write all binary files and store the file strings
-    nper = raw%nper
-    allocate(cwk(nper), lact(nper))
-    maxbound = 0
-    !
-    do iper = 1, nper
-      call this%get_array(i_recharge, 0, iper, 1, 0, i1wrk, r8wrk, ib_in=2, toponly_in=.true.)
-      if (gnlay == 2) call this%get_array(i_recharge, 0, iper, 2, 0, i1wrk, r8wrk, ib_in=2, toponly_in=.true.)
-      !
-      ! check and filter for zero recharge
-      n = 0
-      do i = 1, size(i1wrk)
-        if (r8wrk(i) == DZERO) then
-          if (i1wrk(i) == 1) n = n + 1
-          i1wrk(i) = 0
-        end if
-        if (r8wrk(i) < DZERO) then
-          call logmsg('Negative recharge found.')
-        end if
-      end do
-      if (n > 0) then
-        call logmsg('Removed '//ta((/n/))//' cells with zero recharge.')
-      end if
-      !
-      nbound_lay = this%count_i1a(i1wrk); nbound = sum(nbound_lay)
-      maxbound = max(nbound,maxbound)
-      if (nbound == 0) then
-        lact(iper) = .false.
-        call logmsg('No recharge found.')
-      else
-        lact(iper) = .true.
-        f = trim(pb)//'.rch.sp'//ta((/iper/),'(i3.3)')
-        call this%write_list(iu, 2, f, i1wrk, r8wrk, lbin, lbinpos, cwk(iper))
-      end if
-      call clear_wrk()
-    end do
-    !
-    if (maxbound == 0) then
-      call logmsg('No recharge found.')
-      pckact(irch) = 0
-      return
-    end if
-    !
-    f = trim(p)//'.rch'
-    call open_file(f, iu, 'w')
-    write(iu,'(   a)') 'BEGIN OPTIONS'
-    write(iu,'(   a)') 'END OPTIONS'
-    write(iu,'(a)')
-    write(iu,'(   a)') 'BEGIN DIMENSIONS'
-    write(iu,'(2x,a)') 'MAXBOUND '//ta((/maxbound/))
-    write(iu,'(   a)') 'END DIMENSIONS'
-    write(iu,'(a)')
-    do iper = 1, nper
-      write(iu,'(   a)') 'BEGIN PERIOD '//ta((/iper/))
-      if (lact(iper)) write(iu,'(a)') trim(cwk(iper))
-      write(iu,'(   a)') 'END PERIOD'
-    end do
-    close(iu)
-    !
-    if (ltransient) then
-      f = trim(p)//trim(pr(irch,irun0tr))//'.rch'
-      call open_file(f, iu, 'w')
-      write(iu,'(   a)') 'BEGIN OPTIONS'
-      write(iu,'(   a)') 'END OPTIONS'
-      write(iu,'(a)')
-      write(iu,'(   a)') 'BEGIN DIMENSIONS'
-      write(iu,'(2x,a)') 'MAXBOUND '//ta((/maxbound/))
-      write(iu,'(   a)') 'END DIMENSIONS'
-      write(iu,'(a)')
-      nperspu = raw%geti('nyear_spinup')*12
-      do iper = 1, nper
-        write(iu,'(   a)') 'BEGIN PERIOD '//ta((/iper/))
-        !jper = mod(iper,nperspu)
-        !if (jper == 0) jper = nperspu
-        jper = mod(iper,12)
-        if (jper == 0) jper = 1
-        if (lact(jper)) write(iu,'(a)') trim(cwk(jper))
-        write(iu,'(   a)') 'END PERIOD'
-      end do
-      close(iu)
-    end if
-    !
-    deallocate(cwk, lact)
-    call clear_wrk()
-    !
-    return
-  end subroutine mf6_mod_write_rch
-  
-  subroutine mf6_mod_write_wel(this, lbin, lbinpos)
-! ******************************************************************************
-! ******************************************************************************
-!
-!    SPECIFICATIONS:
-! ------------------------------------------------------------------------------
-!
-    ! -- dummy
-    class(tMf6_mod) :: this
-    logical, intent(in) :: lbin
-    logical, intent(in) :: lbinpos
-    ! -- local
-    character(len=mxslen), dimension(:), allocatable :: cwk
-    character(len=mxslen) :: p, pb, f
-    integer(i4b) :: iu, i, n, nbound, maxbound, iper, jper, nper, nperspu
-    integer(i4b), dimension(gnlay) :: nbound_lay
-    logical, dimension(:), allocatable :: lact
-! ------------------------------------------------------------------------------
-    if (pckact(iwel) == 0) return
-    !
-    call clear_wrk()
-    !
-    p = trim(this%rootdir)//trim(this%modelname)
-    if (lbin) then
-      pb =  trim(this%bindir)//trim(this%modelname)
-    else
-      pb = p
-    end if
-    !
-    ! write all binary files and store the file strings
-    nper = raw%nper
-    allocate(cwk(nper), lact(nper))
-    maxbound = 0
-    !
-    do iper = 1, nper
-      call this%get_array(i_wel, 1, iper, 1, 0, i1wrk, r8wrk, ib_in=2)
-      call this%get_array(i_wel, 2, iper, 2, 0, i1wrk, r8wrk, ib_in=2)
-      !
-      ! filter for zero flux
-      n = 0
-      do i = 1, size(i1wrk)
-        if (r8wrk(i) == DZERO) then
-          if (i1wrk(i) == 1) n = n + 1
-          i1wrk(i) = 0
-        end if
-      end do
-      if (n > 0) then
-        call logmsg('Removed '//ta((/n/))//' wells with zero flux.')
-      end if
-      nbound_lay = this%count_i1a(i1wrk); nbound = sum(nbound_lay)
-      maxbound = max(nbound, maxbound)
-      if (nbound > 0) then
-        lact(iper) = .true.
-        f = trim(pb)//'.wel.sp'//ta((/iper/),'(i3.3)')
-        call this%write_list(iu, 2, f, i1wrk, r8wrk, lbin, lbinpos, cwk(iper))
-      else
-        lact(iper) = .false.
-      end if
-      call clear_wrk()
-    end do
-    !
-    if (maxbound == 0) then
-      call logmsg('No wells found')
-      pckact(iwel) = 0
-      return
-    end if
-    !
-    f = trim(p)//'.wel'
-    call open_file(f, iu, 'w')
-    write(iu,'(   a)') 'BEGIN OPTIONS'
-    write(iu,'(   a)') 'END OPTIONS'
-    write(iu,'(a)')
-    write(iu,'(   a)') 'BEGIN DIMENSIONS'
-    write(iu,'(2x,a)') 'MAXBOUND '//ta((/maxbound/))
-    write(iu,'(   a)') 'END DIMENSIONS'
-    write(iu,'(a)')
-    do iper = 1, nper
-      write(iu,'(   a)') 'BEGIN PERIOD '//ta((/iper/))
-      if (lact(iper)) write(iu,'(a)') trim(cwk(iper))
-      write(iu,'(   a)') 'END PERIOD'
-    end do
-    close(iu)
-    !
-    if (ltransient) then
-      f = trim(p)//trim(pr(irch,irun0tr))//'.wel'
-      call open_file(f, iu, 'w')
-      write(iu,'(   a)') 'BEGIN OPTIONS'
-      write(iu,'(   a)') 'END OPTIONS'
-      write(iu,'(a)')
-      write(iu,'(   a)') 'BEGIN DIMENSIONS'
-      write(iu,'(2x,a)') 'MAXBOUND '//ta((/maxbound/))
-      write(iu,'(   a)') 'END DIMENSIONS'
-      write(iu,'(a)')
-      nperspu = raw%geti('nyear_spinup')*12
-      do iper = 1, nper
-        write(iu,'(   a)') 'BEGIN PERIOD '//ta((/iper/))
-        !jper = mod(iper,nperspu)
-        !if (jper == 0) jper = nperspu
-        jper = mod(iper,12)
-        if (jper == 0) jper = 1
-        if (lact(jper)) write(iu,'(a)') trim(cwk(jper))
-        write(iu,'(   a)') 'END PERIOD'
-      end do
-      close(iu)
-    end if
-    !
-    deallocate(cwk, lact)
-    call clear_wrk()
-    !
-    return
-  end subroutine mf6_mod_write_wel
   
   subroutine mf6_mod_write_exchanges(this, ju)
 ! ******************************************************************************
@@ -3673,11 +3463,11 @@ module mf6_module
     ! -- local
     character(len=mxslen) :: s, d, f, fexg, m1s, m2s
     integer(i4b) :: iu, ixch, iexg
-    type(tExchange), pointer :: xch => null()
+    type(tExchange), pointer :: xch
 ! ------------------------------------------------------------------------------
     if (this%nxch == 0) return
     
-    d = '..\..\models\run_input\exchanges\'
+    d = '../../models/run_input/exchanges/'
     call create_dir(d)
     
     do ixch = 1, this%nxch
@@ -3690,34 +3480,33 @@ module mf6_module
       fexg = trim(m1s)//'-'//trim(m2s)//'.exg'
       !
       ! .exg file
-      f = trim(d)//trim(fexg); call swap_slash(f)
+      f = trim(d)//trim(fexg)
       call open_file(f, iu, 'w')
-      write(iu,'(   a)') 'BEGIN OPTIONS'
+      call write_block_begin(iu, 'OPTIONS')
       if (raw%geti('exchange_newton',idef=0) == 1) then
-        write(iu,'(2x,a)') 'NEWTON'
+        call wline(iu, repeat(' ',2)//'NEWTON')
       end if
-      write(iu,'(   a)') 'END OPTIONS'
-      write(iu,'(a)')
-      write(iu,'(   a)') 'BEGIN DIMENSIONS'
-      write(iu,'(2x,a)') 'NEXG '//ta((/xch%nexg/))
-      write(iu,'(   a)') 'END DIMENSIONS'
-      write(iu,'(a)')
-      write(iu,'(   a)') 'BEGIN EXCHANGEDATA'
-      f = trim(d)//trim(fexg)//'.asc'; call swap_slash(f)
-      write(iu,'(2x,a)') 'OPEN/CLOSE '//trim(f)
-      write(iu,'(   a)') 'END EXCHANGEDATA'
+      call write_block_end(iu, 'OPTIONS')
+      call wline(iu, '')
+      call write_block_begin(iu, 'DIMENSIONS')
+      call wline(iu, repeat(' ',2)//'NEXG '//ta((/xch%nexg/)))
+      call write_block_end(iu, 'DIMENSIONS')
+      call wline(iu, '')
+      call write_block_begin(iu, 'EXCHANGEDATA')
+      f = trim(d)//trim(fexg)//'.asc'
+      call wline(iu, repeat(' ',2)//'OPEN/CLOSE '//trim(f))
+      call write_block_end(iu, 'EXCHANGEDATA')
       close(iu)
       !
       ! .asc file
-      f = trim(d)//trim(fexg)//'.asc'; call swap_slash(f)
+      f = trim(d)//trim(fexg)//'.asc'
       call open_file(f, iu, 'w')
       do iexg = 1, xch%nexg
-        write(iu,'(a)') ta((/xch%cellidm1(iexg), xch%cellidm2(iexg)/))//' 1 '//&
-                        ta((/gcs/2, gcs/2, gcs/))
+        call wline(iu, ta((/xch%cellidm1(iexg), xch%cellidm2(iexg)/))//' 1 '//&
+                        ta((/gcs/2, gcs/2, gcs/)))
       end do
       close(iu)
       !
-      !GWF6-GWF6 .\exchanges\m000039-m000040.exg m000039 m000040
       write(s,'(a,3(1x,a))') 'GWF6-GWF6',  trim(d)//trim(fexg), trim(m1s), trim(m2s)
       write(ju,'(a)') trim(s)
     end do

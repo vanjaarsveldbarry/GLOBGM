@@ -9,8 +9,9 @@
 // pixi environment (python, gdal, mpirun) is ambient. Every tool's stdout is
 // a `*.log` at the task's top level, published flat under params.logs.
 
-process map_glob {
-  publishDir params.output, mode: 'link', pattern: '{datamap,tiles}'
+// Builds every intermediate map_glob's datamap call needs: rasterised
+// HydroBASINS regions, the filtered catchment raster and d_top_2.
+process preprocess_inputs {
   publishDir params.logs, mode: 'link', pattern: '*.log'
   input:
     val c
@@ -19,8 +20,8 @@ process map_glob {
     path confining
     path tools, stageAs: 'tools/*'
   output:
-    path 'datamap'
-    path 'tiles'
+    path 'hybas_lake_lev*_v1c_filt.nc'
+    path 'd_top_2.nc'
     path '*.log'
   script:
   def zips  = c.hydrobasins_cache   // only thing kept between runs
@@ -28,7 +29,7 @@ process map_glob {
   def regs  = c.regions.split(' ').collect { "hybas_lake_${it}_lev${c.level}_v1c" }
   def cat   = "hybas_lake_lev${c.level}_v1c_filt"
   """
-  mkdir -p ${zips} shp datamap tiles
+  mkdir -p ${zips} shp
 
   for r in ${c.regions}; do
     z=hybas_lake_\${r}_lev01-12_v1c.zip
@@ -42,14 +43,28 @@ process map_glob {
 
   python tools/make_landmask.py ${ldd} landmask.nc ${regs.collect { it + '.nc' }.join(' ')}
   tools/process_hydbas landmask ${cat} ${regs.join(' ')} > process_hydbas.log
-  python tools/make_tiles.py landmask.nc tiles ${c.tile_prefix} ${c.window}
-  tile_txt=\$(echo tiles/${c.tile_prefix}*.txt)
-  python tools/make_d_top_2.py ${dem} ${confining} \$tile_txt d_top_2.nc
-
-  tools/datamap ${c.sea_boundary} datamap/map_glob ${cat}.nc d_top_2.nc \$tile_txt tiles/${c.tile_prefix} \\
-    ${c.layer_threshold} ${c.max_neighbours} ${c.window} > datamap.log
+  python tools/make_d_top_2.py ${dem} ${confining} d_top_2.nc
 
   rm -rf shp *.flt *.hdr *.prj *.aux.xml   # ~30 GB of global rasterize scratch
+  """
+}
+
+process map_glob {
+  publishDir params.output, mode: 'link', pattern: 'datamap'
+  publishDir params.logs, mode: 'link', pattern: '*.log'
+  input:
+    val c
+    path cat
+    path d_top_2
+    path tools, stageAs: 'tools/*'
+  output:
+    path 'datamap'
+    path '*.log'
+  script:
+  """
+  mkdir -p datamap
+  tools/datamap ${c.sea_boundary} datamap/map_glob ${cat} ${d_top_2} \\
+    ${c.layer_threshold} ${c.max_neighbours} ${c.window} > datamap.log
   """
 }
 
@@ -89,57 +104,81 @@ process mf6_input {
   """
 }
 
-// One simulation, run from its solution's run_output/ as the reference job
-// scripts do. The tree is a hard-linked copy of the mf6_input output so that
-// the results land beside the inputs without writing into that task; `strt`
-// is the previous phase's tree, staged under its phase name where the .ic
-// files point, or [] for the steady state. `par` is one MPI rank per submodel
-// through mf6ggm's DOMAIN_DECOMPOSITION; `ser` runs the same submodels in
-// one process.
+// One solution of one simulation, run from the tree's solutions/run_output/
+// as the reference job scripts do, in a hard-linked copy of the mf6_input
+// output so that nothing is written into that task. `strt` is the previous
+// phase's merged tree, staged under its phase name where the .ic files point,
+// or [] for the steady state. `np` is the nam's DOMAIN_DECOMPOSITION (main.nf
+// reads it), one MPI rank per submodel group; a `ser` nam has none and runs
+// its submodels in one process. Only what the run wrote leaves the task, as
+// an overlay of the tree for mf6_tree; every file in it carries its
+// solution's or model's name, so overlays never collide.
 process mf6 {
-  tag "${phase}/${sim}/${c.mode}"
-  publishDir "${params.output}/mf6ggm", mode: 'link', saveAs: { it.endsWith('.log') ? null : it }
+  tag "${phase}/${sol}"
   publishDir params.logs, mode: 'link', pattern: '*.log'
   input:
     path tree, stageAs: 'input'
     path strt
     tuple val(phase), val(sim), val(hds)
+    tuple val(sol), val(np)
     val c
     path exe
   output:
-    path "${phase}", emit: tree
+    path "overlay.${sol}", emit: overlay
     path '*.log'
   script:
-  def nam = "../run_input/s01.${c.mode}.mfsim.${sim}.nam"
+  def nam = "../run_input/${sol}.${c.mode}.mfsim.${sim}.nam"
   def launch = c.mode == 'par'
-    ? "mpirun -np \$(awk '\$1 == \"DOMAIN_DECOMPOSITION\" {print \$2}' ${nam}) ${c.mpirun_args} \$exe"
+    ? "mpirun -np ${np} ${c.mpirun_args} \$exe"
     : "\$exe"
   """
   exe=\$PWD/${exe}
-  log=\$PWD/mf6.${phase}.log
+  log=\$PWD/mf6.${phase}.${sol}.log
   cp -RLl input ${phase}
   cd ${phase}/solutions/run_output
   ${launch} -s ${nam} > \$log 2>&1
   grep -q 'Normal termination' \$log
   ls ../../models/run_output_bin/*.${hds} > /dev/null
+  cd ../../..
+  mkdir -p overlay.${sol}/models overlay.${sol}/solutions
+  mv ${phase}/models/run_output_bin ${phase}/models/run_output_lst overlay.${sol}/models/
+  mv ${phase}/solutions/run_output overlay.${sol}/solutions/
+  """
+}
+
+// The phase's tree with every solution's results in it: what post reads and
+// what the next phase starts from.
+process mf6_tree {
+  tag "${phase}"
+  publishDir "${params.output}/mf6ggm", mode: 'link'
+  input:
+    path tree, stageAs: 'input'
+    path overlays
+    val phase
+  output:
+    path "${phase}"
+  script:
+  """
+  cp -RLl input ${phase}
+  for o in ${overlays}; do cp -RLl \$o/. ${phase}/; done
   """
 }
 
 process post {
-  tag "${run}"
+  tag "${run}/${job}"
   publishDir "${params.output}/post", mode: 'link', pattern: '*.nc', saveAs: { "${phase}/${it}" }
   publishDir params.logs, mode: 'link', pattern: '*.log'
   input:
     path tree
     path fields, stageAs: 'fields'
     tuple val(run), val(phase)
-    path inp
+    tuple val(job), path(inp)
     path mf6ggmpost
   output:
     path '*.nc'
     path '*.log'
   script:
   """
-  ./${mf6ggmpost} ${inp} > mf6ggmpost.${phase}.log
+  ./${mf6ggmpost} ${inp} > mf6ggmpost.${phase}.${job}.log
   """
 }

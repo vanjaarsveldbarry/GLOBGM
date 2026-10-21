@@ -9,6 +9,16 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 find_package(netCDF-Fortran REQUIRED)
+find_package(OpenMP REQUIRED COMPONENTS Fortran)
+# mf6ggm calls H5Eset_auto2 itself (per-thread error printing); the HDF5
+# netCDF was built against sits next to it, FindHDF5 would need a C compiler
+get_target_property(_netcdff netCDF::netcdff LOCATION)
+get_filename_component(_netcdf_libdir ${_netcdff} DIRECTORY)
+find_library(HDF5_LIB hdf5 PATHS ${_netcdf_libdir} NO_DEFAULT_PATH)
+find_library(ZLIB_LIB z PATHS ${_netcdf_libdir} NO_DEFAULT_PATH)
+if(NOT HDF5_LIB OR NOT ZLIB_LIB)
+  message(FATAL_ERROR "libhdf5 and libz not found next to ${_netcdff}")
+endif()
 
 # METIS from src/scripts/build_metis.sh. metis_module.f90 passes int64 indices
 # and real32 weights, so a library of any other width links and partitions wrong.
@@ -59,8 +69,10 @@ foreach(tool datamap process_hydbas)
   target_link_libraries(${tool} PRIVATE globgm_lib)
 endforeach()
 
-add_executable(mf6ggm mf6ggm/mf6_module.f90 mf6ggm/mf6ggm.f90)
-target_link_libraries(mf6ggm PRIVATE globgm_lib)
+# mf6ggm writes its models with OpenMP threads and inflates the forcing
+# rasters chunk by chunk on them (chunk_io.f90); the other tools stay serial
+add_executable(mf6ggm mf6ggm/chunk_io.f90 mf6ggm/mf6_module.f90 mf6ggm/mf6ggm.f90)
+target_link_libraries(mf6ggm PRIVATE globgm_lib OpenMP::OpenMP_Fortran ${HDF5_LIB} ${ZLIB_LIB})
 
 add_executable(mf6ggmpost mf6ggmpost/mf6_post_module.f90 mf6ggmpost/mf6ggmpost.f90)
 target_link_libraries(mf6ggmpost PRIVATE globgm_lib)

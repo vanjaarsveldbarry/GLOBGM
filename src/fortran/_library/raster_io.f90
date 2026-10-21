@@ -62,7 +62,7 @@ module raster_io
   end interface raster_write
 
   public :: raster_open, raster_close, raster_read_block, raster_read_all, raster_write
-  public :: raster_time
+  public :: raster_time, raster_create_i4
 
 contains
 
@@ -406,6 +406,21 @@ contains
     call nc_check(nf90_put_var(ncid, vlon, lon), 'put_var(lon)', fname)
     return
   end subroutine write_coords
+
+  subroutine raster_create_i4(fname, ncol, nrow, xll, yll, cs, nodata)
+    ! the file of raster_write_i4 without its data, for a writer that fills
+    ! the chunks itself (mf6ggm's chunk_io)
+    character(len=*), intent(in) :: fname
+    integer(i4b), intent(in) :: ncol, nrow, nodata
+    real(r8b), intent(in) :: xll, yll, cs
+    integer(i4b) :: ncid, varid
+    call write_skeleton(fname, ncol, nrow, xll, yll, cs, NF90_INT, ncid, varid)
+    call nc_check(nf90_put_att(ncid, varid, '_FillValue', nodata), 'put_att(_FillValue)', fname)
+    call nc_check(nf90_enddef(ncid), 'nf90_enddef', fname)
+    call write_coords(ncid, fname, ncol, nrow, xll, yll, cs)
+    call nc_check(nf90_close(ncid), 'nf90_close', fname)
+    return
+  end subroutine raster_create_i4
 
   subroutine raster_write_i4(fname, arr, xll, yll, cs, nodata)
     character(len=*), intent(in) :: fname

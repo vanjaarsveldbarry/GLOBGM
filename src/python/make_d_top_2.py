@@ -14,9 +14,14 @@ four is what makes the result bit-identical to d_top_2.idf. Doing it in one step
 as max(0.1, conf) leaves ~30 % of land cells off by up to 3e-5 m, enough to move
 cells across datamap's 0.1001 layer threshold.
 
-Nodata (float32 max, as the published IDF) outside the 163 clone tiles.
+Valid everywhere, sea included: dem/confining are cover(x, 0.0)'d before the
+subtraction, so the arithmetic has no missing-data case. datamap only reads
+this file at model cells (land and addboundary sea) and never at open ocean
+(datamap.f90's `if (xid(ic,ir) == 0) cycle`), so there is no tile mask to
+replicate; the published IDF's nodata outside its 163 clone tiles was an
+artefact of its own tiled pipeline, not a model requirement.
 
-Usage: make_d_top_2.py <dem_average.nc> <confining.nc> <tile_index.txt> <out.nc>
+Usage: make_d_top_2.py <dem_average.nc> <confining.nc> <out.nc>
 """
 import sys
 
@@ -36,14 +41,13 @@ def open_var(path, name):
     return v, flip, np.float32(v.getncattr("_FillValue"))
 
 
-def main(dem_nc, conf_nc, tiles_txt, out_nc):
+def main(dem_nc, conf_nc, out_nc):
     dem, dem_flip, dem_fill = open_var(dem_nc, "dem_average")
     conf, conf_flip, conf_fill = open_var(conf_nc, "thickness_deklaag")
     nrow, ncol = conf.shape
     if dem.shape != conf.shape:
         raise ValueError(f"grid mismatch: dem {dem.shape} vs confining {conf.shape}")
     dx = 360.0 / ncol
-    tiles = np.loadtxt(tiles_txt, skiprows=1, usecols=(0, 1, 2, 3), dtype=np.int64)
 
     hdr = Header(ncol=ncol, nrow=nrow, xmin=-180.0, ymin=-90.0, xmax=180.0,
                  ymax=90.0, dx=dx, dy=dx, nodata=NODATA, dtype="<f4")
@@ -65,18 +69,11 @@ def main(dem_nc, conf_nc, tiles_txt, out_nc):
             a = band(dem, dem_flip, dem_fill, r0, r1)
             c = band(conf, conf_flip, conf_fill, r0, r1)
             t2 = np.maximum(np.float32(0.1), a - (a - c))
-            blk = a - (a - t2)
-            inside = np.zeros((r1 - r0, ncol), bool)
-            for c0, c1, tr0, tr1 in tiles:                # 1-based incl.
-                lo, hi = max(tr0 - 1, r0), min(tr1, r1)
-                if lo < hi:
-                    inside[lo - r0:hi - r0, c0 - 1:c1] = True
-            blk[~inside] = np.float32(NODATA)
-            return blk
+            return a - (a - t2)
 
     write_nc(out_nc, hdr, Bands())
     print(f"wrote {out_nc}")
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:5])
+    main(*sys.argv[1:4])
