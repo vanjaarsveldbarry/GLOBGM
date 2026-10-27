@@ -120,7 +120,8 @@ process mf6_tree {
 
 process post {
   tag "${run}/${job}"
-  publishDir "${params.output}/post", mode: 'link', pattern: '*.nc', saveAs: { "${phase}/${it}" }
+  publishDir "${params.output}/post", mode: 'link', pattern: '*.nc',
+    saveAs: { phase == 'steady-state' ? "${phase}/${it.replaceFirst(/\.\d{8}_l/, '_l')}" : "${phase}/${it}" }   // steady state has no date
   publishDir params.logs, mode: 'link', pattern: '*.log'
   input:
     path tree

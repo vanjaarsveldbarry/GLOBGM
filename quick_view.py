@@ -71,7 +71,7 @@ coords_slice = {"lat": slice(90, -90), "lon": slice(-180, 180)}
 # consolidated=False)
 
 ds = xr.open_dataset(
-"/gpfs/work4/0/prjs1222/globgm_port/output/run_globgm/post/steady-state/s01_wtd.ss.19790101_l2.nc")
+"/gpfs/work4/0/prjs1222/globgm_port/output/run_globgm/post/steady-state/s01_wtd.ss_l2.nc")
 
-plot_ds(ds, title="ds", cmap=cm.batlow, rasterize=False, clim=(None, 0))
+plot_ds(ds, title="ds", cmap=cm.batlow, rasterize=True, clim=(None, 0))
 # %%

@@ -22,10 +22,10 @@ nlay = 2   # the tools hardwire two
 [window]
 # Degrees, snapped outward to whole cells.
 # British Isles
-north = 61.0
-south = 49.8
-west = -11.0
-east = 2.0
+# north = 61.0
+# south = 49.8
+# west = -11.0
+# east = 2.0
 
 # Australia
 # north = -9.0
@@ -34,10 +34,10 @@ east = 2.0
 # east = 154.0
 
 # Global
-# north = 90.0
-# south = -90.0
-# west = -180.0
-# east = 180.0
+north = 90.0
+south = -90.0
+west = -180.0
+east = 180.0
 
 [inputs]
 dir = "/gpfs/work4/0/prjs1222/globgm_port/input"
@@ -79,12 +79,12 @@ spinup_months = 12
 # Solution i takes datamap's i-th largest region; mpi_ranks <= submodels.
 # Optional per solution: active = false, or partition_file = "<abs path>" instead of submodels/mpi_ranks.
 # Global
-# solutions = [
-#   { submodels = 224, mpi_ranks = 224 },
-#   { submodels = 96,  mpi_ranks = 96 },
-#   { submodels = 32,  mpi_ranks = 32 },
-#   { submodels = 32,  mpi_ranks = 32 },
-# ]
+solutions = [
+  { submodels = 224, mpi_ranks = 224 },
+  { submodels = 96,  mpi_ranks = 96 },
+  { submodels = 32,  mpi_ranks = 32 },
+  { submodels = 32,  mpi_ranks = 32 },
+]
 
 # Australia
 # solutions = [
@@ -93,10 +93,10 @@ spinup_months = 12
 # ]
 
 # British Isles
-solutions = [
-  { submodels = 8, mpi_ranks = 8 },
-  { submodels = 4, mpi_ranks = 4 },
-]
+# solutions = [
+#   { submodels = 8, mpi_ranks = 8 },
+#   { submodels = 4, mpi_ranks = 4 },
+# ]
 
 last_takes_remaining = true   # the last solution takes every remaining region
 single_model_solutions = 0
