@@ -127,13 +127,11 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-.png
+*.png
 *.out
-.snakemake/
 .vscode/
 
-CLAUDE.md
-.code-workspace
+*.code-workspace
 # pixi environments
 .pixi/*
 !.pixi/config.toml
@@ -142,12 +140,7 @@ reference/ref_globgm_input/
 
 *.md
 
-# local model runs
-run_*/output/
-
 # third-party sources fetched by src/scripts/build_{metis,mf6}.sh
 src/c/metis/metis-*
 src/fortran/mf6/modflow6-parallel/
-run_*/.nextflow*
-run_*/logs/
 NOTES.txt

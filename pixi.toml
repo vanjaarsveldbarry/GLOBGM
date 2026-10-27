@@ -2,7 +2,7 @@
 authors = ["Barry van Jaarsveld <a.s.vanjaarsveld@uu.nl>"]
 channels = ["conda-forge", "bioconda"]
 name = "GLOBGM"
-platforms = ["osx-arm64", "linux-64"]
+platforms = ["linux-64"]
 version = "0.1.0"
 
 [dependencies]
@@ -12,12 +12,22 @@ cmake = ">=3.28,<4"
 netcdf-fortran = ">=4.6.4,<5"
 numpy = ">=2.5.3,<3"
 netcdf4 = ">=1.7.4,<2"
-gdal = ">=3.13.3,<4"
 nextflow = ">=26.4.6,<27"
 openmpi = ">=5.0.10,<6"
 xarray = ">=2026.9.0,<2027"
 zarr = ">=3.4.1,<4"
 dask = ">=2026.8.0,<2027"
+numba = ">=0.68.0,<0.69"
+h5py = ">=3.16.0,<4"
+bokeh = ">=3.10.0,<4"
+hvplot = ">=0.12.2,<0.13"
+panel = ">=1.10.0,<2"
+holoviews = ">=1.23.2,<2"
+cmcrameri = ">=1.10,<2"
+datashader = ">=0.19.1,<0.20"
+ipykernel = ">=7.4.0,<8"
+jupyter_bokeh = ">=4.1.0,<5"
+colorcet = ">=3.2.1,<4"
 
 [tasks]
 build_globgm = "bash src/scripts/build_globgm.sh"

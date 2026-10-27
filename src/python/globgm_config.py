@@ -1,7 +1,7 @@
 """The two GLOBGM configuration files, turned into what the tools read.
 
   globgm_config.py run <globgm.toml> <output>
-      writes the mf6ggm / mf6ggmpost .inp files, synthetic.json and
+      writes the mf6ggm / mf6ggmpost .inp files, fields.json and
       params.json (read by main.nf) into <output>/config and empties the
       rest of <output>, the published view Nextflow refills from its cache
   globgm_config.py build-env <build.toml>
@@ -9,9 +9,9 @@
 
 Paths in either file are relative to the file's own directory and come out
 absolute in params.json and the build env; main.nf calls `run` with the
-output root from nextflow.config. The .inp files and synthetic.json
-instead name files relative to the Nextflow task directory that runs the tool,
-in the layout stages.nf stages them (TASK_LAYOUT below), so that they are the
+output root from nextflow.config. fields.json names the inputs by absolute
+path; the .inp files instead name files relative to the Nextflow task directory that runs the tool,
+in the layout stages.nf stages them (see TREE_UP below), so that they are the
 same on every machine and change only with the configuration. Every generated
 file is a build artefact: edit the TOML instead.
 """
@@ -39,18 +39,23 @@ IMS_KEYS = (
 COMPLEXITY = ("SIMPLE", "MODERATE", "COMPLEX")
 PRINT_OPTION = ("NONE", "SUMMARY", "ALL", "ALLITER")
 RCLOSE_OPTION = ("", "STRICT", "L2NORM_RCLOSE", "RELATIVE_RCLOSE")
-PACKAGES = ("sto", "riv", "wel", "chd", "chd2", "ghb", "ghb2")
+PACKAGES = ("sto", "riv", "wel", "chd", "chd2")
 MF6GGM_WRITE = ("all", "solutions")
+# [inputs] files; make_fields.py reads all but the first four from fields.json
+INPUT_KEYS = ("ldd", "dem", "confining", "lakes", "cell_area", "channel", "thickness",
+              "ksat", "specific_yield", "recession", "unconsolidated", "consolidated", "carbonate",
+              "recharge", "abstraction", "discharge")
+CALIBRATION = ("khuncon", "khcon", "khcar", "kvconf", "riverres")
+# the [fields.files] keys make_fields.py writes
+DERIVED_KEYS = ("TOP", "BOT_L1", "BOT_L2", "K_L1", "K_L2", "K_33_L1", "K_33_L2", "PRIM_STO_L1",
+                "PRIM_STO_L2", "STRT_L1", "STRT_L2", "RECHARGE", "RIV_STAGE_L1", "RIV_RBOT_L1",
+                "RIV_COND_L1", "DRN_ELEV_L1", "DRN_ELEV_L2", "DRN_COND_L1:2", "WEL_Q_L1", "WEL_Q_L2")
 
-# The field keys mf6ggm knows (mf6_module.f90 `keys`), with the suffixes a
-# [fields.files] key may carry: _L<n> or _L<n>:<m> for the layer range, _S<n>
-# for the drain/river system; the generator appends the _P<1>:<nper> range to
-# the periodic ones. DRN_COND is static data under a periodic key, as upstream
-# wrote it.
-STATIC_FIELDS = ("TOP", "BOT", "K", "K_33", "STRT", "PRIM_STO")
-PERIODIC_FIELDS = ("RECHARGE", "RIV_STAGE", "RIV_COND", "RIV_RBOT", "DRN_ELEV", "DRN_COND",
-                   "WEL_Q", "GHB_BHEAD", "GHB_COND", "GHB2_BHEAD", "GHB2_COND")
-FIELD_KEYS = STATIC_FIELDS + PERIODIC_FIELDS
+# The mf6ggm field keys (mf6_module.f90 `keys`) the generator appends the
+# _P<1>:<nper> range to, after a [fields.files] key's _L<n>[:<m>] layer and
+# _S<n> system suffixes. DRN_COND is static data under a periodic key, as
+# upstream wrote it.
+PERIODIC_FIELDS = ("RECHARGE", "RIV_STAGE", "RIV_COND", "RIV_RBOT", "DRN_ELEV", "DRN_COND", "WEL_Q")
 
 
 def field_base(key):
@@ -62,15 +67,13 @@ def field_base(key):
     return "_".join(words)
 
 # What stages.nf puts into the task directory of each process, by name; the
-# .inp lines below and the process scripts must agree. mf6 runs from
-# <phase>/solutions/run_output and reads the starting heads from the path
-# mf6ggm copied verbatim into the .ic files, hence TREE_UP on those two.
-TASK_LAYOUT = """
-  datamap/map_glob.*.bin                 map_glob output
-  fields/{steady-state,transient}/*.nc   fields output or [fields] dir
-  <phase>/                               the mf6ggm tree of the phase
-  ./                                     mf6ggmpost writes here
-"""
+# .inp lines below and the process scripts must agree:
+#   datamap/map_glob.*.bin                 map_glob output
+#   fields/{steady-state,transient}/*.nc   preprocess_inputs output
+#   <phase>/                               the mf6ggm tree of the phase
+#   ./                                     mf6ggmpost writes here
+# mf6 runs from <phase>/solutions/run_output and reads the starting heads from
+# the path mf6ggm copied verbatim into the .ic files, hence TREE_UP on those two.
 TREE_UP = Path("../../..")
 
 BUILD_PATHS = {("build", "dir"), ("tools", "bindir"), ("metis", "src"),
@@ -87,20 +90,15 @@ def load_run(path):
     base = path.parent
     run = cfg["run"]
     run["binaries"] = (base / run["binaries"]).resolve()
-    cfg["hydrobasins"]["cache"] = (base / cfg["hydrobasins"]["cache"]).resolve()
     for sol in cfg["partition"]["solutions"]:
         if "partition_file" in sol:
             sol["partition_file"] = (base / sol["partition_file"]).resolve()
     cfg["inputs"]["dir"] = (base / cfg["inputs"]["dir"]).resolve()
-    cfg["fields"]["dir"] = (base / cfg["fields"]["dir"]).resolve()
-    for k in ("ldd", "dem", "confining"):
-        f = cfg["inputs"]["dir"] / cfg["inputs"][k]
+    i = cfg["inputs"]
+    for k in INPUT_KEYS:
+        f = i["dir"] / i[k]
         if not f.is_file():
             fail(f"inputs.{k}: {f} does not exist")
-    if cfg["fields"]["source"] == "external":
-        for sub in sorted({fields_dir(ph).name for ph in cfg["run"]["phases"]}):
-            if not (cfg["fields"]["dir"] / sub).is_dir():
-                fail(f"fields.dir: {cfg['fields']['dir'] / sub} does not exist")
     cfg["_file"] = path
     return cfg
 
@@ -125,12 +123,8 @@ def validate_run(cfg):
         fail(f"window: must satisfy {grid['ymin']} <= south < north <= {ymax}")
     if not grid["xmin"] <= win["west"] < win["east"] <= xmax:
         fail(f"window: must satisfy {grid['xmin']} <= west < east <= {xmax}")
-    if not cfg["hydrobasins"]["regions"]:
-        fail("hydrobasins.regions: empty")
-    if len(cfg["hydrobasins"]["level"]) != 2 or not cfg["hydrobasins"]["level"].isdigit():
-        fail("hydrobasins.level: two digits, e.g. \"08\"")
-    if cfg["hydrobasins"]["curl_retries"] < 0:
-        fail("hydrobasins.curl_retries: 0 or more")
+    if cfg["subbasins"]["area"] <= 0:
+        fail("subbasins.area: positive, km2")
     dm = cfg["datamap"]
     if dm["layer_threshold"] <= 0:
         fail("datamap.layer_threshold: positive, m")
@@ -187,15 +181,15 @@ def validate_run(cfg):
         fail(f"model.packages: exactly the keys {PACKAGES}")
     if m["drain_systems"] < 1 or m["river_systems"] < 1:
         fail("model.drain_systems, model.river_systems: at least 1")
-    if cfg["fields"]["source"] not in ("synthetic", "external"):
-        fail("fields.source: synthetic or external")
     files = cfg["fields"]["files"]
-    if not files:
-        fail("fields.files: empty")
-    for k in files:
-        if field_base(k) not in FIELD_KEYS or "_P" in k:
-            fail(f"fields.files.{k}: not an mf6ggm field key ({', '.join(FIELD_KEYS)}) "
-                 "with optional _L<n>[:<m>] and _S<n> suffixes; the period range is appended")
+    if set(files) != set(DERIVED_KEYS):
+        fail(f"fields.files: exactly the keys {', '.join(DERIVED_KEYS)}")
+    cal = cfg["fields"]["calibration"]
+    if set(cal) != set(CALIBRATION) or any(v <= 0 for v in cal.values()):
+        fail(f"fields.calibration: positive values for exactly {', '.join(CALIBRATION)}")
+    for k in INPUT_KEYS:
+        if k not in cfg["inputs"]:
+            fail(f"inputs.{k}: missing")
     for table in ("multiply", "add"):
         for k in cfg["fields"][table]:
             if k not in files:
@@ -330,12 +324,6 @@ def write_mf6ggmpost_inps(cfg, phase, out):
     ]) for isol, o in post_jobs(cfg)]
 
 
-def rasterize_te(cfg):
-    g = cfg["grid"]
-    xmax, ymax = g["xmin"] + g["ncol"] * g["cellsize"], g["ymin"] + g["nrow"] * g["cellsize"]
-    return f"{g['xmin']:g} {g['ymin']:g} {xmax:g} {ymax:g}"
-
-
 def window(cfg):
     """1-based inclusive [r0, r1, c0, c1] of the cells enclosing the bounds."""
     g, w = cfg["grid"], cfg["window"]
@@ -347,29 +335,27 @@ def window(cfg):
             math.floor(cells(w["west"] - g["xmin"])) + 1, math.ceil(cells(w["east"] - g["xmin"]))]
 
 
-def write_synthetic_json(cfg, out):
-    i = cfg["inputs"]
-    return write_text(out / "synthetic.json", json.dumps({
+def write_fields_json(cfg, out):
+    i, phases = cfg["inputs"], cfg["run"]["phases"]
+    inputs = {k: str(i["dir"] / i[k]) for k in INPUT_KEYS}
+    return write_text(out / "fields.json", json.dumps({
         "window": window(cfg),
         "grid": cfg["grid"],
+        # spin-up reads the transient fields
+        "phases": ["steady-state"] + (["transient"] if len(phases) > 1 else []),
+        "start": cfg["time"]["start"],
         "nper": cfg["time"]["months"],
-        "start": start_yyyymm(cfg),
-        "layer_threshold": cfg["datamap"]["layer_threshold"],
         "files": cfg["fields"]["files"],
-        # nextflow's `path` inputs stage ldd/dem/confining into the fields
-        # task directory by basename, dropping any subdirectory in inputs.*
-        "dem": Path(i["dem"]).name,
-        "confining": Path(i["confining"]).name,
-        "ldd": Path(i["ldd"]).name,
+        "calibration": cfg["fields"]["calibration"],
         "nodata": cfg["globals"]["nodata"],
-        **cfg["synthetic"],
+        "inputs": inputs,
     }, indent=2) + "\n")
 
 
 # One sub-map per stages.nf process that takes one, holding exactly the
 # values its script uses, so a changed key reruns only the tasks it feeds.
 def write_params_json(cfg, out):
-    r, i, h, dm = cfg["run"], cfg["inputs"], cfg["hydrobasins"], cfg["datamap"]
+    r, i, dm = cfg["run"], cfg["inputs"], cfg["datamap"]
     phases = r["phases"]
     return write_text(out / "params.json", json.dumps({
         "config_dir": str(out),
@@ -382,21 +368,8 @@ def write_params_json(cfg, out):
                 "transient": "ic_spu" if "spin-up" in phases else "ic_ss"},
         "hds": HDS,
         "inputs_dir": str(i["dir"]),
-        "ldd": i["ldd"], "dem": i["dem"], "confining": i["confining"],
-        "fields_source": cfg["fields"]["source"],
-        "fields_dir": str(cfg["fields"]["dir"]),
-        "preprocess_inputs": {
-            "window": " ".join(str(x) for x in window(cfg)),
-            "grid": cfg["grid"],
-            "rasterize_te": rasterize_te(cfg),
-            "regions": " ".join(h["regions"]),
-            "level": h["level"],
-            "hydrobasins_url": h["url"],
-            "hydrobasins_cache": str(h["cache"]),
-            "rasterize_attribute": h["rasterize_attribute"],
-            "rasterize_nodata": h["rasterize_nodata"],
-            "curl_retries": h["curl_retries"],
-        },
+        "ldd": i["ldd"], "dem": i["dem"], "confining": i["confining"], "lakes": i["lakes"],
+        "preprocess_inputs": {"area": cfg["subbasins"]["area"]},
         "map_glob": {
             "window": " ".join(str(x) for x in window(cfg)),
             "sea_boundary": int(dm["sea_boundary"]),
@@ -410,7 +383,7 @@ def write_params_json(cfg, out):
 
 # what stages.nf publishes under the output root; work/, binaries/ and logs/ live
 # beside them and must survive a regenerate
-PRODUCTS = ("datamap", "fields", "mf6ggm", "post")
+PRODUCTS = ("datamap", "mf6ggm", "post")
 
 
 def write_run(cfg, out):
@@ -420,8 +393,7 @@ def write_run(cfg, out):
         written += [write_mf6ggm_inp(cfg, phase, out), write_mf6_mod_inp(cfg, phase, out)]
     for phase in cfg["post"]["phases"]:
         written += write_mf6ggmpost_inps(cfg, phase, out)
-    if cfg["fields"]["source"] == "synthetic":
-        written.append(write_synthetic_json(cfg, out))
+    written.append(write_fields_json(cfg, out))
     written.append(write_params_json(cfg, out))
     for stale in set(out.iterdir()) - set(written):
         stale.unlink()

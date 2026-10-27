@@ -15,12 +15,6 @@ src=$MF6_SRC
 work="$BUILD_DIR/mf6-build"
 bindir=$TOOLS_BINDIR
 
-# pixi's cctools ld rejects the 27.0 SDK's libSystem.tbd ("unknown
-# architecture arm64e.x1-macos"); link against the newest SDK it accepts.
-if [[ -n $BUILD_SDK_GLOB ]]; then
-  export SDKROOT=$(ls -d $BUILD_SDK_GLOB | sort -V | tail -1)
-fi
-
 mkdir -p "$work" "$bindir"
 if [[ ! -d $src/.git ]]; then
   git clone -q "$MF6_REPO" "$src"

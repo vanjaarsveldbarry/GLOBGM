@@ -64,10 +64,8 @@ target_link_libraries(globgm_lib PUBLIC netCDF::netcdff ${METIS_LIB})
 target_include_directories(globgm_lib PUBLIC ${CMAKE_Fortran_MODULE_DIRECTORY})
 
 # --- tools ---------------------------------------------------------------
-foreach(tool datamap process_hydbas)
-  add_executable(${tool} ${tool}/${tool}.f90)
-  target_link_libraries(${tool} PRIVATE globgm_lib)
-endforeach()
+add_executable(datamap datamap/datamap.f90)
+target_link_libraries(datamap PRIVATE globgm_lib)
 
 # mf6ggm writes its models with OpenMP threads and inflates the forcing
 # rasters chunk by chunk on them (chunk_io.f90); the other tools stay serial

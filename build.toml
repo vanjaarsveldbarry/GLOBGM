@@ -12,17 +12,14 @@ type = "Release"
 fc = "gfortran"
 # Parallel jobs for the tool build.
 jobs = 8
-# macOS only: glob of the SDKs pixi's cctools ld accepts, newest wins
-# (design.md, Known traps, "macOS SDK 27"). "" leaves SDKROOT alone (Linux).
-sdk_glob = "/Library/Developer/CommandLineTools/SDKs/MacOSX2[0-6].[0-9].sdk"
 # CMake build tree of the tools; METIS and mf6 also compile under it.
 dir = "../output/run_globgm/work/build"
 # true: rebuild METIS and mf6 even when they are already installed.
 rebuild_deps = false
 
 [tools]
-# Install directory of datamap, process_hydbas, mf6ggm, mf6ggmpost, mf6 and
-# mf6_par; [run] binaries in globgm.toml must point here.
+# Install directory of datamap, mf6ggm, mf6ggmpost, mf6 and mf6_par;
+# [run] binaries in globgm.toml must point here.
 bindir = "../output/run_globgm/binaries"
 
 [metis]

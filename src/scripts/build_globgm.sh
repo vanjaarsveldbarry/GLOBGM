@@ -1,16 +1,11 @@
 #!/bin/bash
-# Everything the pipeline executes: METIS and mf6 when missing, the four tools
+# Everything the pipeline executes: METIS and mf6 when missing, the three tools
 # via CMake, all into the tools bindir (METIS into the build tree). Runs inside
 # `pixi run`; every choice comes from build.toml.
 set -euo pipefail
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$root"
 eval "$(python src/python/globgm_config.py build-env build.toml)"
-
-# pixi's cctools ld rejects the 27.0 SDK; the newest earlier one wins
-if [[ -n $BUILD_SDK_GLOB ]]; then
-  export SDKROOT=$(ls -d $BUILD_SDK_GLOB | sort -V | tail -1)
-fi
 
 [[ $BUILD_REBUILD_DEPS == 0 && -f $METIS_PREFIX/include/metis.h ]] || bash src/scripts/build_metis.sh
 cmake -S src/fortran -B "$BUILD_DIR" -DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
